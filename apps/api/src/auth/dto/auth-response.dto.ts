@@ -23,8 +23,11 @@ export class SessionActorDto {
   @ApiProperty({ nullable: true, type: String })
   name: string | null;
 
-  @ApiProperty({ example: '+919876500001' })
-  phone: string;
+  @ApiProperty({ nullable: true, type: String, example: 'owner@brewbean.com' })
+  email: string | null;
+
+  @ApiProperty({ nullable: true, type: String, example: '+919876500001' })
+  phone: string | null;
 }
 
 export class AuthSessionDto {

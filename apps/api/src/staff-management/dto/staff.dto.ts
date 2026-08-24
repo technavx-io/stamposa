@@ -3,6 +3,7 @@ import { Staff, StaffRole } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
+  IsEmail,
   IsEnum,
   IsOptional,
   IsString,
@@ -21,12 +22,16 @@ export class CreateStaffDto {
   @Length(2, 60)
   name: string;
 
-  @ApiProperty({ example: '+91 98765 00002', description: 'The phone the staff member logs in with' })
+  @ApiProperty({ example: 'ravi@brewbean.com', description: 'The email the staff member logs in with' })
+  @IsEmail({}, { message: 'Enter a valid email address.' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  email: string;
+
+  @ApiProperty({ example: 'password123', description: 'Initial password — share it with the staff member' })
   @IsString()
-  @Transform(trim)
-  @MinLength(6)
-  @MaxLength(20)
-  phone: string;
+  @MinLength(8, { message: 'Password must be at least 8 characters.' })
+  @MaxLength(200)
+  password: string;
 
   @ApiPropertyOptional({ enum: StaffRole, default: StaffRole.STAFF, description: 'Managers see team stats and can undo any recent stamp' })
   @IsOptional()
@@ -60,8 +65,8 @@ export class StaffDto {
   @ApiProperty({ example: 'Ravi Kumar' })
   name: string;
 
-  @ApiProperty({ example: '+919876500002' })
-  phone: string;
+  @ApiProperty({ example: 'ravi@brewbean.com', nullable: true, type: String })
+  email: string | null;
 
   @ApiProperty({ enum: StaffRole })
   role: StaffRole;
@@ -80,7 +85,7 @@ export function toStaffDto(staff: Staff & { _count?: { stampsIssued: number } })
   return {
     id: staff.id,
     name: staff.name,
-    phone: staff.phone,
+    email: staff.email,
     role: staff.role,
     isActive: staff.isActive,
     stampsIssued: staff._count?.stampsIssued ?? 0,

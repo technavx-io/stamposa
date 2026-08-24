@@ -46,8 +46,8 @@ class StaffSelfDto {
   @ApiProperty()
   name: string;
 
-  @ApiProperty()
-  phone: string;
+  @ApiProperty({ nullable: true, type: String })
+  email: string | null;
 
   @ApiProperty({ enum: StaffRole, description: 'MANAGER unlocks team stats and longer undo' })
   role: StaffRole;
@@ -176,7 +176,7 @@ export class StaffConsoleController {
   async context(@CurrentStaff() staff: StaffWithBusiness): Promise<StaffContextDto> {
     const campaign = await this.campaigns.activeCampaign(staff.businessId);
     return {
-      staff: { id: staff.id, name: staff.name, phone: staff.phone, role: staff.role },
+      staff: { id: staff.id, name: staff.name, email: staff.email, role: staff.role },
       business: this.businesses.dto(staff.business),
       campaign: campaign
         ? {

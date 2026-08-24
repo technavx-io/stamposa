@@ -11,7 +11,7 @@ import { ApiError } from '@/lib/api/client';
 import { merchantApi } from '@/lib/api/endpoints';
 import { useMerchant } from '@/lib/auth/merchant-context';
 import { downloadAuthenticated } from '@/lib/download';
-import { cn, formatPhone } from '@/lib/utils';
+import {cn} from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
 import { StampGrid } from '@/components/stamp-grid';
 import { Button } from '@/components/ui/button';
@@ -436,8 +436,8 @@ export default function SettingsPage() {
                 <dd className="font-medium text-strong">{me.actor.name}</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-muted">Login phone</dt>
-                <dd className="font-medium text-strong">{formatPhone(me.actor.phone)}</dd>
+                <dt className="text-muted">Login email</dt>
+                <dd className="font-medium text-strong">{me.actor.email ?? '—'}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-muted">Join link</dt>

@@ -40,7 +40,8 @@ export interface SessionActor {
   id: string;
   role: ActorRole;
   name: string | null;
-  phone: string;
+  email: string | null;
+  phone: string | null;
 }
 
 export interface AuthSession {
@@ -112,7 +113,7 @@ export interface Campaign {
 export interface StaffMember {
   id: string;
   name: string;
-  phone: string;
+  email: string | null;
   role: StaffRole;
   isActive: boolean;
   stampsIssued: number;

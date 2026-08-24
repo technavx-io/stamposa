@@ -47,6 +47,15 @@ const rolePath: Record<ActorRole, string> = {
   CUSTOMER: 'customer',
 };
 
+/** me() + logout(), shared by every role regardless of how they sign in. */
+function sessionApi(client: ApiClient) {
+  return {
+    me: () => client.get<Me>('/auth/me'),
+    logout: (refreshToken: string) =>
+      client.post<{ success: boolean }>('/auth/logout', { refreshToken }, { anonymous: true }),
+  };
+}
+
 export function authApi(role: ActorRole, client: ApiClient) {
   return {
     requestOtp: (phone: string) =>
@@ -64,7 +73,21 @@ export function authApi(role: ActorRole, client: ApiClient) {
 // ── Merchant portal ─────────────────────────────────────────────────────
 
 export const merchantApi = {
-  auth: authApi('MERCHANT', merchantClient),
+  auth: {
+    ...sessionApi(merchantClient),
+    signup: (email: string, password: string, name: string) =>
+      merchantClient.post<AuthSession>(
+        '/auth/merchant/signup',
+        { email, password, name },
+        { anonymous: true },
+      ),
+    login: (email: string, password: string) =>
+      merchantClient.post<AuthSession>(
+        '/auth/merchant/login',
+        { email, password },
+        { anonymous: true },
+      ),
+  },
 
   createBusiness: (data: { name: string; address?: string; phone?: string }) =>
     merchantClient.post<Business>('/merchant/business', data),
@@ -118,7 +141,7 @@ export const merchantApi = {
   ) => merchantClient.patch<Campaign>(`/merchant/campaigns/${id}`, data),
 
   listStaff: () => merchantClient.get<StaffMember[]>('/merchant/staff'),
-  createStaff: (data: { name: string; phone: string; role?: StaffRole }) =>
+  createStaff: (data: { name: string; email: string; password: string; role?: StaffRole }) =>
     merchantClient.post<StaffMember>('/merchant/staff', data),
   updateStaff: (id: string, data: { name?: string; isActive?: boolean; role?: StaffRole }) =>
     merchantClient.patch<StaffMember>(`/merchant/staff/${id}`, data),
@@ -209,7 +232,15 @@ export const merchantApi = {
 // ── Staff console ───────────────────────────────────────────────────────
 
 export const staffApi = {
-  auth: authApi('STAFF', staffClient),
+  auth: {
+    ...sessionApi(staffClient),
+    login: (email: string, password: string) =>
+      staffClient.post<AuthSession>(
+        '/auth/staff/login',
+        { email, password },
+        { anonymous: true },
+      ),
+  },
   context: () => staffClient.get<StaffContext>('/staff/context'),
   search: (q: string) =>
     staffClient.get<MembershipListItem[]>(`/staff/customers/search?q=${encodeURIComponent(q)}`),

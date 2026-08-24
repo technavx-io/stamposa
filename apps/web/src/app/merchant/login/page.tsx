@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { OtpLogin } from '@/components/auth/otp-login';
+import { EmailAuth } from '@/components/auth/email-auth';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { useStoredSession } from '@/lib/auth/use-stored-session';
 
@@ -28,13 +28,9 @@ export default function MerchantLoginPage() {
         </>
       }
     >
-      <OtpLogin
+      <EmailAuth
         role="MERCHANT"
-        title="Merchant sign in"
-        subtitle="New here? Enter your phone — we'll create your account."
-        allowRegistration
-        nameLabel="Your full name"
-        submitLabel="Create account"
+        allowSignup
         onAuthenticated={(s) =>
           router.replace(s.business ? '/merchant/dashboard' : '/merchant/onboarding')
         }

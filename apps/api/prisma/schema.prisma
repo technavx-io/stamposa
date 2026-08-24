@@ -62,12 +62,17 @@ enum AuditActorType {
   SYSTEM
 }
 
-/// Business owner account. Authenticates with phone + OTP.
+/// Business owner account. Authenticates with email + password.
 model Merchant {
-  id        String    @id @default(cuid())
-  phone     String    @unique
-  name      String
-  business  Business?
+  id           String    @id @default(cuid())
+  /// Login identity. Nullable at the DB level only for migration safety;
+  /// the app always sets it on signup.
+  email        String?   @unique
+  passwordHash String?   @map("password_hash")
+  /// Optional contact number — no longer the login credential.
+  phone        String?   @unique
+  name         String
+  business     Business?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
@@ -139,10 +144,12 @@ model Staff {
   businessId String   @map("business_id")
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  phone    String    @unique
-  name     String
-  role     StaffRole @default(STAFF)
-  isActive Boolean   @default(true) @map("is_active")
+  phone        String?   @unique
+  email        String?   @unique
+  passwordHash String?   @map("password_hash")
+  name         String
+  role         StaffRole @default(STAFF)
+  isActive     Boolean   @default(true) @map("is_active")
 
   stampsIssued       Stamp[]
   redemptionsHandled Redemption[]

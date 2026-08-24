@@ -2,11 +2,11 @@
  * Development seed — wipes and repopulates the database with two demo tenants
  * so multi-tenant isolation is visible from the first login.
  *
- * Demo phone numbers (OTP is printed to the API console in dev):
- *   Merchant  (Brew & Bean) : +91 98765 00001
- *   Staff     (Brew & Bean) : +91 98765 00002, +91 98765 00003
- *   Merchant  (Glow Salon)  : +91 98765 00004
- *   Customers               : +91 98765 01101 … 01108
+ * Demo accounts (password for all: password123):
+ *   Merchant (Brew & Bean) : owner@brewbean.com
+ *   Staff    (Brew & Bean) : ravi@brewbean.com, meera@brewbean.com (manager)
+ *   Merchant (Glow Salon)  : owner@glowsalon.com
+ *   Customers keep phone + OTP: +91 98765 01101 … 01108 (code shown on screen)
  */
 import { AdminRole, PrismaClient, RedemptionStatus, StampIssuerType } from '@prisma/client';
 import { hash } from '@node-rs/argon2';
@@ -55,9 +55,12 @@ async function main() {
   await prisma.customer.deleteMany();
   await prisma.merchant.deleteMany();
 
+  // Every demo account shares one password so the login screen is easy.
+  const demoHash = await hash('password123');
+
   console.log('Seeding Brew & Bean Coffee…');
   const merchant = await prisma.merchant.create({
-    data: { phone: '+919876500001', name: 'Asha Patel' },
+    data: { email: 'owner@brewbean.com', passwordHash: demoHash, phone: '+919876500001', name: 'Asha Patel' },
   });
   const business = await prisma.business.create({
     data: {
@@ -78,10 +81,10 @@ async function main() {
     },
   });
   const staffRavi = await prisma.staff.create({
-    data: { businessId: business.id, phone: '+919876500002', name: 'Ravi Kumar' },
+    data: { businessId: business.id, email: 'ravi@brewbean.com', passwordHash: demoHash, phone: '+919876500002', name: 'Ravi Kumar' },
   });
   const staffMeera = await prisma.staff.create({
-    data: { businessId: business.id, phone: '+919876500003', name: 'Meera Iyer', role: 'MANAGER' },
+    data: { businessId: business.id, email: 'meera@brewbean.com', passwordHash: demoHash, phone: '+919876500003', name: 'Meera Iyer', role: 'MANAGER' },
   });
   const staffPool = [staffRavi, staffMeera];
 
@@ -147,7 +150,7 @@ async function main() {
 
   console.log('Seeding Glow Salon (second tenant — proves isolation)…');
   const merchant2 = await prisma.merchant.create({
-    data: { phone: '+919876500004', name: 'Priya Sharma' },
+    data: { email: 'owner@glowsalon.com', passwordHash: demoHash, phone: '+919876500004', name: 'Priya Sharma' },
   });
   const business2 = await prisma.business.create({
     data: {
@@ -168,7 +171,7 @@ async function main() {
     },
   });
   const staffZara = await prisma.staff.create({
-    data: { businessId: business2.id, phone: '+919876500005', name: 'Zara Khan' },
+    data: { businessId: business2.id, email: 'zara@glowsalon.com', passwordHash: demoHash, phone: '+919876500005', name: 'Zara Khan' },
   });
 
   // Aarav is a customer at BOTH businesses — one global identity, two cards.
@@ -285,7 +288,9 @@ async function main() {
       },
     ],
   });
-  console.log(`  admin sign-in: owner@stamposa.com / ${adminPassword}`);
+  console.log(`  admin sign-in:    owner@stamposa.com / ${adminPassword}`);
+  console.log('  merchant sign-in: owner@brewbean.com / password123');
+  console.log('  staff sign-in:    ravi@brewbean.com / password123 (Meera = manager)');
 
   const counts = {
     merchants: await prisma.merchant.count(),

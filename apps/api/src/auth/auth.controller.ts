@@ -4,7 +4,14 @@ import { Throttle } from '@nestjs/throttler';
 import { CurrentActor, Public } from './decorators/auth.decorators';
 import { AuthActor } from './auth.types';
 import { AuthService } from './auth.service';
-import { RefreshTokenDto, RegisterDto, RequestOtpDto, VerifyOtpDto } from './dto/auth-request.dto';
+import {
+  EmailLoginDto,
+  MerchantSignupDto,
+  RefreshTokenDto,
+  RegisterDto,
+  RequestOtpDto,
+  VerifyOtpDto,
+} from './dto/auth-request.dto';
 import {
   AuthResultDto,
   AuthSessionDto,
@@ -20,57 +27,38 @@ const OTP_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  // ── Merchant ──────────────────────────────────────────────────────────
+  // ── Merchant (email + password) ───────────────────────────────────────
 
   @Public()
   @Throttle(OTP_THROTTLE)
-  @Post('merchant/otp/request')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send a login/registration OTP to a merchant phone' })
-  @ApiOkResponse({ type: OtpRequestedDto })
-  requestMerchantOtp(@Body() dto: RequestOtpDto): Promise<OtpRequestedDto> {
-    return this.auth.requestOtp('MERCHANT', dto.phone);
-  }
-
-  @Public()
-  @Throttle(OTP_THROTTLE)
-  @Post('merchant/otp/verify')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Verify merchant OTP — logs in, or returns a registration token for new phones' })
-  @ApiOkResponse({ type: AuthResultDto })
-  verifyMerchantOtp(@Body() dto: VerifyOtpDto): Promise<AuthResultDto> {
-    return this.auth.verifyOtp('MERCHANT', dto.phone, dto.code);
-  }
-
-  @Public()
-  @Post('merchant/register')
+  @Post('merchant/signup')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Complete merchant registration after OTP verification' })
+  @ApiOperation({ summary: 'Create a merchant account with email + password' })
   @ApiOkResponse({ type: AuthSessionDto })
-  registerMerchant(@Body() dto: RegisterDto): Promise<AuthSessionDto> {
-    return this.auth.registerMerchant(dto.registrationToken, dto.name);
-  }
-
-  // ── Staff ─────────────────────────────────────────────────────────────
-
-  @Public()
-  @Throttle(OTP_THROTTLE)
-  @Post('staff/otp/request')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send a login OTP to a staff phone (account must exist)' })
-  @ApiOkResponse({ type: OtpRequestedDto })
-  requestStaffOtp(@Body() dto: RequestOtpDto): Promise<OtpRequestedDto> {
-    return this.auth.requestOtp('STAFF', dto.phone);
+  signupMerchant(@Body() dto: MerchantSignupDto): Promise<AuthSessionDto> {
+    return this.auth.signupMerchant(dto.email, dto.password, dto.name);
   }
 
   @Public()
   @Throttle(OTP_THROTTLE)
-  @Post('staff/otp/verify')
+  @Post('merchant/login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Verify staff OTP and log in' })
-  @ApiOkResponse({ type: AuthResultDto })
-  verifyStaffOtp(@Body() dto: VerifyOtpDto): Promise<AuthResultDto> {
-    return this.auth.verifyOtp('STAFF', dto.phone, dto.code);
+  @ApiOperation({ summary: 'Log a merchant in with email + password' })
+  @ApiOkResponse({ type: AuthSessionDto })
+  loginMerchant(@Body() dto: EmailLoginDto): Promise<AuthSessionDto> {
+    return this.auth.loginMerchant(dto.email, dto.password);
+  }
+
+  // ── Staff (email + password, created by the merchant) ─────────────────
+
+  @Public()
+  @Throttle(OTP_THROTTLE)
+  @Post('staff/login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Log a staff member in with email + password' })
+  @ApiOkResponse({ type: AuthSessionDto })
+  loginStaff(@Body() dto: EmailLoginDto): Promise<AuthSessionDto> {
+    return this.auth.loginStaff(dto.email, dto.password);
   }
 
   // ── Customer ──────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RequestOtpDto {
   @ApiProperty({ example: '+91 98765 00001', description: 'Any format; normalised to E.164 server-side' })
@@ -36,4 +36,25 @@ export class RefreshTokenDto {
   @IsString()
   @MinLength(10)
   refreshToken: string;
+}
+
+export class EmailLoginDto {
+  @ApiProperty({ example: 'owner@brewbean.com' })
+  @IsEmail({}, { message: 'Enter a valid email address.' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  email: string;
+
+  @ApiProperty({ example: 'password123' })
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters.' })
+  @MaxLength(200)
+  password: string;
+}
+
+export class MerchantSignupDto extends EmailLoginDto {
+  @ApiProperty({ example: 'Asha Patel' })
+  @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Length(2, 60)
+  name: string;
 }

@@ -106,7 +106,8 @@ export default function AdminMerchantDetailPage({
           id: result.sessionId,
           role: 'MERCHANT',
           name: result.ownerName,
-          phone: '',
+          email: null,
+          phone: null,
         },
       });
       setImpersonateOpen(false);

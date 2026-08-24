@@ -10,7 +10,6 @@ import { Link2, UserPlus } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { merchantApi } from '@/lib/api/endpoints';
 import type { StaffMember } from '@/lib/api/types';
-import { formatPhone } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
@@ -20,7 +19,8 @@ import { LoadError } from '@/components/ui/load-error';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Enter their name').max(60),
-  phone: z.string().trim().min(6, 'Enter their phone number').max(20),
+  email: z.string().trim().email('Enter a valid email'),
+  password: z.string().min(8, 'At least 8 characters'),
   role: z.enum(['STAFF', 'MANAGER']),
 });
 type FormValues = z.infer<typeof schema>;
@@ -33,7 +33,7 @@ export default function StaffPage() {
     <>
       <PageHeader
         title="Staff"
-        description="Staff sign in with their phone number and can add stamps at the counter."
+        description="Staff sign in with their email and add stamps at the counter."
         action={
           <Button variant="brand" onClick={() => setAddOpen(true)}>
             <UserPlus className="size-4" /> Add staff
@@ -115,7 +115,7 @@ function StaffRow({ member }: { member: StaffMember }) {
           {!member.isActive && <Badge tone="red">Deactivated</Badge>}
         </p>
         <p className="text-xs text-muted">
-          {formatPhone(member.phone)} · {member.stampsIssued} stamp{member.stampsIssued === 1 ? '' : 's'} issued
+          {member.email} · {member.stampsIssued} stamp{member.stampsIssued === 1 ? '' : 's'} issued
         </p>
       </div>
       <Button
@@ -142,7 +142,7 @@ function AddStaffModal({ open, onClose }: { open: boolean; onClose: () => void }
   const queryClient = useQueryClient();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', phone: '', role: 'STAFF' },
+    defaultValues: { name: '', email: '', password: '', role: 'STAFF' },
   });
 
   const submit = form.handleSubmit(async (values) => {
@@ -162,14 +162,24 @@ function AddStaffModal({ open, onClose }: { open: boolean; onClose: () => void }
       open={open}
       onClose={onClose}
       title="Add a staff member"
-      description="They'll sign in with this phone number using an OTP — no password to manage."
+      description="They sign in with this email and password. Share the password with them; they can use it right away."
     >
       <form onSubmit={submit} className="space-y-4">
         <Field label="Name" error={form.formState.errors.name?.message}>
           {(p) => <Input {...p} placeholder="Ravi Kumar" {...form.register('name')} autoFocus />}
         </Field>
-        <Field label="Phone number" error={form.formState.errors.phone?.message}>
-          {(p) => <Input {...p} type="tel" placeholder="+91 98765 00002" {...form.register('phone')} />}
+        <Field label="Email" error={form.formState.errors.email?.message}>
+          {(p) => <Input {...p} type="email" placeholder="ravi@yourshop.com" {...form.register('email')} />}
+        </Field>
+        <Field label="Initial password" error={form.formState.errors.password?.message}>
+          {(p) => (
+            <Input
+              {...p}
+              type="text"
+              placeholder="At least 8 characters"
+              {...form.register('password')}
+            />
+          )}
         </Field>
         <Field
           label="Role"

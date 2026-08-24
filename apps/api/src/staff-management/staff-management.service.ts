@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { conflict, notFound } from '../common/exceptions';
-import { PhoneService } from '../common/phone.service';
+import { PasswordService } from '../common/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto, StaffDto, toStaffDto, UpdateStaffDto } from './dto/staff.dto';
 
@@ -9,22 +9,22 @@ import { CreateStaffDto, StaffDto, toStaffDto, UpdateStaffDto } from './dto/staf
 export class StaffManagementService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly phones: PhoneService,
+    private readonly passwords: PasswordService,
   ) {}
 
   async create(businessId: string, dto: CreateStaffDto): Promise<StaffDto> {
-    const phone = this.phones.normalize(dto.phone);
+    const passwordHash = await this.passwords.hash(dto.password);
     try {
       const staff = await this.prisma.staff.create({
-        data: { businessId, name: dto.name, phone, role: dto.role },
+        data: { businessId, name: dto.name, email: dto.email, passwordHash, role: dto.role },
         include: { _count: { select: { stampsIssued: true } } },
       });
       return toStaffDto(staff);
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
         throw conflict(
-          'STAFF_PHONE_EXISTS',
-          'This phone number is already registered as staff.',
+          'STAFF_EMAIL_EXISTS',
+          'This email is already registered as staff.',
         );
       }
       throw e;

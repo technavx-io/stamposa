@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { OtpLogin } from '@/components/auth/otp-login';
+import { EmailAuth } from '@/components/auth/email-auth';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { useStoredSession } from '@/lib/auth/use-stored-session';
 
@@ -28,13 +28,7 @@ export default function StaffLoginPage() {
         </>
       }
     >
-      <OtpLogin
-        role="STAFF"
-        title="Staff login"
-        subtitle="Use the phone number your manager registered for you."
-        allowRegistration={false}
-        onAuthenticated={() => router.replace('/staff')}
-      />
+      <EmailAuth role="STAFF" allowSignup={false} onAuthenticated={() => router.replace('/staff')} />
     </AuthShell>
   );
 }

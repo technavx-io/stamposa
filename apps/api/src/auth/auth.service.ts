@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { forbidden, notFound } from '../common/exceptions';
+import { conflict, forbidden, notFound, unauthorized } from '../common/exceptions';
+import { PasswordService } from '../common/password.service';
 import { PhoneService } from '../common/phone.service';
 import { AppConfigService } from '../config/app-config.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,7 +20,8 @@ import { TokenService } from './token.service';
 interface ActorRecord {
   id: string;
   name: string | null;
-  phone: string;
+  phone: string | null;
+  email?: string | null;
 }
 
 @Injectable()
@@ -29,8 +31,79 @@ export class AuthService {
     private readonly otp: OtpService,
     private readonly tokens: TokenService,
     private readonly phones: PhoneService,
+    private readonly passwords: PasswordService,
     private readonly config: AppConfigService,
   ) {}
+
+  // ── Merchant + staff: email + password ────────────────────────────────
+
+  /** Self-serve merchant signup. Email is the login identity. */
+  async signupMerchant(email: string, password: string, name: string): Promise<AuthSessionDto> {
+    const passwordHash = await this.passwords.hash(password);
+    try {
+      const merchant = await this.prisma.merchant.create({
+        data: { email, passwordHash, name },
+      });
+      return this.buildSession('MERCHANT', merchant, null);
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw conflict(
+          'EMAIL_TAKEN',
+          'An account with this email already exists. Try signing in instead.',
+        );
+      }
+      throw e;
+    }
+  }
+
+  async loginMerchant(email: string, password: string): Promise<AuthSessionDto> {
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { email },
+      include: { business: true },
+    });
+    // Verify unconditionally (dummy hash when no account) for constant timing.
+    const ok = await this.passwords.verify(merchant?.passwordHash, password);
+    if (!merchant || !ok) {
+      throw unauthorized('INVALID_CREDENTIALS', 'Email or password is incorrect.');
+    }
+    if (merchant.business?.suspendedAt) {
+      throw forbidden(
+        'BUSINESS_SUSPENDED',
+        merchant.business.suspendedReason
+          ? `This account is suspended: ${merchant.business.suspendedReason}`
+          : 'This account has been suspended. Contact support.',
+      );
+    }
+    return this.buildSession(
+      'MERCHANT',
+      merchant,
+      merchant.business && toBusinessDto(merchant.business, this.urls()),
+    );
+  }
+
+  /** Staff have no self-signup — the merchant creates them with a password. */
+  async loginStaff(email: string, password: string): Promise<AuthSessionDto> {
+    const staff = await this.prisma.staff.findUnique({
+      where: { email },
+      include: { business: true },
+    });
+    const ok = await this.passwords.verify(staff?.passwordHash, password);
+    if (!staff || !ok) {
+      throw unauthorized('INVALID_CREDENTIALS', 'Email or password is incorrect.');
+    }
+    if (!staff.isActive) {
+      throw forbidden('STAFF_INACTIVE', 'This staff account has been deactivated.');
+    }
+    if (staff.business.suspendedAt) {
+      throw forbidden(
+        'BUSINESS_SUSPENDED',
+        'This business account is suspended. Ask the owner to contact support.',
+      );
+    }
+    return this.buildSession('STAFF', staff, toBusinessDto(staff.business, this.urls()));
+  }
+
+  // ── Customer: phone + OTP (unchanged) ─────────────────────────────────
 
   async requestOtp(role: ActorRole, rawPhone: string): Promise<OtpRequestedDto> {
     const phone = this.phones.normalize(rawPhone);
@@ -209,7 +282,13 @@ export class AuthService {
   }
 
   private actorSummary(role: ActorRole, record: ActorRecord) {
-    return { id: record.id, role, name: record.name ?? null, phone: record.phone };
+    return {
+      id: record.id,
+      role,
+      name: record.name ?? null,
+      email: record.email ?? null,
+      phone: record.phone ?? null,
+    };
   }
 
   private urls() {
