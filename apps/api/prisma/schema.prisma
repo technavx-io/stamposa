@@ -1,0 +1,476 @@
+// Loyalty Platform — Phase 1 schema
+//
+// Multi-tenancy model: the tenant is the Business. Every tenant-owned row
+// carries a businessId, and services only ever query with a businessId taken
+// from the authenticated actor (never from client input).
+//
+// Customers are global identities (one account per phone) that join tenants
+// through CustomerMembership — this is what lets one person hold loyalty
+// cards at many businesses, and later powers cross-merchant features.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum StampIssuerType {
+  STAFF
+  MERCHANT
+  /// Owner-initiated balance correction; carries a reason and may be negative.
+  ADJUSTMENT
+}
+
+enum RedemptionStatus {
+  PENDING
+  REDEEMED
+  /// Cancelled before hand-over — e.g. the completing stamp was undone.
+  VOID
+}
+
+/// Counter roles. Managers additionally see the team's day and can undo
+/// any recent stamp (staff can only undo their own, within a short window).
+enum StaffRole {
+  STAFF
+  MANAGER
+}
+
+/// Platform-side roles. Tenant roles (merchant/staff/customer) are separate
+/// tables entirely — a platform admin is never a tenant user.
+enum AdminRole {
+  SUPER_ADMIN
+  OPS
+  SUPPORT
+  FINANCE
+  ANALYST
+}
+
+/// Who performed an audited action.
+enum AuditActorType {
+  ADMIN
+  MERCHANT
+  STAFF
+  SYSTEM
+}
+
+/// Business owner account. Authenticates with phone + OTP.
+model Merchant {
+  id        String    @id @default(cuid())
+  phone     String    @unique
+  name      String
+  business  Business?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("merchants")
+}
+
+/// The tenant. Phase 1 allows exactly one business per merchant
+/// (merchantId is unique); the relation is already 1-N ready for Phase 2+.
+model Business {
+  id         String  @id @default(cuid())
+  merchantId String  @unique @map("merchant_id")
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  name     String
+  /// URL-safe identifier used in the public join link and QR code.
+  slug     String  @unique
+  /// Relative path under the uploads root (e.g. /uploads/logos/x.png).
+  logoPath String? @map("logo_path")
+  address  String?
+  phone    String?
+
+  /// Set by a platform admin. While set: merchant + staff logins are blocked,
+  /// stamping stops, and the public join page shows "programme paused".
+  suspendedAt     DateTime? @map("suspended_at")
+  suspendedReason String?   @map("suspended_reason")
+  suspendedById   String?   @map("suspended_by_id")
+  suspendedBy     PlatformAdmin? @relation("BusinessSuspendedBy", fields: [suspendedById], references: [id], onDelete: SetNull)
+
+  /// Free-form operator notes, visible only in the admin panel.
+  adminNotes String? @map("admin_notes")
+
+  /// Hex brand colour applied to the customer card and join page.
+  brandColor String? @map("brand_color")
+  /// Vertical (cafe, salon, gym…) — drives defaults and reporting cohorts.
+  category   String?
+  /// IANA zone. "Today" in every merchant metric is computed in this zone.
+  timezone   String  @default("Asia/Kolkata")
+
+  /// Wording customers agree to at enrolment; versioned via Consent rows.
+  consentText        String? @map("consent_text")
+  consentTextVersion Int     @default(1) @map("consent_text_version")
+
+  notifyDailySummary  Boolean @default(true) @map("notify_daily_summary")
+  notifyWeeklyDigest  Boolean @default(true) @map("notify_weekly_digest")
+  notifyStaffInactive Boolean @default(true) @map("notify_staff_inactive")
+
+  staff        Staff[]
+  campaigns    Campaign[]
+  memberships  CustomerMembership[]
+  stamps       Stamp[]
+  redemptions  Redemption[]
+  consents     Consent[]
+  auditEntries AuditLog[]
+  impersonations ImpersonationSession[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([suspendedAt])
+  @@map("businesses")
+}
+
+/// Counter staff for a business. Created by the merchant; authenticates with
+/// phone + OTP. Phone is globally unique in Phase 1 (one staff account per
+/// person); relax to @@unique([businessId, phone]) when multi-business staff
+/// membership ships.
+model Staff {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  phone    String    @unique
+  name     String
+  role     StaffRole @default(STAFF)
+  isActive Boolean   @default(true) @map("is_active")
+
+  stampsIssued       Stamp[]
+  redemptionsHandled Redemption[]
+  stampsUndone       Stamp[]      @relation("StampUndoneBy")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@map("staff")
+}
+
+/// Global customer identity keyed by phone. Not tenant-scoped by design —
+/// tenant data lives on CustomerMembership.
+model Customer {
+  id    String  @id @default(cuid())
+  phone String  @unique
+  name  String?
+
+  /// DPDP/GDPR erasure: identity fields are anonymised in place (phone
+  /// becomes an opaque sentinel) and this marks when. Ledger rows survive,
+  /// keyed only by opaque ids.
+  erasedAt DateTime? @map("erased_at")
+
+  memberships CustomerMembership[]
+  consents    Consent[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("customers")
+}
+
+/// A loyalty program run by a business, e.g. "Buy 10, get 1 free".
+/// Phase 1 enforces a single non-archived campaign per business at the
+/// service layer; the schema supports many.
+model Campaign {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+  stampsRequired Int            @map("stamps_required")
+  reward         String
+  status         CampaignStatus @default(ACTIVE)
+
+  /// Max stamps one customer can earn per day. Null = unlimited.
+  dailyStampCap Int?    @map("daily_stamp_cap")
+  /// Small print shown on the card and join page.
+  terms         String?
+
+  memberships CustomerMembership[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@map("campaigns")
+}
+
+/// A customer's loyalty card in one campaign — the join table between the
+/// global customer and a tenant. `code` is the human-friendly unique customer
+/// ID staff use at the counter (shown as XXXX-XXXX).
+model CustomerMembership {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaignId String   @map("campaign_id")
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  /// Stamps on the current (incomplete) card: 0..stampsRequired-1.
+  stampCount     Int       @default(0) @map("stamp_count")
+  /// Completed cards, i.e. rewards earned.
+  completedCount Int       @default(0) @map("completed_count")
+  /// Lifetime stamps, immune to campaign edits.
+  totalStamps    Int       @default(0) @map("total_stamps")
+  lastStampAt    DateTime? @map("last_stamp_at")
+
+  /// Merchant-private notes and tags about this customer.
+  notes String?
+  tags  String[] @default([])
+
+  /// Blocked members keep their history but cannot earn or be messaged.
+  blockedAt     DateTime? @map("blocked_at")
+  blockedReason String?   @map("blocked_reason")
+
+  stamps      Stamp[]
+  redemptions Redemption[]
+  walletPass  WalletPass?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([customerId, campaignId])
+  @@index([businessId, lastStampAt])
+  @@index([businessId, createdAt])
+  @@map("customer_memberships")
+}
+
+/// Immutable stamp event — the audit trail behind every card.
+model Stamp {
+  id           String             @id @default(cuid())
+  membershipId String             @map("membership_id")
+  membership   CustomerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  businessId   String             @map("business_id")
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  issuerType StampIssuerType @map("issuer_type")
+  staffId    String?         @map("staff_id")
+  staff      Staff?          @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  /// Signed movement: +1 for a normal stamp, ±N for an owner adjustment.
+  delta Int @default(1)
+  /// Mandatory for adjustments; shown in the customer's history.
+  reason String?
+
+  /// True when this entry completed a card and earned the reward.
+  completedCard Boolean @default(false) @map("completed_card")
+
+  /// Set when this stamp was undone at the counter. The undo appends a
+  /// delta -1 reversal row rather than deleting this one, so the ledger
+  /// stays append-only and sums stay truthful.
+  undoneAt        DateTime? @map("undone_at")
+  undoneByStaffId String?   @map("undone_by_staff_id")
+  undoneBy        Staff?    @relation("StampUndoneBy", fields: [undoneByStaffId], references: [id], onDelete: SetNull)
+
+  /// The voucher minted when this stamp completed a card.
+  redemption Redemption?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([membershipId, createdAt])
+  @@index([businessId, createdAt])
+  @@map("stamps")
+}
+
+/// A reward earned by completing a card: first a voucher waiting to be
+/// honoured at the counter, then an immutable record of the hand-over.
+model Redemption {
+  id           String             @id @default(cuid())
+  /// Unique voucher code (same unambiguous alphabet as customer codes).
+  code         String             @unique
+  membershipId String             @map("membership_id")
+  membership   CustomerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  businessId   String             @map("business_id")
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  /// Reward text snapshotted at earn time — immune to later campaign edits.
+  rewardText String @map("reward_text")
+
+  earnedByStampId String? @unique @map("earned_by_stamp_id")
+  earnedByStamp   Stamp?  @relation(fields: [earnedByStampId], references: [id], onDelete: SetNull)
+
+  status RedemptionStatus @default(PENDING)
+
+  redeemedAt      DateTime?        @map("redeemed_at")
+  /// STAFF or MERCHANT — who honoured it at the counter.
+  redeemedByType  StampIssuerType? @map("redeemed_by_type")
+  redeemedStaffId String?          @map("redeemed_staff_id")
+  redeemedStaff   Staff?           @relation(fields: [redeemedStaffId], references: [id], onDelete: SetNull)
+
+  voidedAt   DateTime? @map("voided_at")
+  voidReason String?   @map("void_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId, status, createdAt])
+  @@index([membershipId, status])
+  @@map("redemptions")
+}
+
+/// Consent history — every grant and withdrawal, with the exact wording the
+/// customer saw. Never updated in place; a change appends a new row.
+model Consent {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  /// True = granted, false = withdrawn.
+  granted Boolean
+  /// Snapshot of the wording shown, plus its version number.
+  text        String
+  textVersion Int    @map("text_version")
+  /// Where it happened: enrol_page, counter, unsubscribe_link.
+  channel   String
+  ipAddress String? @map("ip_address")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([customerId, businessId, createdAt])
+  @@index([businessId, createdAt])
+  @@map("consents")
+}
+
+/// One row per card that has (or requested) a wallet pass. The Apple auth
+/// token guards Apple's web-service protocol; updatedAt drives
+/// passesUpdatedSince. Google objects are keyed {issuerId}.{membershipId}.
+model WalletPass {
+  id           String             @id @default(cuid())
+  membershipId String             @unique @map("membership_id")
+  membership   CustomerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  /// Bearer token Apple devices present (Authorization: ApplePass …).
+  appleAuthToken String    @unique @map("apple_auth_token")
+  /// Bumped whenever the card changes; Apple devices poll against it.
+  appleUpdatedAt DateTime  @default(now()) @map("apple_updated_at")
+  /// Set once the LoyaltyObject exists at Google.
+  googleObjectId String?   @map("google_object_id")
+
+  registrations AppleWalletRegistration[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("wallet_passes")
+}
+
+/// An iPhone/Watch that added the pass and wants push updates.
+model AppleWalletRegistration {
+  id           String     @id @default(cuid())
+  walletPassId String     @map("wallet_pass_id")
+  walletPass   WalletPass @relation(fields: [walletPassId], references: [id], onDelete: Cascade)
+
+  deviceLibraryId String @map("device_library_id")
+  pushToken       String @map("push_token")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([deviceLibraryId, walletPassId])
+  @@index([deviceLibraryId])
+  @@map("apple_wallet_registrations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Platform (admin) domain. Deliberately has no businessId anywhere: these
+// rows belong to the platform operator, not to any tenant.
+// ─────────────────────────────────────────────────────────────────────────
+
+/// A member of the platform operator's own team.
+model PlatformAdmin {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String    @map("password_hash")
+  role         AdminRole @default(SUPPORT)
+
+  /// Base32 TOTP secret. Set at first login; 2FA is mandatory for admins.
+  totpSecret     String?  @map("totp_secret")
+  totpEnabledAt  DateTime? @map("totp_enabled_at")
+  /// Hashed single-use recovery codes.
+  recoveryCodes  String[] @map("recovery_codes")
+
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  auditEntries        AuditLog[]
+  impersonations      ImpersonationSession[]
+  suspendedBusinesses Business[] @relation("BusinessSuspendedBy")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_admins")
+}
+
+/// Append-only record of every sensitive action. Never updated, never
+/// deleted — the API exposes reads only.
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorType AuditActorType @map("actor_type")
+  /// PlatformAdmin id when actorType = ADMIN; null for SYSTEM.
+  adminId   String?        @map("admin_id")
+  admin     PlatformAdmin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  /// Free-form id for non-admin actors (merchant/staff id).
+  actorId   String?        @map("actor_id")
+  /// Display label captured at write time, so the log survives deletions.
+  actorLabel String        @map("actor_label")
+
+  /// Machine-readable verb, e.g. "merchant.suspended", "admin.login".
+  action String
+  /// What was acted upon, e.g. "business", "customer", "platform_admin".
+  targetType String? @map("target_type")
+  targetId   String? @map("target_id")
+  targetLabel String? @map("target_label")
+
+  /// Tenant the action touched, when applicable.
+  businessId String?   @map("business_id")
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  /// Why — mandatory for impersonation, suspension and PII access.
+  reason String?
+  /// Before/after or extra context.
+  metadata Json?
+
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([adminId, createdAt])
+  @@index([businessId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+/// A time-boxed admin session acting as a merchant, for support.
+model ImpersonationSession {
+  id         String        @id @default(cuid())
+  adminId    String        @map("admin_id")
+  admin      PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  businessId String        @map("business_id")
+  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  reason    String
+  startedAt DateTime  @default(now()) @map("started_at")
+  expiresAt DateTime  @map("expires_at")
+  endedAt   DateTime? @map("ended_at")
+
+  @@index([adminId, startedAt])
+  @@index([businessId, startedAt])
+  @@map("impersonation_sessions")
+}

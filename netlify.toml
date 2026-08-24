@@ -1,0 +1,21 @@
+# Netlify build for the Stamposa web app (npm-workspaces monorepo).
+#
+# What this hosts: the public marketing site at "/" — fully self-contained,
+# no backend needed. The merchant / staff / customer portals also deploy,
+# but they talk to the Stamposa API, which is not part of a Netlify build
+# (it needs Postgres + Redis). Point NEXT_PUBLIC_API_URL at a running API
+# to make those work; otherwise they show a "couldn't reach Stamposa"
+# screen, which is the honest state for a preview link.
+
+[build]
+  command = "npm run build --workspace apps/web"
+  publish = "apps/web/.next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Netlify installs the whole workspace from the repo root.
+  NPM_FLAGS = "--include-workspace-root"
+
+# Netlify's Next.js runtime handles SSR, image optimisation and routing.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

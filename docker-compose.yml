@@ -1,0 +1,37 @@
+# Optional infrastructure for machines without local PostgreSQL/Redis.
+# Ports are offset (5433/6380) so they never clash with locally installed services.
+# If you use these, set in apps/api/.env:
+#   DATABASE_URL=postgresql://loyalty:loyalty@localhost:5433/loyalty_platform?schema=public
+#   REDIS_URL=redis://localhost:6380
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: loyalty-postgres
+    environment:
+      POSTGRES_USER: loyalty
+      POSTGRES_PASSWORD: loyalty
+      POSTGRES_DB: loyalty_platform
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loyalty -d loyalty_platform"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: loyalty-redis
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

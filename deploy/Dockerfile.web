@@ -1,0 +1,26 @@
+# Next.js app — standalone output for a slim runtime image.
+# NEXT_PUBLIC_* values are baked in at BUILD time; pass them as build args.
+
+FROM node:22-alpine AS build
+WORKDIR /repo
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci --workspace apps/web --include-workspace-root
+COPY apps/web apps/web
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_DEFAULT_PHONE_REGION=IN
+ARG NEXT_PUBLIC_SENTRY_DSN=
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_DEFAULT_PHONE_REGION=$NEXT_PUBLIC_DEFAULT_PHONE_REGION \
+    NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+RUN npm run -w apps/web build
+
+FROM node:22-alpine
+ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
+WORKDIR /app
+COPY --from=build /repo/apps/web/.next/standalone ./
+COPY --from=build /repo/apps/web/.next/static apps/web/.next/static
+COPY --from=build /repo/apps/web/public apps/web/public
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]

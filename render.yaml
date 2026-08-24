@@ -1,0 +1,46 @@
+# Render blueprint for the Stamposa API (demo / staging deployment).
+#
+# What this is: a public home for the NestJS API so the Netlify site's
+# merchant / staff / customer sign-in actually works. Data lives in Neon
+# (Postgres) and Upstash (Redis) — set their URLs below in the Render
+# dashboard (they are marked sync:false so they are never committed).
+#
+# This runs in a NON-production node env on purpose, so the OTP code shows
+# on the login screen (no SMS gateway needed to demo sign-in). For real
+# customers, switch to a hardened production config + MSG91 (docs/SMS-SETUP.md).
+
+services:
+  - type: web
+    name: stamposa-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/Dockerfile.api
+    dockerContext: .
+    healthCheckPath: /v1/health
+    envVars:
+      # Non-production so OTP codes appear on-screen for the demo.
+      - key: NODE_ENV
+        value: development
+      - key: OTP_DEV_EXPOSE
+        value: "true"
+      - key: ADMIN_REQUIRE_2FA
+        value: "false"
+      - key: DEFAULT_PHONE_REGION
+        value: IN
+      # Render generates strong secrets and keeps them.
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # The Netlify site that is allowed to call this API.
+      - key: WEB_APP_URL
+        value: https://getstamposa.netlify.app
+      - key: CORS_ORIGINS
+        value: https://getstamposa.netlify.app
+      # Set these three in the Render dashboard after creating the service:
+      - key: API_PUBLIC_URL      # the https://stamposa-api-xxxx.onrender.com URL
+        sync: false
+      - key: DATABASE_URL        # from Neon (use the pooled connection string)
+        sync: false
+      - key: REDIS_URL           # from Upstash (rediss://... TLS URL)
+        sync: false

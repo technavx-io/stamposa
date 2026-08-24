@@ -1,0 +1,37 @@
+# NestJS API — multi-stage build for the npm-workspaces monorepo.
+# Build context is the repo root (loyalty-platform/); see docker-compose.prod.yml.
+
+# ── Stage 1: full install + compile (also used for `prisma migrate deploy`) ──
+FROM node:22-alpine AS build
+WORKDIR /repo
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci --workspace apps/api --include-workspace-root
+COPY apps/api apps/api
+RUN npx -w apps/api prisma generate && npm run -w apps/api build
+
+# ── Stage 2: production-only dependencies ────────────────────────────────
+FROM node:22-alpine AS prune
+WORKDIR /repo
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci --workspace apps/api --include-workspace-root --omit=dev \
+    && mkdir -p apps/api/node_modules
+COPY apps/api/prisma apps/api/prisma
+# Regenerate the client into the pruned tree.
+RUN npx -w apps/api prisma generate
+
+# ── Stage 3: runtime ─────────────────────────────────────────────────────
+FROM node:22-alpine
+ENV NODE_ENV=production
+WORKDIR /repo
+COPY --from=prune /repo/node_modules node_modules
+COPY --from=prune /repo/apps/api/node_modules apps/api/node_modules
+COPY --from=build /repo/apps/api/dist apps/api/dist
+COPY apps/api/prisma apps/api/prisma
+COPY apps/api/package.json apps/api/package.json
+WORKDIR /repo/apps/api
+EXPOSE 4000
+CMD ["node", "dist/main.js"]

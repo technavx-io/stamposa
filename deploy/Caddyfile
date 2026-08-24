@@ -1,0 +1,27 @@
+# Caddy terminates HTTPS and fetches Let's Encrypt certificates automatically.
+# APP_DOMAIN / API_DOMAIN / ACME_EMAIL come from deploy/.env.production.
+#
+# APP_DOMAIN is the bare domain (stamposa.com) — the marketing site is the
+# app's own "/" route, so one host serves both the public site and the
+# merchant, staff and customer portals.
+
+{
+	email {$ACME_EMAIL}
+}
+
+# Public site + all portals.
+{$APP_DOMAIN} {
+	encode gzip
+	reverse_proxy web:3000
+}
+
+# www → bare domain, so links shared either way land in the same place.
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}
+
+# The API lives on its own hostname.
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy api:4000
+}

@@ -1,0 +1,130 @@
+# Production stack for a single VPS.
+#   cd loyalty-platform
+#   cp deploy/env.production.example deploy/.env.production   # then fill it in
+#   ./deploy/deploy.sh
+#
+# Caddy terminates HTTPS for both domains with automatic Let's Encrypt
+# certificates — point two DNS A records at this server first.
+
+name: loyalty
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: loyalty
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env.production}
+      POSTGRES_DB: loyalty_platform
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U loyalty -d loyalty_platform']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+      PORT: '4000'
+      DATABASE_URL: postgresql://loyalty:${POSTGRES_PASSWORD}@postgres:5432/loyalty_platform?schema=public
+      REDIS_URL: redis://redis:6379
+      WEB_APP_URL: https://${APP_DOMAIN}
+      API_PUBLIC_URL: https://${API_DOMAIN}
+      CORS_ORIGINS: https://${APP_DOMAIN}
+      UPLOAD_DIR: ./uploads
+      OTP_DEV_EXPOSE: 'false'
+    volumes:
+      - uploads:/repo/apps/api/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # One-off: `docker compose -f deploy/docker-compose.prod.yml --profile tools run --rm migrate`
+  # (deploy.sh does this for you). Uses the build stage, which has the Prisma CLI.
+  migrate:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+      target: build
+    profiles: ['tools']
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://loyalty:${POSTGRES_PASSWORD}@postgres:5432/loyalty_platform?schema=public
+    working_dir: /repo
+    command: ['npx', '-w', 'apps/api', 'prisma', 'migrate', 'deploy']
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+      target: build
+    profiles: ['tools']
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://loyalty:${POSTGRES_PASSWORD}@postgres:5432/loyalty_platform?schema=public
+    working_dir: /repo
+    command: ['npx', '-w', 'apps/api', 'prisma', 'db', 'seed']
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: https://${API_DOMAIN}
+        NEXT_PUBLIC_DEFAULT_PHONE_REGION: ${DEFAULT_PHONE_REGION:-IN}
+        NEXT_PUBLIC_SENTRY_DSN: ${WEB_SENTRY_DSN:-}
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:
+  caddy_data:
+  caddy_config:
