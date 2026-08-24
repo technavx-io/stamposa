@@ -15,6 +15,7 @@
   NODE_VERSION = "22"
   # Netlify installs the whole workspace from the repo root.
   NPM_FLAGS = "--include-workspace-root"
+  NEXT_PUBLIC_API_URL = "https://stamposa-api.onrender.com"
 
 # Netlify's Next.js runtime handles SSR, image optimisation and routing.
 [[plugins]]
