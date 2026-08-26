@@ -109,7 +109,7 @@ export interface AdminMerchantRow {
   slug: string;
   logoUrl: string | null;
   ownerName: string;
-  ownerPhone: string;
+  ownerPhone: string | null;
   campaignName: string | null;
   campaignStatus: 'ACTIVE' | 'PAUSED' | 'ARCHIVED' | null;
   customers: number;
@@ -131,7 +131,7 @@ export interface AdminMerchantDetail {
   phone: string | null;
   joinUrl: string;
   adminNotes: string | null;
-  owner: { id: string; name: string; phone: string; joinedAt: string };
+  owner: { id: string; name: string; phone: string | null; joinedAt: string };
   suspended: boolean;
   suspendedAt: string | null;
   suspendedReason: string | null;
@@ -161,7 +161,7 @@ export interface AdminMerchantDetail {
   staff: {
     id: string;
     name: string;
-    phone: string;
+    phone: string | null;
     isActive: boolean;
     stampsIssued: number;
     createdAt: string;

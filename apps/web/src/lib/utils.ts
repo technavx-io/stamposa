@@ -36,7 +36,10 @@ export function timeAgo(iso: string | Date): string {
   return formatDate(iso);
 }
 
-export function formatPhone(e164: string): string {
+export function formatPhone(e164: string | null | undefined): string {
+  // Merchants and staff now sign in with email, so their phone can be null.
+  // parsePhoneNumberFromString throws on a non-string, so guard first.
+  if (!e164) return '';
   const parsed = parsePhoneNumberFromString(e164);
   return parsed ? parsed.formatInternational() : e164;
 }

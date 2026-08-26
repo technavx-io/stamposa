@@ -172,7 +172,8 @@ export default function AdminMerchantDetailPage({
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">{m.name}</h1>
             <p className="mt-0.5 text-[13px] text-slate-500">
-              {m.owner.name} · {formatPhone(m.owner.phone)} · joined {formatDate(m.createdAt)}
+              {m.owner.name}{m.owner.phone ? ` · ${formatPhone(m.owner.phone)}` : ''} · joined{' '}
+              {formatDate(m.createdAt)}
             </p>
             <p className="mt-0.5 text-[12.5px] text-slate-500">{m.healthReason}</p>
           </div>
@@ -250,7 +251,9 @@ export default function AdminMerchantDetailPage({
                   <li key={s.id} className="flex items-center gap-3 px-5 py-2.5">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13.5px] font-medium text-slate-800">{s.name}</p>
-                      <p className="truncate text-[11.5px] text-slate-500">{formatPhone(s.phone)}</p>
+                      {s.phone && (
+                        <p className="truncate text-[11.5px] text-slate-500">{formatPhone(s.phone)}</p>
+                      )}
                     </div>
                     {!s.isActive && <Pill tone="red">Inactive</Pill>}
                     <span className="font-mono text-[12px] text-slate-500 tabular-nums">

@@ -121,7 +121,7 @@ function MerchantsView() {
                         <HealthBadge grade={m.health} title={m.healthReason} />
                       </div>
                       <p className="mt-0.5 truncate text-[12px] text-slate-500">
-                        {m.ownerName} · {formatPhone(m.ownerPhone)}
+                        {m.ownerName}{m.ownerPhone ? ` · ${formatPhone(m.ownerPhone)}` : ''}
                       </p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-600">
                         {m.suspended ? (
@@ -171,7 +171,7 @@ function MerchantsView() {
                               {m.name}
                             </Link>
                             <p className="truncate text-[11.5px] text-slate-500">
-                              {m.ownerName} · {formatPhone(m.ownerPhone)}
+                              {m.ownerName}{m.ownerPhone ? ` · ${formatPhone(m.ownerPhone)}` : ''}
                             </p>
                           </div>
                         </div>
