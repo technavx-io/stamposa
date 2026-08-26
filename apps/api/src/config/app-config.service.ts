@@ -82,6 +82,28 @@ export class AppConfigService {
     return this.config.get('DEFAULT_PHONE_REGION', { infer: true });
   }
 
+  get emailProvider(): Env['EMAIL_PROVIDER'] {
+    return this.config.get('EMAIL_PROVIDER', { infer: true });
+  }
+
+  /** SMTP credentials, or null when any required piece is missing. */
+  get smtp(): {
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    pass: string;
+    from: string;
+  } | null {
+    const host = this.config.get('SMTP_HOST', { infer: true });
+    const port = this.config.get('SMTP_PORT', { infer: true });
+    const user = this.config.get('SMTP_USER', { infer: true });
+    const pass = this.config.get('SMTP_PASS', { infer: true });
+    const from = this.config.get('SMTP_FROM', { infer: true });
+    if (!host || !port || !user || !pass || !from) return null;
+    return { host, port, secure: this.config.get('SMTP_SECURE', { infer: true }), user, pass, from };
+  }
+
   /** Always true in production — the env schema refuses to load otherwise. */
   /** Apple Wallet config, or null when any piece is missing. */
   get appleWallet(): {

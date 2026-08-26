@@ -10,10 +10,12 @@ import { ActorRole, AuthActor } from './auth.types';
 import {
   AuthResultDto,
   AuthSessionDto,
+  EmailVerificationRequestedDto,
   MeDto,
   OtpRequestedDto,
   TokensDto,
 } from './dto/auth-response.dto';
+import { EmailVerificationService } from './email-verification.service';
 import { OtpService } from './otp.service';
 import { TokenService } from './token.service';
 
@@ -33,27 +35,67 @@ export class AuthService {
     private readonly phones: PhoneService,
     private readonly passwords: PasswordService,
     private readonly config: AppConfigService,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   // ── Merchant + staff: email + password ────────────────────────────────
 
-  /** Self-serve merchant signup. Email is the login identity. */
-  async signupMerchant(email: string, password: string, name: string): Promise<AuthSessionDto> {
+  /**
+   * Self-serve merchant signup. The account is created UNVERIFIED and a
+   * 6-digit code is emailed; sign-in stays blocked until it's confirmed.
+   * Re-signing up on an unverified email refreshes the credentials and
+   * resends, so an abandoned attempt is never a dead end.
+   */
+  async signupMerchant(
+    email: string,
+    password: string,
+    name: string,
+  ): Promise<EmailVerificationRequestedDto> {
     const passwordHash = await this.passwords.hash(password);
-    try {
-      const merchant = await this.prisma.merchant.create({
-        data: { email, passwordHash, name },
-      });
-      return this.buildSession('MERCHANT', merchant, null);
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        throw conflict(
-          'EMAIL_TAKEN',
-          'An account with this email already exists. Try signing in instead.',
-        );
-      }
-      throw e;
+    const existing = await this.prisma.merchant.findUnique({ where: { email } });
+    if (existing?.emailVerifiedAt) {
+      throw conflict(
+        'EMAIL_TAKEN',
+        'An account with this email already exists. Try signing in instead.',
+      );
     }
+    if (existing) {
+      await this.prisma.merchant.update({ where: { email }, data: { passwordHash, name } });
+    } else {
+      await this.prisma.merchant.create({ data: { email, passwordHash, name } });
+    }
+    const result = await this.emailVerification.requestCode(email);
+    return { verificationRequired: true, email, ...result };
+  }
+
+  /** Confirm the signup code, mark the email verified, and sign the merchant in. */
+  async verifyMerchantEmail(email: string, code: string): Promise<AuthSessionDto> {
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { email },
+      include: { business: true },
+    });
+    if (!merchant) {
+      throw notFound('MERCHANT_NOT_FOUND', 'No signup found for this email. Create an account first.');
+    }
+    if (!merchant.emailVerifiedAt) {
+      await this.emailVerification.verifyCode(email, code);
+      await this.prisma.merchant.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
+    }
+    return this.buildSession(
+      'MERCHANT',
+      merchant,
+      merchant.business && toBusinessDto(merchant.business, this.urls()),
+    );
+  }
+
+  /** Resend the signup code — only for accounts that still need verifying. */
+  async resendMerchantVerification(email: string): Promise<OtpRequestedDto> {
+    const merchant = await this.prisma.merchant.findUnique({ where: { email } });
+    // Don't reveal whether the email exists or is already verified.
+    if (!merchant || merchant.emailVerifiedAt) {
+      return { expiresInSec: 900, resendInSec: 60 };
+    }
+    return this.emailVerification.requestCode(email);
   }
 
   async loginMerchant(email: string, password: string): Promise<AuthSessionDto> {
@@ -65,6 +107,12 @@ export class AuthService {
     const ok = await this.passwords.verify(merchant?.passwordHash, password);
     if (!merchant || !ok) {
       throw unauthorized('INVALID_CREDENTIALS', 'Email or password is incorrect.');
+    }
+    if (!merchant.emailVerifiedAt) {
+      throw forbidden(
+        'EMAIL_NOT_VERIFIED',
+        'Please verify your email to finish setting up your account.',
+      );
     }
     if (merchant.business?.suspendedAt) {
       throw forbidden(

@@ -32,6 +32,20 @@ export const envSchema = z.object({
   OTP_DEV_EXPOSE: booleanString.default('false'),
   DEFAULT_PHONE_REGION: z.string().length(2).default('IN'),
 
+  // ── Transactional email (merchant email verification). SMTP works with
+  //    Gmail app-passwords or any mail domain; console just logs the code
+  //    so the flow is testable in staging without a real mailbox. ────────
+  EMAIL_PROVIDER: z.enum(['console', 'smtp']).default('console'),
+  /** SMTP host, e.g. smtp.gmail.com — required when EMAIL_PROVIDER=smtp. */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  /** true for port 465 (implicit TLS); false uses STARTTLS on 587. */
+  SMTP_SECURE: booleanString.default('false'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  /** From header, e.g. "Stamposa <no-reply@yourdomain.com>". */
+  SMTP_FROM: z.string().optional(),
+
   /**
    * Whether platform admins must complete an authenticator step. Turning
    * this off makes admin sign-in password-only — convenient locally, but it
@@ -74,6 +88,15 @@ export const envSchema = z.object({
     message:
       'SMS_PROVIDER=msg91 needs MSG91_AUTH_KEY, MSG91_TEMPLATE_ID and MSG91_SENDER_ID.',
     path: ['SMS_PROVIDER'],
+  },
+).refine(
+  (env) =>
+    env.EMAIL_PROVIDER !== 'smtp' ||
+    (!!env.SMTP_HOST && !!env.SMTP_PORT && !!env.SMTP_USER && !!env.SMTP_PASS && !!env.SMTP_FROM),
+  {
+    message:
+      'EMAIL_PROVIDER=smtp needs SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS and SMTP_FROM.',
+    path: ['EMAIL_PROVIDER'],
   },
 );
 

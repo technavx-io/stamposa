@@ -56,6 +56,23 @@ export class OtpRequestedDto {
   devCode?: string;
 }
 
+export class EmailVerificationRequestedDto {
+  @ApiProperty({ example: true, description: 'Signup succeeded but the email must be confirmed before sign-in' })
+  verificationRequired: true;
+
+  @ApiProperty({ example: 'owner@brewbean.com', description: 'The email the code was sent to' })
+  email: string;
+
+  @ApiProperty({ example: 900 })
+  expiresInSec: number;
+
+  @ApiProperty({ example: 60 })
+  resendInSec: number;
+
+  @ApiProperty({ required: false, description: 'Dev-mode only — never present in production' })
+  devCode?: string;
+}
+
 export class AuthResultDto {
   @ApiProperty({ enum: ['AUTHENTICATED', 'REGISTRATION_REQUIRED'] })
   status: 'AUTHENTICATED' | 'REGISTRATION_REQUIRED';

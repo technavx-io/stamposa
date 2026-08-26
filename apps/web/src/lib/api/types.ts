@@ -56,6 +56,14 @@ export interface OtpRequested {
   devCode?: string;
 }
 
+export interface EmailVerificationRequested {
+  verificationRequired: true;
+  email: string;
+  expiresInSec: number;
+  resendInSec: number;
+  devCode?: string;
+}
+
 export interface AuthResult {
   status: 'AUTHENTICATED' | 'REGISTRATION_REQUIRED';
   session: AuthSession | null;

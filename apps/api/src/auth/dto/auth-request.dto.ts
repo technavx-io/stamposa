@@ -58,3 +58,17 @@ export class MerchantSignupDto extends EmailLoginDto {
   @Length(2, 60)
   name: string;
 }
+
+export class ResendEmailVerificationDto {
+  @ApiProperty({ example: 'owner@brewbean.com' })
+  @IsEmail({}, { message: 'Enter a valid email address.' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  email: string;
+}
+
+export class VerifyEmailDto extends ResendEmailVerificationDto {
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @Matches(/^\d{6}$/, { message: 'Code must be the 6-digit number from the email.' })
+  code: string;
+}

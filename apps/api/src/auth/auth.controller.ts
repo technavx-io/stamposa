@@ -10,11 +10,14 @@ import {
   RefreshTokenDto,
   RegisterDto,
   RequestOtpDto,
+  ResendEmailVerificationDto,
+  VerifyEmailDto,
   VerifyOtpDto,
 } from './dto/auth-request.dto';
 import {
   AuthResultDto,
   AuthSessionDto,
+  EmailVerificationRequestedDto,
   MeDto,
   OtpRequestedDto,
   TokensDto,
@@ -33,10 +36,30 @@ export class AuthController {
   @Throttle(OTP_THROTTLE)
   @Post('merchant/signup')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a merchant account with email + password' })
-  @ApiOkResponse({ type: AuthSessionDto })
-  signupMerchant(@Body() dto: MerchantSignupDto): Promise<AuthSessionDto> {
+  @ApiOperation({ summary: 'Create a merchant account; emails a verification code' })
+  @ApiOkResponse({ type: EmailVerificationRequestedDto })
+  signupMerchant(@Body() dto: MerchantSignupDto): Promise<EmailVerificationRequestedDto> {
     return this.auth.signupMerchant(dto.email, dto.password, dto.name);
+  }
+
+  @Public()
+  @Throttle(OTP_THROTTLE)
+  @Post('merchant/verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirm the emailed code and sign the new merchant in' })
+  @ApiOkResponse({ type: AuthSessionDto })
+  verifyMerchantEmail(@Body() dto: VerifyEmailDto): Promise<AuthSessionDto> {
+    return this.auth.verifyMerchantEmail(dto.email, dto.code);
+  }
+
+  @Public()
+  @Throttle(OTP_THROTTLE)
+  @Post('merchant/verify-email/resend')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend the merchant email verification code' })
+  @ApiOkResponse({ type: OtpRequestedDto })
+  resendMerchantVerification(@Body() dto: ResendEmailVerificationDto): Promise<OtpRequestedDto> {
+    return this.auth.resendMerchantVerification(dto.email);
   }
 
   @Public()

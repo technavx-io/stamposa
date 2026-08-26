@@ -9,6 +9,7 @@ import type {
   Card,
   CardDetail,
   Dashboard,
+  EmailVerificationRequested,
   JoinResult,
   Me,
   MembershipDetail,
@@ -76,9 +77,21 @@ export const merchantApi = {
   auth: {
     ...sessionApi(merchantClient),
     signup: (email: string, password: string, name: string) =>
-      merchantClient.post<AuthSession>(
+      merchantClient.post<EmailVerificationRequested>(
         '/auth/merchant/signup',
         { email, password, name },
+        { anonymous: true },
+      ),
+    verifyEmail: (email: string, code: string) =>
+      merchantClient.post<AuthSession>(
+        '/auth/merchant/verify-email',
+        { email, code },
+        { anonymous: true },
+      ),
+    resendEmailVerification: (email: string) =>
+      merchantClient.post<OtpRequested>(
+        '/auth/merchant/verify-email/resend',
+        { email },
         { anonymous: true },
       ),
     login: (email: string, password: string) =>
