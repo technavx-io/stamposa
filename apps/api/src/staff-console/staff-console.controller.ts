@@ -21,7 +21,9 @@ import { CurrentStaff, Roles } from '../auth/decorators/auth.decorators';
 import { BusinessesService } from '../businesses/businesses.service';
 import { BusinessDto } from '../businesses/dto/business.dto';
 import { CampaignsService } from '../campaigns/campaigns.service';
+import { PasswordService } from '../common/password.service';
 import { PhoneService } from '../common/phone.service';
+import { badRequest } from '../common/exceptions';
 import {
   AddStampResultDto,
   CardCampaignDto,
@@ -34,6 +36,7 @@ import { RedeemRequestDto } from '../loyalty/dto/redeem-request.dto';
 import { MembershipsService } from '../loyalty/memberships.service';
 import { RedemptionsService } from '../loyalty/redemptions.service';
 import { StampsService } from '../loyalty/stamps.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { StaffConsoleService } from './staff-console.service';
 
 const trim = ({ value }: { value: unknown }) =>
@@ -62,6 +65,20 @@ class StaffContextDto {
 
   @ApiProperty({ type: CardCampaignDto, nullable: true, description: 'Campaign stamps are added to (null when none active)' })
   campaign: CardCampaignDto | null;
+}
+
+class ChangePasswordDto {
+  @ApiProperty({ description: 'Current password for verification' })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(200)
+  currentPassword: string;
+
+  @ApiProperty({ description: 'New password (min 8 chars)' })
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters.' })
+  @MaxLength(200)
+  newPassword: string;
 }
 
 class SearchQueryDto {
@@ -168,6 +185,8 @@ export class StaffConsoleController {
     private readonly businesses: BusinessesService,
     private readonly console: StaffConsoleService,
     private readonly phones: PhoneService,
+    private readonly passwords: PasswordService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get('context')
@@ -196,6 +215,20 @@ export class StaffConsoleController {
   @ApiOkResponse({ type: TodayDto })
   today(@CurrentStaff() staff: StaffWithBusiness): Promise<TodayDto> {
     return this.console.today(staff);
+  }
+
+  @Post('password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change own password (requires current password)' })
+  async changePassword(
+    @CurrentStaff() staff: StaffWithBusiness,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ success: boolean }> {
+    const ok = await this.passwords.verify(staff.passwordHash, dto.currentPassword);
+    if (!ok) throw badRequest('WRONG_PASSWORD', 'Current password is incorrect.');
+    const hash = await this.passwords.hash(dto.newPassword);
+    await this.prisma.staff.update({ where: { id: staff.id }, data: { passwordHash: hash } });
+    return { success: true };
   }
 
   @Get('customers/search')

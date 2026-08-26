@@ -46,10 +46,13 @@ export class StaffManagementService {
     });
     if (!existing) throw notFound('STAFF_NOT_FOUND', 'Staff member not found.');
 
+    const passwordHash = dto.password ? await this.passwords.hash(dto.password) : undefined;
+
     const staff = await this.prisma.staff.update({
       where: { id: staffId },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(passwordHash !== undefined ? { passwordHash } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         ...(dto.role !== undefined ? { role: dto.role } : {}),
       },

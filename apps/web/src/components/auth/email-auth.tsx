@@ -7,7 +7,7 @@ import { merchantApi, staffApi } from '@/lib/api/endpoints';
 import type { AuthSession } from '@/lib/api/types';
 import { sessionFor } from '@/lib/auth/session';
 import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/field';
+import { Field, Input, PasswordInput } from '@/components/ui/field';
 
 type Role = 'MERCHANT' | 'STAFF';
 type Mode = 'login' | 'signup';
@@ -130,9 +130,8 @@ export function EmailAuth({ role, allowSignup, onAuthenticated }: EmailAuthProps
 
         <Field label="Password" error={error ?? undefined}>
           {(p) => (
-            <Input
+            <PasswordInput
               {...p}
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={isSignup ? 'At least 8 characters' : 'Your password'}

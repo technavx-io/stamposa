@@ -1,6 +1,7 @@
 'use client';
 
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const inputClasses =
@@ -26,6 +27,31 @@ export const Textarea = forwardRef<
       className={cn(inputClasses, 'h-auto min-h-20 py-2', className)}
       {...props}
     />
+  );
+});
+
+export const PasswordInput = forwardRef<
+  HTMLInputElement,
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>
+>(function PasswordInput({ className, ...props }, ref) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        ref={ref}
+        type={visible ? 'text' : 'password'}
+        className={cn(inputClasses, 'pr-10', className)}
+        {...props}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setVisible((v) => !v)}
+        className="absolute top-1/2 right-3 -translate-y-1/2 text-muted transition-colors hover:text-strong"
+      >
+        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
   );
 });
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogPanel } from '@headlessui/react';
 import {
   BarChart3,
+  BookOpen,
   Gift,
   LayoutDashboard,
   LogOut,
@@ -37,6 +38,7 @@ const nav = [
   { href: '/merchant/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/merchant/staff', label: 'Staff', icon: UserCog },
   { href: '/merchant/settings', label: 'Settings', icon: Settings },
+  { href: '/guide', label: 'Guide', icon: BookOpen },
 ];
 
 export function MerchantShell({ children }: { children: React.ReactNode }) {

@@ -4,8 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  BookOpen,
   Check,
   Gift,
+  KeyRound,
   LogOut,
   PartyPopper,
   Plus,
@@ -16,6 +18,9 @@ import {
   UserPlus,
   UserRound,
 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api/client';
 import { staffApi } from '@/lib/api/endpoints';
@@ -31,7 +36,7 @@ import { useStoredSession } from '@/lib/auth/use-stored-session';
 import { useDebounced } from '@/lib/use-debounced';
 import { cn, formatPhone, timeAgo } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/field';
+import { Field, Input, PasswordInput } from '@/components/ui/field';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { Modal } from '@/components/ui/modal';
 import { Badge, EmptyState, PageLoader, Panel, Spinner } from '@/components/ui/surface';
@@ -58,6 +63,7 @@ export default function StaffConsolePage() {
   const [lastRedeemed, setLastRedeemed] = useState<RedeemResult | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [enrollOpen, setEnrollOpen] = useState(false);
+  const [changePwOpen, setChangePwOpen] = useState(false);
 
   const context = useQuery({
     queryKey: ['staff', 'context'],
@@ -209,6 +215,22 @@ export default function StaffConsolePage() {
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
             <ThemeToggleCompact />
+            <a
+              href="/guide#staff"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"
+              title="Guide"
+            >
+              <BookOpen className="size-4" />
+            </a>
+            <button
+              onClick={() => setChangePwOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"
+              title="Change password"
+            >
+              <KeyRound className="size-4" />
+            </button>
             <button
               onClick={() => void logout()}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"
@@ -395,6 +417,8 @@ export default function StaffConsolePage() {
         {scanOpen && <QrScanner onDecode={onScanDecode} />}
       </Modal>
 
+      <ChangePasswordModal open={changePwOpen} onClose={() => setChangePwOpen(false)} />
+
       <EnrollModal
         open={enrollOpen}
         onClose={() => setEnrollOpen(false)}
@@ -447,6 +471,68 @@ export default function StaffConsolePage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+const changePwSchema = z.object({
+  currentPassword: z.string().min(8, 'At least 8 characters'),
+  newPassword: z.string().min(8, 'At least 8 characters'),
+});
+
+function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const form = useForm<z.infer<typeof changePwSchema>>({
+    resolver: zodResolver(changePwSchema),
+    defaultValues: { currentPassword: '', newPassword: '' },
+  });
+
+  const submit = form.handleSubmit(async (values) => {
+    try {
+      await staffApi.changePassword(values.currentPassword, values.newPassword);
+      toast.success('Password changed.');
+      form.reset();
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Could not change password.');
+    }
+  });
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Change your password"
+      description="Enter your current password to verify, then set a new one."
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="Current password" error={form.formState.errors.currentPassword?.message}>
+          {(p) => (
+            <PasswordInput
+              {...p}
+              placeholder="Your current password"
+              {...form.register('currentPassword')}
+              autoFocus
+            />
+          )}
+        </Field>
+        <Field label="New password" error={form.formState.errors.newPassword?.message}>
+          {(p) => (
+            <PasswordInput
+              {...p}
+              placeholder="At least 8 characters"
+              {...form.register('newPassword')}
+            />
+          )}
+        </Field>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="brand" loading={form.formState.isSubmitting}>
+            Change password
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

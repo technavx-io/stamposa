@@ -143,7 +143,7 @@ export const merchantApi = {
   listStaff: () => merchantClient.get<StaffMember[]>('/merchant/staff'),
   createStaff: (data: { name: string; email: string; password: string; role?: StaffRole }) =>
     merchantClient.post<StaffMember>('/merchant/staff', data),
-  updateStaff: (id: string, data: { name?: string; isActive?: boolean; role?: StaffRole }) =>
+  updateStaff: (id: string, data: { name?: string; password?: string; isActive?: boolean; role?: StaffRole }) =>
     merchantClient.patch<StaffMember>(`/merchant/staff/${id}`, data),
 
   listCustomers: (params: { search?: string; page?: number; limit?: number }) => {
@@ -241,6 +241,8 @@ export const staffApi = {
         { anonymous: true },
       ),
   },
+  changePassword: (currentPassword: string, newPassword: string) =>
+    staffClient.post<{ success: boolean }>('/staff/password', { currentPassword, newPassword }),
   context: () => staffClient.get<StaffContext>('/staff/context'),
   search: (q: string) =>
     staffClient.get<MembershipListItem[]>(`/staff/customers/search?q=${encodeURIComponent(q)}`),

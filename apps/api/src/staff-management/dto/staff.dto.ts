@@ -47,6 +47,13 @@ export class UpdateStaffDto {
   @Length(2, 60)
   name?: string;
 
+  @ApiPropertyOptional({ description: 'Set a new password (replaces the existing one)' })
+  @IsOptional()
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters.' })
+  @MaxLength(200)
+  password?: string;
+
   @ApiPropertyOptional({ description: 'Set false to deactivate (blocks login immediately)' })
   @IsOptional()
   @IsBoolean()

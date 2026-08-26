@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {
   ArrowRight,
   BarChart3,
+  BookOpen,
   Check,
   Download,
   Gift,
@@ -101,6 +102,7 @@ export default function LandingPage() {
             <a href="#how" className="transition-colors hover:text-strong">How it works</a>
             <a href="#roles" className="transition-colors hover:text-strong">What you get</a>
             <a href="#included" className="transition-colors hover:text-strong">Features</a>
+            <Link href="/guide" className="transition-colors hover:text-strong">Guide</Link>
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggleCompact />
@@ -451,6 +453,9 @@ export default function LandingPage() {
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-body">
+            <Link href="/guide" className="transition-colors hover:text-strong">
+              <BookOpen className="mr-1.5 inline size-3.5" aria-hidden />Guide
+            </Link>
             <Link href="/merchant/login" className="transition-colors hover:text-strong">
               <Store className="mr-1.5 inline size-3.5" aria-hidden />Merchant sign in
             </Link>

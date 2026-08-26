@@ -75,8 +75,8 @@ export default function MyCardsPage() {
               title="No cards yet"
               description="Scan a participating business's QR code to collect your first loyalty card."
               action={
-                <Link href="/" className="text-sm font-medium text-brand-600">
-                  Learn more →
+                <Link href="/guide#customer" className="text-sm font-medium text-brand-600">
+                  How it works →
                 </Link>
               }
             />

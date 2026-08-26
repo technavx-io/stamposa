@@ -6,13 +6,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Link2, UserPlus } from 'lucide-react';
+import { KeyRound, Link2, UserPlus } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { merchantApi } from '@/lib/api/endpoints';
 import type { StaffMember } from '@/lib/api/types';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/field';
+import { Field, Input, PasswordInput } from '@/components/ui/field';
 import { Modal } from '@/components/ui/modal';
 import { Badge, EmptyState, Panel, Spinner } from '@/components/ui/surface';
 import { LoadError } from '@/components/ui/load-error';
@@ -82,6 +82,7 @@ export default function StaffPage() {
 
 function StaffRow({ member }: { member: StaffMember }) {
   const queryClient = useQueryClient();
+  const [resetOpen, setResetOpen] = useState(false);
   const setRole = useMutation({
     mutationFn: (role: 'STAFF' | 'MANAGER') => merchantApi.updateStaff(member.id, { role }),
     onSuccess: async (updated) => {
@@ -121,6 +122,13 @@ function StaffRow({ member }: { member: StaffMember }) {
       <Button
         variant="ghost"
         size="sm"
+        onClick={() => setResetOpen(true)}
+      >
+        <KeyRound className="size-3.5" /> Reset password
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => setRole.mutate(member.role === 'MANAGER' ? 'STAFF' : 'MANAGER')}
         loading={setRole.isPending}
       >
@@ -134,6 +142,12 @@ function StaffRow({ member }: { member: StaffMember }) {
       >
         {member.isActive ? 'Deactivate' : 'Reactivate'}
       </Button>
+      <ResetPasswordModal
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        staffId={member.id}
+        staffName={member.name}
+      />
     </li>
   );
 }
@@ -173,9 +187,8 @@ function AddStaffModal({ open, onClose }: { open: boolean; onClose: () => void }
         </Field>
         <Field label="Initial password" error={form.formState.errors.password?.message}>
           {(p) => (
-            <Input
+            <PasswordInput
               {...p}
-              type="text"
               placeholder="At least 8 characters"
               {...form.register('password')}
             />
@@ -202,6 +215,68 @@ function AddStaffModal({ open, onClose }: { open: boolean; onClose: () => void }
           </Button>
           <Button type="submit" variant="brand" loading={form.formState.isSubmitting}>
             Add staff member
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+const resetSchema = z.object({
+  password: z.string().min(8, 'At least 8 characters'),
+});
+
+function ResetPasswordModal({
+  open,
+  onClose,
+  staffId,
+  staffName,
+}: {
+  open: boolean;
+  onClose: () => void;
+  staffId: string;
+  staffName: string;
+}) {
+  const form = useForm<{ password: string }>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: { password: '' },
+  });
+
+  const submit = form.handleSubmit(async (values) => {
+    try {
+      await merchantApi.updateStaff(staffId, { password: values.password });
+      toast.success(`Password updated for ${staffName} — share the new one with them.`);
+      form.reset();
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Could not reset password.');
+    }
+  });
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Reset password for ${staffName}`}
+      description="Set a new password and share it with them. Their current password will stop working immediately."
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <Field label="New password" error={form.formState.errors.password?.message}>
+          {(p) => (
+            <PasswordInput
+              {...p}
+              placeholder="At least 8 characters"
+              {...form.register('password')}
+              autoFocus
+            />
+          )}
+        </Field>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="brand" loading={form.formState.isSubmitting}>
+            Reset password
           </Button>
         </div>
       </form>
