@@ -229,12 +229,19 @@ export default function CustomerDetailPage({
         <Panel className="lg:col-span-1">
           <PanelHeader title="Current card" description={m.campaign.name} />
           <div className="space-y-4 p-5">
-            <StampGrid total={m.stampsRequired} filled={m.stampCount} />
+            <StampGrid
+              total={m.stampsRequired}
+              filled={m.stampCount}
+              onAddStamp={() => addStamp.mutate()}
+              addPending={addStamp.isPending}
+              addDisabled={!!m.blockedAt}
+            />
             <p className="text-sm text-body">
               <span className="font-semibold text-strong">
                 {m.stampsRequired - m.stampCount} more
               </span>{' '}
               to: {m.campaign.reward}
+              <span className="ml-1 text-muted">· tap a circle to stamp</span>
             </p>
             <div className="grid grid-cols-2 gap-3 border-t border-line-soft pt-4 text-center">
               <div>

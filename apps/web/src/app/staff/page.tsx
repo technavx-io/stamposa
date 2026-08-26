@@ -728,6 +728,9 @@ function CustomerResult({
                 filled={m.stampCount}
                 size="sm"
                 highlightLast={!!justStamped}
+                onAddStamp={onStamp}
+                addPending={stamping}
+                addDisabled={disabled && !stamping}
               />
             </div>
           </div>
