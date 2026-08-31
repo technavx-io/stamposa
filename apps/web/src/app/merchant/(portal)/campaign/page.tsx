@@ -16,6 +16,12 @@ import { Field, Input, Textarea } from '@/components/ui/field';
 import { Badge, EmptyState, Panel, PanelHeader, Spinner } from '@/components/ui/surface';
 import { StampGrid } from '@/components/stamp-grid';
 import { LoadError } from '@/components/ui/load-error';
+import {
+  CardColourChoice,
+  EmojiChoice,
+  REWARD_EMOJIS,
+  STAMP_EMOJIS,
+} from '@/components/merchant/card-style-fields';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Name your campaign').max(80),
@@ -24,11 +30,18 @@ const schema = z.object({
   description: z.string().trim().max(300).optional().or(z.literal('')),
   dailyStampCap: z.coerce.number().int().min(0).max(20).optional(),
   terms: z.string().trim().max(400).optional().or(z.literal('')),
+  cardColor: z.string().optional().or(z.literal('')),
+  stampIcon: z.string().optional().or(z.literal('')),
+  rewardIcon: z.string().optional().or(z.literal('')),
 });
 type FormValues = z.infer<typeof schema>;
 
+/** The default card colour when neither campaign nor business sets one. */
+const DEFAULT_CARD_COLOR = '#4F46E5';
+
 export default function CampaignPage() {
   const campaigns = useQuery({ queryKey: ['merchant', 'campaigns'], queryFn: merchantApi.listCampaigns });
+  const business = useQuery({ queryKey: ['merchant', 'business'], queryFn: merchantApi.getBusiness });
 
   if (campaigns.isPending) {
     return (
@@ -49,6 +62,7 @@ export default function CampaignPage() {
   }
 
   const current = campaigns.data?.find((c) => c.status !== 'ARCHIVED') ?? null;
+  const biz = business.data ?? null;
 
   return (
     <>
@@ -56,12 +70,15 @@ export default function CampaignPage() {
         title="Loyalty campaign"
         description="The stamp card your customers collect on. One campaign runs at a time."
       />
-      {current ? <EditCampaign campaign={current} /> : <CreateCampaign />}
+      {current ? <EditCampaign campaign={current} business={biz} /> : <CreateCampaign business={biz} />}
     </>
   );
 }
 
-function CreateCampaign() {
+/** Business-level defaults used to fill the preview when a field is unset. */
+type BizDefaults = { brandColor: string | null; stampIcon: string | null; rewardIcon: string | null } | null;
+
+function CreateCampaign({ business }: { business: BizDefaults }) {
   const queryClient = useQueryClient();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -72,6 +89,9 @@ function CreateCampaign() {
       description: '',
       dailyStampCap: 1,
       terms: '',
+      cardColor: '',
+      stampIcon: '',
+      rewardIcon: '',
     },
   });
 
@@ -84,6 +104,9 @@ function CreateCampaign() {
         description: values.description || undefined,
         dailyStampCap: values.dailyStampCap || undefined,
         terms: values.terms || undefined,
+        cardColor: values.cardColor || undefined,
+        stampIcon: values.stampIcon || undefined,
+        rewardIcon: values.rewardIcon || undefined,
       });
       toast.success('Campaign launched!');
       await queryClient.invalidateQueries({ queryKey: ['merchant'] });
@@ -96,7 +119,7 @@ function CreateCampaign() {
     <Panel className="max-w-xl">
       <PanelHeader title="Create your campaign" description="A classic stamp card. You can pause or edit it any time." />
       <form onSubmit={submit} className="space-y-4 p-5">
-        <CampaignFields form={form} />
+        <CampaignFields form={form} business={business} />
         <Button type="submit" variant="brand" loading={form.formState.isSubmitting}>
           <Stamp className="size-4" /> Launch campaign
         </Button>
@@ -105,7 +128,7 @@ function CreateCampaign() {
   );
 }
 
-function EditCampaign({ campaign }: { campaign: Campaign }) {
+function EditCampaign({ campaign, business }: { campaign: Campaign; business: BizDefaults }) {
   const queryClient = useQueryClient();
   const [confirmStamps, setConfirmStamps] = useState(false);
   const form = useForm<FormValues>({
@@ -117,10 +140,18 @@ function EditCampaign({ campaign }: { campaign: Campaign }) {
       description: campaign.description ?? '',
       dailyStampCap: campaign.dailyStampCap ?? 0,
       terms: campaign.terms ?? '',
+      cardColor: campaign.cardColor ?? '',
+      stampIcon: campaign.stampIcon ?? '',
+      rewardIcon: campaign.rewardIcon ?? '',
     },
   });
   const stamps = form.watch('stampsRequired');
   const stampsChanged = Number(stamps) !== campaign.stampsRequired;
+
+  // Preview resolves the same way the real card does: campaign → business → default.
+  const previewColor = form.watch('cardColor') || business?.brandColor || DEFAULT_CARD_COLOR;
+  const previewStampIcon = form.watch('stampIcon') || business?.stampIcon || null;
+  const previewRewardIcon = form.watch('rewardIcon') || business?.rewardIcon || null;
 
   const save = form.handleSubmit(async (values) => {
     if (stampsChanged && !confirmStamps) {
@@ -135,6 +166,9 @@ function EditCampaign({ campaign }: { campaign: Campaign }) {
         description: values.description || undefined,
         dailyStampCap: values.dailyStampCap ? values.dailyStampCap : null,
         terms: values.terms || undefined,
+        cardColor: values.cardColor ? values.cardColor : null,
+        stampIcon: values.stampIcon ? values.stampIcon : null,
+        rewardIcon: values.rewardIcon ? values.rewardIcon : null,
       });
       toast.success('Campaign updated');
       setConfirmStamps(false);
@@ -186,7 +220,7 @@ function EditCampaign({ campaign }: { campaign: Campaign }) {
           }
         />
         <form onSubmit={save} className="space-y-4 p-5">
-          <CampaignFields form={form} />
+          <CampaignFields form={form} business={business} />
           {stampsChanged && (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
               Changing the stamp target affects everyone&apos;s progress toward the reward.
@@ -202,7 +236,12 @@ function EditCampaign({ campaign }: { campaign: Campaign }) {
       <Panel className="lg:col-span-2">
         <PanelHeader title="Customer view" description={`${campaign.memberCount} enrolled`} />
         <div className="space-y-4 p-5">
-          <div className="rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-brand-950 p-5 text-white">
+          <div
+            className="rounded-2xl bg-cover bg-center p-5 text-white shadow-lg"
+            style={{
+              background: `linear-gradient(135deg, ${previewColor} 0%, ${previewColor}cc 55%, #18181b 100%)`,
+            }}
+          >
             <p className="font-semibold">{form.watch('name') || campaign.name}</p>
             <p className="mt-0.5 text-xs text-white/60">
               {form.watch('description') || campaign.description || 'Collect stamps with every visit.'}
@@ -213,6 +252,8 @@ function EditCampaign({ campaign }: { campaign: Campaign }) {
                 filled={3}
                 size="sm"
                 tone="dark"
+                stampIcon={previewStampIcon}
+                rewardIcon={previewRewardIcon}
               />
             </div>
             <p className="text-sm font-medium">{form.watch('reward') || campaign.reward}</p>
@@ -229,7 +270,15 @@ function EditCampaign({ campaign }: { campaign: Campaign }) {
   );
 }
 
-function CampaignFields({ form }: { form: ReturnType<typeof useForm<FormValues>> }) {
+function CampaignFields({
+  form,
+  business,
+}: {
+  form: ReturnType<typeof useForm<FormValues>>;
+  business: BizDefaults;
+}) {
+  const set = (k: 'cardColor' | 'stampIcon' | 'rewardIcon') => (v: string) =>
+    form.setValue(k, v, { shouldDirty: true });
   return (
     <>
       <Field label="Campaign name" error={form.formState.errors.name?.message}>
@@ -263,6 +312,43 @@ function CampaignFields({ form }: { form: ReturnType<typeof useForm<FormValues>>
           />
         )}
       </Field>
+
+      <div className="space-y-4 border-t border-line-soft pt-4">
+        <p className="text-sm font-medium text-strong">Card look</p>
+        <Field label="Card colour" hint="Shown on the customer's card and join page.">
+          {() => (
+            <CardColourChoice value={form.watch('cardColor') ?? ''} onChange={set('cardColor')} />
+          )}
+        </Field>
+        <Field label="Stamp icon">
+          {() => (
+            <EmojiChoice
+              value={form.watch('stampIcon') ?? ''}
+              onChange={set('stampIcon')}
+              presets={STAMP_EMOJIS}
+              defaultHint={
+                business?.stampIcon
+                  ? `Using the business default ${business.stampIcon}.`
+                  : 'Using the default check mark.'
+              }
+            />
+          )}
+        </Field>
+        <Field label="Reward icon">
+          {() => (
+            <EmojiChoice
+              value={form.watch('rewardIcon') ?? ''}
+              onChange={set('rewardIcon')}
+              presets={REWARD_EMOJIS}
+              defaultHint={
+                business?.rewardIcon
+                  ? `Using the business default ${business.rewardIcon}.`
+                  : 'Using the default gift.'
+              }
+            />
+          )}
+        </Field>
+      </div>
     </>
   );
 }

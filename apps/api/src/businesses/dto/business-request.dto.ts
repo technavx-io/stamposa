@@ -33,6 +33,20 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
   @IsHexColor({ message: 'Pick a colour in #RRGGBB form.' })
   brandColor?: string;
 
+  @ApiPropertyOptional({ example: '☕', description: 'Default stamp emoji; \'\' clears it' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? (value.trim() === '' ? null : value.trim()) : value))
+  @IsString()
+  @MaxLength(8)
+  stampIcon?: string | null;
+
+  @ApiPropertyOptional({ example: '🎁', description: 'Default reward emoji; \'\' clears it' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? (value.trim() === '' ? null : value.trim()) : value))
+  @IsString()
+  @MaxLength(8)
+  rewardIcon?: string | null;
+
   @ApiPropertyOptional({ example: 'cafe' })
   @IsOptional()
   @IsString()

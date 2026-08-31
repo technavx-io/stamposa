@@ -26,6 +26,15 @@ export class BusinessDto {
   @ApiProperty({ nullable: true, type: String, example: '#4F46E5' })
   brandColor: string | null;
 
+  @ApiProperty({ nullable: true, type: String, example: '☕', description: 'Default stamp emoji for cards' })
+  stampIcon: string | null;
+
+  @ApiProperty({ nullable: true, type: String, example: '🎁', description: 'Default reward emoji for cards' })
+  rewardIcon: string | null;
+
+  @ApiProperty({ nullable: true, type: String, description: 'Default card background image URL' })
+  cardImageUrl: string | null;
+
   @ApiProperty({ nullable: true, type: String })
   category: string | null;
 
@@ -66,6 +75,9 @@ export function toBusinessDto(business: Business, opts: BusinessDtoOptions): Bus
     phone: business.phone,
     joinUrl: `${opts.webAppUrl}/join/${business.slug}`,
     brandColor: business.brandColor,
+    stampIcon: business.stampIcon,
+    rewardIcon: business.rewardIcon,
+    cardImageUrl: business.cardImagePath ? `${opts.apiPublicUrl}${business.cardImagePath}` : null,
     category: business.category,
     timezone: business.timezone,
     consentText: business.consentText,

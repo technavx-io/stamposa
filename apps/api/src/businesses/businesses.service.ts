@@ -55,6 +55,8 @@ export class BusinessesService {
         ...(dto.address !== undefined ? { address: dto.address || null } : {}),
         ...(dto.phone !== undefined ? { phone: dto.phone || null } : {}),
         ...(dto.brandColor !== undefined ? { brandColor: dto.brandColor || null } : {}),
+        ...(dto.stampIcon !== undefined ? { stampIcon: dto.stampIcon } : {}),
+        ...(dto.rewardIcon !== undefined ? { rewardIcon: dto.rewardIcon } : {}),
         ...(dto.category !== undefined ? { category: dto.category || null } : {}),
         ...(dto.timezone !== undefined ? { timezone: dto.timezone } : {}),
         // Editing the wording bumps the version so past consents stay

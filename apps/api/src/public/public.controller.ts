@@ -6,6 +6,8 @@ import { notFound } from '../common/exceptions';
 import { AppConfigService } from '../config/app-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { defaultConsentText } from '../loyalty/memberships.service';
+import { resolveCardStyle } from '../loyalty/card-style.util';
+import { CardStyleDto } from '../loyalty/dto/loyalty.dto';
 
 class PublicCampaignDto {
   @ApiProperty({ example: 'Coffee Lovers Card' })
@@ -42,6 +44,9 @@ class PublicBusinessDto {
 
   @ApiProperty({ nullable: true, type: String, example: '#4F46E5' })
   brandColor: string | null;
+
+  @ApiProperty({ type: CardStyleDto, description: 'Resolved card look for the preview' })
+  style: CardStyleDto;
 
   @ApiProperty({ description: 'Wording the customer must agree to' })
   consentText: string;
@@ -95,6 +100,11 @@ export class PublicController {
           }
         : null,
       brandColor: business.brandColor,
+      style: resolveCardStyle(
+        campaign ?? { cardColor: null, stampIcon: null, rewardIcon: null, cardImagePath: null },
+        business,
+        this.config.apiPublicUrl,
+      ),
       consentText: business.consentText ?? defaultConsentText(business.name),
       acceptingJoins: campaign !== null,
     };

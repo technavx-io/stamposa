@@ -19,6 +19,7 @@ import { Field, Input, Textarea } from '@/components/ui/field';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { Modal } from '@/components/ui/modal';
 import { Panel, PanelHeader } from '@/components/ui/surface';
+import { EmojiChoice, REWARD_EMOJIS, STAMP_EMOJIS } from '@/components/merchant/card-style-fields';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Business name is required').max(80),
@@ -60,6 +61,8 @@ export default function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [brandColor, setBrandColor] = useState(business.brandColor ?? '#4F46E5');
+  const [stampIcon, setStampIcon] = useState(business.stampIcon ?? '');
+  const [rewardIcon, setRewardIcon] = useState(business.rewardIcon ?? '');
   const [consentText, setConsentText] = useState<string | null>(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -369,8 +372,9 @@ export default function SettingsPage() {
           </Panel>
 
           <Panel>
-            <PanelHeader title="Brand colour" description="Used on the customer card and join page." />
+            <PanelHeader title="Card look" description="Defaults for the customer card and join page. Campaigns can override these." />
             <div className="space-y-4 p-5">
+              <p className="text-[13px] font-medium text-body">Brand colour</p>
               <div className="flex flex-wrap gap-2">
                 {swatches.map((hex) => (
                   <button
@@ -412,18 +416,54 @@ export default function SettingsPage() {
               >
                 <p className="text-sm font-semibold">{business.name}</p>
                 <div className="my-3">
-                  <StampGrid total={8} filled={3} size="sm" tone="dark" />
+                  <StampGrid
+                    total={8}
+                    filled={3}
+                    size="sm"
+                    tone="dark"
+                    stampIcon={stampIcon || null}
+                    rewardIcon={rewardIcon || null}
+                  />
                 </div>
                 <p className="text-xs text-white/70">Card preview</p>
+              </div>
+
+              <div className="space-y-2 border-t border-line-soft pt-4">
+                <p className="text-[13px] font-medium text-body">Stamp icon</p>
+                <EmojiChoice
+                  value={stampIcon}
+                  onChange={setStampIcon}
+                  presets={STAMP_EMOJIS}
+                  defaultHint="Using the default check mark."
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-[13px] font-medium text-body">Reward icon</p>
+                <EmojiChoice
+                  value={rewardIcon}
+                  onChange={setRewardIcon}
+                  presets={REWARD_EMOJIS}
+                  defaultHint="Using the default gift."
+                />
               </div>
 
               <Button
                 size="sm"
                 loading={saveField.isPending}
-                disabled={brandColor.toLowerCase() === (business.brandColor ?? '').toLowerCase()}
-                onClick={() => saveField.mutate({ brandColor })}
+                disabled={
+                  brandColor.toLowerCase() === (business.brandColor ?? '').toLowerCase() &&
+                  stampIcon === (business.stampIcon ?? '') &&
+                  rewardIcon === (business.rewardIcon ?? '')
+                }
+                onClick={() =>
+                  saveField.mutate({
+                    brandColor,
+                    stampIcon: stampIcon || null,
+                    rewardIcon: rewardIcon || null,
+                  })
+                }
               >
-                Save colour
+                Save card look
               </Button>
             </div>
           </Panel>

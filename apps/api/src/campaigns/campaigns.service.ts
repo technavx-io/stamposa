@@ -1,12 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { Campaign, CampaignStatus } from '@prisma/client';
 import { conflict, notFound } from '../common/exceptions';
+import { AppConfigService } from '../config/app-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CampaignDto, CreateCampaignDto, toCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 
 @Injectable()
 export class CampaignsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: AppConfigService,
+  ) {}
+
+  private dto(campaign: Campaign & { _count?: { memberships: number } }, memberCount?: number) {
+    return toCampaignDto(campaign, memberCount, this.config.apiPublicUrl);
+  }
 
   async create(businessId: string, dto: CreateCampaignDto): Promise<CampaignDto> {
     // Phase 1 product rule: one live campaign per business. The schema
@@ -29,9 +37,12 @@ export class CampaignsService {
         reward: dto.reward,
         dailyStampCap: dto.dailyStampCap ?? null,
         terms: dto.terms ?? null,
+        cardColor: dto.cardColor ?? null,
+        stampIcon: dto.stampIcon ?? null,
+        rewardIcon: dto.rewardIcon ?? null,
       },
     });
-    return toCampaignDto(campaign, 0);
+    return this.dto(campaign, 0);
   }
 
   async list(businessId: string): Promise<CampaignDto[]> {
@@ -40,12 +51,12 @@ export class CampaignsService {
       orderBy: { createdAt: 'desc' },
       include: { _count: { select: { memberships: true } } },
     });
-    return campaigns.map((c) => toCampaignDto(c));
+    return campaigns.map((c) => this.dto(c));
   }
 
   async get(businessId: string, campaignId: string): Promise<CampaignDto> {
     const campaign = await this.findOwned(businessId, campaignId);
-    return toCampaignDto(campaign);
+    return this.dto(campaign);
   }
 
   async update(businessId: string, campaignId: string, dto: UpdateCampaignDto): Promise<CampaignDto> {
@@ -60,10 +71,13 @@ export class CampaignsService {
         ...(dto.dailyStampCap !== undefined ? { dailyStampCap: dto.dailyStampCap || null } : {}),
         ...(dto.terms !== undefined ? { terms: dto.terms || null } : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),
+        ...(dto.cardColor !== undefined ? { cardColor: dto.cardColor } : {}),
+        ...(dto.stampIcon !== undefined ? { stampIcon: dto.stampIcon } : {}),
+        ...(dto.rewardIcon !== undefined ? { rewardIcon: dto.rewardIcon } : {}),
       },
       include: { _count: { select: { memberships: true } } },
     });
-    return toCampaignDto(campaign);
+    return this.dto(campaign);
   }
 
   /** The campaign new members join and stamps accrue against. */

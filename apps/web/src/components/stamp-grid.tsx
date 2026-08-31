@@ -21,6 +21,8 @@ export function StampGrid({
   onAddStamp,
   addPending = false,
   addDisabled = false,
+  stampIcon = null,
+  rewardIcon = null,
 }: {
   total: number;
   filled: number;
@@ -33,14 +35,30 @@ export function StampGrid({
   addPending?: boolean;
   /** Disable stamping (e.g. blocked customer, paused campaign). */
   addDisabled?: boolean;
+  /** Emoji for filled stamps; null uses the default check. */
+  stampIcon?: string | null;
+  /** Emoji for the reward slot; null uses the default gift. */
+  rewardIcon?: string | null;
 }) {
   const sizes = {
-    sm: { cell: 'size-8', icon: 'size-3.5' },
-    md: { cell: 'size-10', icon: 'size-4' },
-    lg: { cell: 'size-12', icon: 'size-5' },
+    sm: { cell: 'size-8', icon: 'size-3.5', emoji: 'text-sm' },
+    md: { cell: 'size-10', icon: 'size-4', emoji: 'text-lg' },
+    lg: { cell: 'size-12', icon: 'size-5', emoji: 'text-2xl' },
   }[size];
 
   const cols = total <= 8 ? 4 : 5;
+
+  // A filled/reward mark, honouring the custom emoji when set.
+  const stampMark = stampIcon ? (
+    <span className={cn('leading-none', sizes.emoji)} aria-hidden>{stampIcon}</span>
+  ) : (
+    <Check className={sizes.icon} strokeWidth={3} aria-hidden />
+  );
+  const rewardMark = rewardIcon ? (
+    <span className={cn('leading-none', sizes.emoji)} aria-hidden>{rewardIcon}</span>
+  ) : (
+    <Gift className={sizes.icon} aria-hidden />
+  );
 
   // Only the next unfilled slot is stampable — stamps are sequential.
   const canStamp = !!onAddStamp && !addDisabled && filled < total;
@@ -84,7 +102,9 @@ export function StampGrid({
                 <Loader2 className={cn(sizes.icon, 'animate-spin')} aria-hidden />
               ) : isReward ? (
                 <>
-                  <Gift className={cn(sizes.icon, 'transition-opacity group-hover/slot:opacity-0')} aria-hidden />
+                  <span className="flex items-center justify-center transition-opacity group-hover/slot:opacity-0">
+                    {rewardMark}
+                  </span>
                   <Plus
                     className={cn(sizes.icon, 'absolute opacity-0 transition-opacity group-hover/slot:opacity-100')}
                     strokeWidth={3}
@@ -129,13 +149,9 @@ export function StampGrid({
             )}
           >
             {isFilled ? (
-              isReward ? (
-                <Gift className={sizes.icon} aria-hidden />
-              ) : (
-                <Check className={sizes.icon} strokeWidth={3} aria-hidden />
-              )
+              isReward ? rewardMark : stampMark
             ) : isReward ? (
-              <Gift className={sizes.icon} aria-hidden />
+              rewardMark
             ) : (
               <span className={cn('text-xs font-medium', size === 'lg' && 'text-sm')}>{i + 1}</span>
             )}

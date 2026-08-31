@@ -109,6 +109,11 @@ model Business {
 
   /// Hex brand colour applied to the customer card and join page.
   brandColor String? @map("brand_color")
+  /// Card look defaults, overridable per campaign. Icons are single emoji;
+  /// the image is a relative uploads path like the logo.
+  stampIcon     String? @map("stamp_icon")
+  rewardIcon    String? @map("reward_icon")
+  cardImagePath String? @map("card_image_path")
   /// Vertical (cafe, salon, gym…) — drives defaults and reporting cohorts.
   category   String?
   /// IANA zone. "Today" in every merchant metric is computed in this zone.
@@ -199,6 +204,13 @@ model Campaign {
   stampsRequired Int            @map("stamps_required")
   reward         String
   status         CampaignStatus @default(ACTIVE)
+
+  /// Per-campaign card look. Each overrides the business default; null falls
+  /// back to the business value, then a built-in default.
+  cardColor     String? @map("card_color")
+  stampIcon     String? @map("stamp_icon")
+  rewardIcon    String? @map("reward_icon")
+  cardImagePath String? @map("card_image_path")
 
   /// Max stamps one customer can earn per day. Null = unlimited.
   dailyStampCap Int?    @map("daily_stamp_cap")

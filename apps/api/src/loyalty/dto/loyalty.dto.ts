@@ -41,6 +41,21 @@ export class CardCampaignDto {
   status: CampaignStatus;
 }
 
+/** Resolved card look (campaign override → business default → built-in). */
+export class CardStyleDto {
+  @ApiProperty({ example: '#4F46E5' })
+  color: string;
+
+  @ApiProperty({ nullable: true, type: String, example: '☕', description: 'Emoji for filled stamps; null = default check' })
+  stampIcon: string | null;
+
+  @ApiProperty({ nullable: true, type: String, example: '🎁', description: 'Emoji for the reward slot; null = default gift' })
+  rewardIcon: string | null;
+
+  @ApiProperty({ nullable: true, type: String, description: 'Card background image URL' })
+  cardImageUrl: string | null;
+}
+
 export class StampDto {
   @ApiProperty()
   id: string;
@@ -117,6 +132,9 @@ export class CardDto {
 
   @ApiProperty({ type: CardCampaignDto })
   campaign: CardCampaignDto;
+
+  @ApiProperty({ type: CardStyleDto })
+  style: CardStyleDto;
 }
 
 export class CardDetailDto extends CardDto {

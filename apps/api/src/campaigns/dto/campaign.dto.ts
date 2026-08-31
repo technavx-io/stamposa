@@ -1,10 +1,17 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Campaign, CampaignStatus } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Length, Matches, Max, MaxLength, Min } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
+
+/** '' clears the field (back to the business default); trimmed otherwise. */
+const emptyToNull = ({ value }: { value: unknown }) => {
+  if (typeof value !== 'string') return value;
+  const t = value.trim();
+  return t === '' ? null : t;
+};
 
 export class CreateCampaignDto {
   @ApiProperty({ example: 'Coffee Lovers Card' })
@@ -50,6 +57,27 @@ export class CreateCampaignDto {
   @Transform(trim)
   @MaxLength(400)
   terms?: string;
+
+  // ── Card look (each overrides the business default; '' clears it) ──────
+  @ApiPropertyOptional({ example: '#4F46E5', description: 'Card colour (hex). Omit to use the business brand colour.' })
+  @IsOptional()
+  @Transform(emptyToNull)
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'Use a hex colour like #4F46E5.' })
+  cardColor?: string | null;
+
+  @ApiPropertyOptional({ example: '☕', description: 'Emoji shown in each stamp. Omit for the default check.' })
+  @IsOptional()
+  @Transform(emptyToNull)
+  @IsString()
+  @MaxLength(8)
+  stampIcon?: string | null;
+
+  @ApiPropertyOptional({ example: '🎁', description: 'Emoji on the reward slot. Omit for the default gift.' })
+  @IsOptional()
+  @Transform(emptyToNull)
+  @IsString()
+  @MaxLength(8)
+  rewardIcon?: string | null;
 }
 
 export class UpdateCampaignDto extends PartialType(CreateCampaignDto) {
@@ -84,6 +112,18 @@ export class CampaignDto {
   @ApiProperty({ nullable: true, type: String })
   terms: string | null;
 
+  @ApiProperty({ nullable: true, type: String, example: '#4F46E5' })
+  cardColor: string | null;
+
+  @ApiProperty({ nullable: true, type: String, example: '☕' })
+  stampIcon: string | null;
+
+  @ApiProperty({ nullable: true, type: String, example: '🎁' })
+  rewardIcon: string | null;
+
+  @ApiProperty({ nullable: true, type: String, description: 'Card background image URL' })
+  cardImageUrl: string | null;
+
   @ApiProperty({ example: 42, description: 'Customers enrolled in this campaign' })
   memberCount: number;
 
@@ -94,6 +134,7 @@ export class CampaignDto {
 export function toCampaignDto(
   campaign: Campaign & { _count?: { memberships: number } },
   memberCount?: number,
+  apiPublicUrl?: string,
 ): CampaignDto {
   return {
     id: campaign.id,
@@ -104,6 +145,11 @@ export function toCampaignDto(
     status: campaign.status,
     dailyStampCap: campaign.dailyStampCap,
     terms: campaign.terms,
+    cardColor: campaign.cardColor,
+    stampIcon: campaign.stampIcon,
+    rewardIcon: campaign.rewardIcon,
+    cardImageUrl:
+      campaign.cardImagePath && apiPublicUrl ? `${apiPublicUrl}${campaign.cardImagePath}` : null,
     memberCount: memberCount ?? campaign._count?.memberships ?? 0,
     createdAt: campaign.createdAt,
   };

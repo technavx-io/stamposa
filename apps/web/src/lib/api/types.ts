@@ -95,6 +95,9 @@ export interface Business {
   phone: string | null;
   joinUrl: string;
   brandColor: string | null;
+  stampIcon: string | null;
+  rewardIcon: string | null;
+  cardImageUrl: string | null;
   category: string | null;
   timezone: string;
   consentText: string | null;
@@ -114,6 +117,10 @@ export interface Campaign {
   status: CampaignStatus;
   dailyStampCap: number | null;
   terms: string | null;
+  cardColor: string | null;
+  stampIcon: string | null;
+  rewardIcon: string | null;
+  cardImageUrl: string | null;
   memberCount: number;
   createdAt: string;
 }
@@ -182,6 +189,14 @@ export interface RedemptionRow extends RedemptionSummary {
   customerCode: string;
 }
 
+/** Resolved card look (campaign override → business default → built-in). */
+export interface CardStyle {
+  color: string;
+  stampIcon: string | null;
+  rewardIcon: string | null;
+  cardImageUrl: string | null;
+}
+
 export interface Card {
   id: string;
   code: string;
@@ -195,6 +210,7 @@ export interface Card {
   redeemedCount: number;
   business: CardBusiness;
   campaign: CardCampaign;
+  style: CardStyle;
 }
 
 export interface CardDetail extends Card {
@@ -346,6 +362,7 @@ export interface PublicBusiness {
   address: string | null;
   campaign: PublicCampaign | null;
   brandColor: string | null;
+  style: CardStyle;
   consentText: string;
   acceptingJoins: boolean;
 }

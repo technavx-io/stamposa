@@ -8,6 +8,7 @@ import {
   Stamp,
 } from '@prisma/client';
 import { formatCode } from '../common/utils/codes.util';
+import { resolveCardStyle } from './card-style.util';
 import {
   CardDetailDto,
   CardDto,
@@ -105,6 +106,7 @@ export function toCardDto(m: MembershipWithBusinessCampaign, urls: PresenterUrls
       brandColor: m.business.brandColor,
     },
     campaign: toCardCampaign(m.campaign),
+    style: resolveCardStyle(m.campaign, m.business, urls.apiPublicUrl),
   };
 }
 

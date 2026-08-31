@@ -212,11 +212,11 @@ function LiveCard({ membershipId }: { membershipId: string }) {
       <div className="w-full max-w-md pt-8">
         {/* The card itself */}
         <div
-          className="rounded-3xl p-6 text-white shadow-2xl shadow-zinc-900/20"
+          className="rounded-3xl bg-cover bg-center p-6 text-white shadow-2xl shadow-zinc-900/20"
           style={{
-            background: c.business.brandColor
-              ? `linear-gradient(135deg, ${c.business.brandColor} 0%, ${c.business.brandColor}cc 55%, #18181b 100%)`
-              : 'linear-gradient(135deg, #18181b 0%, #27272a 55%, #1e1b4b 100%)',
+            background: c.style.cardImageUrl
+              ? `linear-gradient(135deg, ${c.style.color}e6 0%, ${c.style.color}99 45%, #18181bd9 100%), url(${c.style.cardImageUrl}) center/cover`
+              : `linear-gradient(135deg, ${c.style.color} 0%, ${c.style.color}cc 55%, #18181b 100%)`,
           }}
         >
           <div className="flex items-center gap-3">
@@ -239,6 +239,8 @@ function LiveCard({ membershipId }: { membershipId: string }) {
               size="lg"
               tone="dark"
               highlightLast={justStamped}
+              stampIcon={c.style.stampIcon}
+              rewardIcon={c.style.rewardIcon}
             />
           </div>
 

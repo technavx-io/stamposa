@@ -69,9 +69,9 @@ export function JoinFlow({ slug }: { slug: string }) {
     <div
       className="flex min-h-dvh flex-col items-center px-4 pb-10"
       style={{
-        background: b.brandColor
-          ? `linear-gradient(to bottom, ${b.brandColor} 0%, ${b.brandColor}bb 25%, #18181b 70%, #09090b 100%)`
-          : 'linear-gradient(to bottom, #1e1b4b 0%, #18181b 60%, #09090b 100%)',
+        background: b.style.cardImageUrl
+          ? `linear-gradient(to bottom, ${b.style.color}e6 0%, ${b.style.color}aa 25%, #18181be6 70%, #09090b 100%), url(${b.style.cardImageUrl}) center/cover fixed`
+          : `linear-gradient(to bottom, ${b.style.color} 0%, ${b.style.color}bb 25%, #18181b 70%, #09090b 100%)`,
       }}
     >
       {/* Business header */}
@@ -89,7 +89,14 @@ export function JoinFlow({ slug }: { slug: string }) {
               <Stamp className="size-4 text-brand-300" /> {b.campaign.name}
             </p>
             <div className="my-4 flex justify-center">
-              <StampGrid total={b.campaign.stampsRequired} filled={0} size="sm" tone="dark" />
+              <StampGrid
+                total={b.campaign.stampsRequired}
+                filled={0}
+                size="sm"
+                tone="dark"
+                stampIcon={b.style.stampIcon}
+                rewardIcon={b.style.rewardIcon}
+              />
             </div>
             <p className="flex items-center justify-center gap-1.5 text-sm text-amber-200">
               <Gift className="size-4" />

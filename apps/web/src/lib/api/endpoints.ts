@@ -110,6 +110,8 @@ export const merchantApi = {
     address?: string;
     phone?: string;
     brandColor?: string;
+    stampIcon?: string | null;
+    rewardIcon?: string | null;
     category?: string;
     timezone?: string;
     consentText?: string;
@@ -138,6 +140,9 @@ export const merchantApi = {
     reward: string;
     dailyStampCap?: number;
     terms?: string;
+    cardColor?: string | null;
+    stampIcon?: string | null;
+    rewardIcon?: string | null;
   }) => merchantClient.post<Campaign>('/merchant/campaigns', data),
   listCampaigns: () => merchantClient.get<Campaign[]>('/merchant/campaigns'),
   updateCampaign: (
@@ -150,6 +155,9 @@ export const merchantApi = {
       dailyStampCap: number | null;
       terms: string;
       status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+      cardColor: string | null;
+      stampIcon: string | null;
+      rewardIcon: string | null;
     }>,
   ) => merchantClient.patch<Campaign>(`/merchant/campaigns/${id}`, data),
 
