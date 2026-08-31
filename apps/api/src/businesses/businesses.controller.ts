@@ -32,6 +32,7 @@ import { BusinessDto } from './dto/business.dto';
 import { CreateBusinessDto, QrQueryDto, UpdateBusinessDto } from './dto/business-request.dto';
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const CARD_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
 
 class QrResponseDto {
   @ApiProperty({ example: 'http://localhost:3000/join/brew-and-bean' })
@@ -107,6 +108,34 @@ export class BusinessesController {
   @ApiOkResponse({ type: BusinessDto })
   removeLogo(@CurrentMerchant() merchant: MerchantWithBusiness): Promise<BusinessDto> {
     return this.businesses.removeLogo(requireBusiness(merchant.business));
+  }
+
+  @Post('card-image')
+  @ApiOperation({ summary: 'Upload/replace the default card background image (max 4 MB)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @ApiOkResponse({ type: BusinessDto })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: CARD_IMAGE_MAX_BYTES } }))
+  uploadCardImage(
+    @CurrentMerchant() merchant: MerchantWithBusiness,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ): Promise<BusinessDto> {
+    const business = requireBusiness(merchant.business);
+    if (!file) throw badRequest('FILE_REQUIRED', 'Attach an image file named "file".');
+    return this.businesses.setCardImage(business, file);
+  }
+
+  @Delete('card-image')
+  @ApiOperation({ summary: 'Remove the default card background image' })
+  @ApiOkResponse({ type: BusinessDto })
+  removeCardImage(@CurrentMerchant() merchant: MerchantWithBusiness): Promise<BusinessDto> {
+    return this.businesses.removeCardImage(requireBusiness(merchant.business));
   }
 
   @Get('qr')

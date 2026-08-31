@@ -1,7 +1,9 @@
 'use client';
 
-import { Check, X } from 'lucide-react';
+import { useRef } from 'react';
+import { Check, ImageIcon, ImagePlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export const CARD_COLORS = [
   '#4F46E5', '#6366F1', '#0EA5E9', '#0D9488', '#059669',
@@ -112,6 +114,54 @@ export function EmojiChoice({
         })}
       </div>
       <p className="text-[12px] text-muted">{value ? 'Tap again to clear.' : defaultHint}</p>
+    </div>
+  );
+}
+
+/** Thumbnail + upload/replace/remove for a card background image. */
+export function CardImageField({
+  imageUrl,
+  onFile,
+  onRemove,
+  uploading = false,
+  removing = false,
+}: {
+  imageUrl: string | null;
+  onFile: (file: File) => void;
+  onRemove: () => void;
+  uploading?: boolean;
+  removing?: boolean;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-surface-2 bg-cover bg-center text-muted"
+        style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
+      >
+        {!imageUrl && <ImageIcon className="size-5" />}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <input
+          ref={ref}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+            e.target.value = '';
+          }}
+        />
+        <Button variant="secondary" size="sm" loading={uploading} onClick={() => ref.current?.click()}>
+          <ImagePlus className="size-4" /> {imageUrl ? 'Replace' : 'Upload image'}
+        </Button>
+        {imageUrl && (
+          <Button variant="ghost" size="sm" loading={removing} onClick={onRemove}>
+            Remove
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

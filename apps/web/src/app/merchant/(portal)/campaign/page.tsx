@@ -18,6 +18,7 @@ import { StampGrid } from '@/components/stamp-grid';
 import { LoadError } from '@/components/ui/load-error';
 import {
   CardColourChoice,
+  CardImageField,
   EmojiChoice,
   REWARD_EMOJIS,
   STAMP_EMOJIS,
@@ -76,7 +77,12 @@ export default function CampaignPage() {
 }
 
 /** Business-level defaults used to fill the preview when a field is unset. */
-type BizDefaults = { brandColor: string | null; stampIcon: string | null; rewardIcon: string | null } | null;
+type BizDefaults = {
+  brandColor: string | null;
+  stampIcon: string | null;
+  rewardIcon: string | null;
+  cardImageUrl: string | null;
+} | null;
 
 function CreateCampaign({ business }: { business: BizDefaults }) {
   const queryClient = useQueryClient();
@@ -148,10 +154,28 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
   const stamps = form.watch('stampsRequired');
   const stampsChanged = Number(stamps) !== campaign.stampsRequired;
 
+  const uploadImage = useMutation({
+    mutationFn: (file: File) => merchantApi.uploadCampaignCardImage(campaign.id, file),
+    onSuccess: async () => {
+      toast.success('Card image updated');
+      await queryClient.invalidateQueries({ queryKey: ['merchant'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Upload failed.'),
+  });
+  const removeImage = useMutation({
+    mutationFn: () => merchantApi.removeCampaignCardImage(campaign.id),
+    onSuccess: async () => {
+      toast.success('Card image removed');
+      await queryClient.invalidateQueries({ queryKey: ['merchant'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove the image.'),
+  });
+
   // Preview resolves the same way the real card does: campaign → business → default.
   const previewColor = form.watch('cardColor') || business?.brandColor || DEFAULT_CARD_COLOR;
   const previewStampIcon = form.watch('stampIcon') || business?.stampIcon || null;
   const previewRewardIcon = form.watch('rewardIcon') || business?.rewardIcon || null;
+  const previewImage = campaign.cardImageUrl || business?.cardImageUrl || null;
 
   const save = form.handleSubmit(async (values) => {
     if (stampsChanged && !confirmStamps) {
@@ -220,7 +244,17 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
           }
         />
         <form onSubmit={save} className="space-y-4 p-5">
-          <CampaignFields form={form} business={business} />
+          <CampaignFields
+            form={form}
+            business={business}
+            image={{
+              url: campaign.cardImageUrl,
+              onFile: (f) => uploadImage.mutate(f),
+              onRemove: () => removeImage.mutate(),
+              uploading: uploadImage.isPending,
+              removing: removeImage.isPending,
+            }}
+          />
           {stampsChanged && (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
               Changing the stamp target affects everyone&apos;s progress toward the reward.
@@ -239,7 +273,9 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
           <div
             className="rounded-2xl bg-cover bg-center p-5 text-white shadow-lg"
             style={{
-              background: `linear-gradient(135deg, ${previewColor} 0%, ${previewColor}cc 55%, #18181b 100%)`,
+              background: previewImage
+                ? `linear-gradient(135deg, ${previewColor}e6 0%, ${previewColor}99 45%, #18181bd9 100%), url(${previewImage}) center/cover`
+                : `linear-gradient(135deg, ${previewColor} 0%, ${previewColor}cc 55%, #18181b 100%)`,
             }}
           >
             <p className="font-semibold">{form.watch('name') || campaign.name}</p>
@@ -270,12 +306,22 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
   );
 }
 
+type ImageControls = {
+  url: string | null;
+  onFile: (f: File) => void;
+  onRemove: () => void;
+  uploading: boolean;
+  removing: boolean;
+};
+
 function CampaignFields({
   form,
   business,
+  image,
 }: {
   form: ReturnType<typeof useForm<FormValues>>;
   business: BizDefaults;
+  image?: ImageControls;
 }) {
   const set = (k: 'cardColor' | 'stampIcon' | 'rewardIcon') => (v: string) =>
     form.setValue(k, v, { shouldDirty: true });
@@ -347,6 +393,27 @@ function CampaignFields({
               }
             />
           )}
+        </Field>
+        <Field label="Card background image">
+          {() =>
+            image ? (
+              <div className="space-y-1.5">
+                <CardImageField
+                  imageUrl={image.url}
+                  onFile={image.onFile}
+                  onRemove={image.onRemove}
+                  uploading={image.uploading}
+                  removing={image.removing}
+                />
+                <p className="text-[12px] text-muted">
+                  PNG, JPEG or WebP, up to 4 MB. Overrides the business default; a dark overlay
+                  keeps text readable.
+                </p>
+              </div>
+            ) : (
+              <p className="text-[13px] text-muted">Save the campaign first, then add a background image.</p>
+            )
+          }
         </Field>
       </div>
     </>

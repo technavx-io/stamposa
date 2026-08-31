@@ -128,6 +128,15 @@ export const merchantApi = {
     });
   },
   removeLogo: () => merchantClient.delete<Business>('/merchant/business/logo'),
+  uploadCardImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return merchantClient.request<Business>('/merchant/business/card-image', {
+      method: 'POST',
+      formData,
+    });
+  },
+  removeCardImage: () => merchantClient.delete<Business>('/merchant/business/card-image'),
   getQr: (size = 512) => merchantClient.get<QrInfo>(`/merchant/business/qr?size=${size}`),
   qrPngUrl: () => `/merchant/business/qr.png`,
 
@@ -160,6 +169,16 @@ export const merchantApi = {
       rewardIcon: string | null;
     }>,
   ) => merchantClient.patch<Campaign>(`/merchant/campaigns/${id}`, data),
+  uploadCampaignCardImage: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return merchantClient.request<Campaign>(`/merchant/campaigns/${id}/card-image`, {
+      method: 'POST',
+      formData,
+    });
+  },
+  removeCampaignCardImage: (id: string) =>
+    merchantClient.delete<Campaign>(`/merchant/campaigns/${id}/card-image`),
 
   listStaff: () => merchantClient.get<StaffMember[]>('/merchant/staff'),
   createStaff: (data: { name: string; email: string; password: string; role?: StaffRole }) =>

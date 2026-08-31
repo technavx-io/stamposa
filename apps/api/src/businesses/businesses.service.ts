@@ -108,6 +108,33 @@ export class BusinessesService {
     return this.dto(updated);
   }
 
+  async setCardImage(business: Business, file: Express.Multer.File): Promise<BusinessDto> {
+    const extension = LOGO_MIME_TO_EXT[file.mimetype];
+    if (!extension) {
+      throw badRequest('UNSUPPORTED_FILE', 'The card image must be a PNG, JPEG or WebP.');
+    }
+    const cardImagePath = await this.storage.save({
+      buffer: file.buffer,
+      directory: 'card-images',
+      extension,
+    });
+    if (business.cardImagePath) await this.storage.remove(business.cardImagePath);
+    const updated = await this.prisma.business.update({
+      where: { id: business.id },
+      data: { cardImagePath },
+    });
+    return this.dto(updated);
+  }
+
+  async removeCardImage(business: Business): Promise<BusinessDto> {
+    if (business.cardImagePath) await this.storage.remove(business.cardImagePath);
+    const updated = await this.prisma.business.update({
+      where: { id: business.id },
+      data: { cardImagePath: null },
+    });
+    return this.dto(updated);
+  }
+
   async qrForBusiness(business: Business, size = 512): Promise<QrResult> {
     const joinUrl = this.joinUrl(business);
     const clamped = Math.min(2048, Math.max(128, size));

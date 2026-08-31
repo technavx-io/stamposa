@@ -1,15 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Campaign, CampaignStatus } from '@prisma/client';
-import { conflict, notFound } from '../common/exceptions';
+import { badRequest, conflict, notFound } from '../common/exceptions';
 import { AppConfigService } from '../config/app-config.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { FILE_STORAGE, FileStorage } from '../storage/storage.types';
 import { CampaignDto, CreateCampaignDto, toCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
+
+const IMAGE_MIME_TO_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+};
 
 @Injectable()
 export class CampaignsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfigService,
+    @Inject(FILE_STORAGE) private readonly storage: FileStorage,
   ) {}
 
   private dto(campaign: Campaign & { _count?: { memberships: number } }, memberCount?: number) {
@@ -78,6 +86,41 @@ export class CampaignsService {
       include: { _count: { select: { memberships: true } } },
     });
     return this.dto(campaign);
+  }
+
+  async setCardImage(
+    businessId: string,
+    campaignId: string,
+    file: Express.Multer.File,
+  ): Promise<CampaignDto> {
+    const campaign = await this.findOwned(businessId, campaignId);
+    const extension = IMAGE_MIME_TO_EXT[file.mimetype];
+    if (!extension) {
+      throw badRequest('UNSUPPORTED_FILE', 'The card image must be a PNG, JPEG or WebP.');
+    }
+    const cardImagePath = await this.storage.save({
+      buffer: file.buffer,
+      directory: 'card-images',
+      extension,
+    });
+    if (campaign.cardImagePath) await this.storage.remove(campaign.cardImagePath);
+    const updated = await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: { cardImagePath },
+      include: { _count: { select: { memberships: true } } },
+    });
+    return this.dto(updated);
+  }
+
+  async removeCardImage(businessId: string, campaignId: string): Promise<CampaignDto> {
+    const campaign = await this.findOwned(businessId, campaignId);
+    if (campaign.cardImagePath) await this.storage.remove(campaign.cardImagePath);
+    const updated = await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: { cardImagePath: null },
+      include: { _count: { select: { memberships: true } } },
+    });
+    return this.dto(updated);
   }
 
   /** The campaign new members join and stamps accrue against. */

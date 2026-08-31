@@ -19,7 +19,7 @@ import { Field, Input, Textarea } from '@/components/ui/field';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { Modal } from '@/components/ui/modal';
 import { Panel, PanelHeader } from '@/components/ui/surface';
-import { EmojiChoice, REWARD_EMOJIS, STAMP_EMOJIS } from '@/components/merchant/card-style-fields';
+import { CardImageField, EmojiChoice, REWARD_EMOJIS, STAMP_EMOJIS } from '@/components/merchant/card-style-fields';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Business name is required').max(80),
@@ -124,6 +124,24 @@ export default function SettingsPage() {
       await refresh();
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove the logo.'),
+  });
+
+  const uploadCardImage = useMutation({
+    mutationFn: (file: File) => merchantApi.uploadCardImage(file),
+    onSuccess: async () => {
+      toast.success('Card image updated');
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Upload failed.'),
+  });
+
+  const removeCardImage = useMutation({
+    mutationFn: () => merchantApi.removeCardImage(),
+    onSuccess: async () => {
+      toast.success('Card image removed');
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove the image.'),
   });
 
   const togglePause = useMutation({
@@ -409,9 +427,11 @@ export default function SettingsPage() {
 
               {/* Live preview so the choice is judged in context, not abstractly. */}
               <div
-                className="rounded-2xl p-4 text-white"
+                className="rounded-2xl bg-cover bg-center p-4 text-white"
                 style={{
-                  background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}dd 60%, #18181b 100%)`,
+                  background: business.cardImageUrl
+                    ? `linear-gradient(135deg, ${brandColor}e6 0%, ${brandColor}99 45%, #18181bd9 100%), url(${business.cardImageUrl}) center/cover`
+                    : `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}dd 60%, #18181b 100%)`,
                 }}
               >
                 <p className="text-sm font-semibold">{business.name}</p>
@@ -445,6 +465,20 @@ export default function SettingsPage() {
                   presets={REWARD_EMOJIS}
                   defaultHint="Using the default gift."
                 />
+              </div>
+
+              <div className="space-y-2 border-t border-line-soft pt-4">
+                <p className="text-[13px] font-medium text-body">Card background image</p>
+                <CardImageField
+                  imageUrl={business.cardImageUrl}
+                  onFile={(f) => uploadCardImage.mutate(f)}
+                  onRemove={() => removeCardImage.mutate()}
+                  uploading={uploadCardImage.isPending}
+                  removing={removeCardImage.isPending}
+                />
+                <p className="text-[12px] text-muted">
+                  PNG, JPEG or WebP, up to 4 MB. A dark overlay keeps text readable.
+                </p>
               </div>
 
               <Button
