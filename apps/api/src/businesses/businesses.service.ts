@@ -57,6 +57,7 @@ export class BusinessesService {
         ...(dto.brandColor !== undefined ? { brandColor: dto.brandColor || null } : {}),
         ...(dto.stampIcon !== undefined ? { stampIcon: dto.stampIcon } : {}),
         ...(dto.rewardIcon !== undefined ? { rewardIcon: dto.rewardIcon } : {}),
+        ...(dto.cardImageTint !== undefined ? { cardImageTint: dto.cardImageTint } : {}),
         ...(dto.category !== undefined ? { category: dto.category || null } : {}),
         ...(dto.timezone !== undefined ? { timezone: dto.timezone } : {}),
         // Editing the wording bumps the version so past consents stay

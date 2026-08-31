@@ -112,6 +112,7 @@ export const merchantApi = {
     brandColor?: string;
     stampIcon?: string | null;
     rewardIcon?: string | null;
+    cardImageTint?: boolean;
     category?: string;
     timezone?: string;
     consentText?: string;
@@ -152,6 +153,7 @@ export const merchantApi = {
     cardColor?: string | null;
     stampIcon?: string | null;
     rewardIcon?: string | null;
+    cardImageTint?: boolean;
   }) => merchantClient.post<Campaign>('/merchant/campaigns', data),
   listCampaigns: () => merchantClient.get<Campaign[]>('/merchant/campaigns'),
   updateCampaign: (
@@ -167,6 +169,7 @@ export const merchantApi = {
       cardColor: string | null;
       stampIcon: string | null;
       rewardIcon: string | null;
+      cardImageTint: boolean;
     }>,
   ) => merchantClient.patch<Campaign>(`/merchant/campaigns/${id}`, data),
   uploadCampaignCardImage: (id: string, file: File) => {

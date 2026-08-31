@@ -16,6 +16,7 @@ import { Field, Input, Textarea } from '@/components/ui/field';
 import { Badge, EmptyState, Panel, PanelHeader, Spinner } from '@/components/ui/surface';
 import { StampGrid } from '@/components/stamp-grid';
 import { LoadError } from '@/components/ui/load-error';
+import { cardBackground } from '@/lib/card-bg';
 import {
   CardColourChoice,
   CardImageField,
@@ -34,6 +35,7 @@ const schema = z.object({
   cardColor: z.string().optional().or(z.literal('')),
   stampIcon: z.string().optional().or(z.literal('')),
   rewardIcon: z.string().optional().or(z.literal('')),
+  cardImageTint: z.boolean().optional(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -82,6 +84,7 @@ type BizDefaults = {
   stampIcon: string | null;
   rewardIcon: string | null;
   cardImageUrl: string | null;
+  cardImageTint: boolean;
 } | null;
 
 function CreateCampaign({ business }: { business: BizDefaults }) {
@@ -98,6 +101,7 @@ function CreateCampaign({ business }: { business: BizDefaults }) {
       cardColor: '',
       stampIcon: '',
       rewardIcon: '',
+      cardImageTint: true,
     },
   });
 
@@ -149,6 +153,7 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
       cardColor: campaign.cardColor ?? '',
       stampIcon: campaign.stampIcon ?? '',
       rewardIcon: campaign.rewardIcon ?? '',
+      cardImageTint: campaign.cardImageTint,
     },
   });
   const stamps = form.watch('stampsRequired');
@@ -176,6 +181,10 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
   const previewStampIcon = form.watch('stampIcon') || business?.stampIcon || null;
   const previewRewardIcon = form.watch('rewardIcon') || business?.rewardIcon || null;
   const previewImage = campaign.cardImageUrl || business?.cardImageUrl || null;
+  // Tint travels with the image's source: campaign's own vs the business default.
+  const previewTint = campaign.cardImageUrl
+    ? (form.watch('cardImageTint') ?? true)
+    : (business?.cardImageTint ?? true);
 
   const save = form.handleSubmit(async (values) => {
     if (stampsChanged && !confirmStamps) {
@@ -193,6 +202,7 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
         cardColor: values.cardColor ? values.cardColor : null,
         stampIcon: values.stampIcon ? values.stampIcon : null,
         rewardIcon: values.rewardIcon ? values.rewardIcon : null,
+        cardImageTint: values.cardImageTint ?? true,
       });
       toast.success('Campaign updated');
       setConfirmStamps(false);
@@ -273,9 +283,11 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
           <div
             className="rounded-2xl bg-cover bg-center p-5 text-white shadow-lg"
             style={{
-              background: previewImage
-                ? `linear-gradient(135deg, ${previewColor}e6 0%, ${previewColor}99 45%, #18181bd9 100%), url(${previewImage}) center/cover`
-                : `linear-gradient(135deg, ${previewColor} 0%, ${previewColor}cc 55%, #18181b 100%)`,
+              background: cardBackground({
+                color: previewColor,
+                cardImageUrl: previewImage,
+                imageTinted: previewTint,
+              }),
             }}
           >
             <p className="font-semibold">{form.watch('name') || campaign.name}</p>
@@ -397,7 +409,7 @@ function CampaignFields({
         <Field label="Card background image">
           {() =>
             image ? (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <CardImageField
                   imageUrl={image.url}
                   onFile={image.onFile}
@@ -405,9 +417,22 @@ function CampaignFields({
                   uploading={image.uploading}
                   removing={image.removing}
                 />
+                {image.url && (
+                  <label className="flex items-center gap-2 text-[13px] text-body">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-brand-600"
+                      checked={form.watch('cardImageTint') ?? true}
+                      onChange={(e) =>
+                        form.setValue('cardImageTint', e.target.checked, { shouldDirty: true })
+                      }
+                    />
+                    Tint the image with the card colour
+                  </label>
+                )}
                 <p className="text-[12px] text-muted">
-                  PNG, JPEG or WebP, up to 4 MB. Overrides the business default; a dark overlay
-                  keeps text readable.
+                  PNG, JPEG or WebP, up to 4 MB. Overrides the business default. Untick the tint to
+                  show the image on its own (a soft dark scrim keeps text readable).
                 </p>
               </div>
             ) : (

@@ -101,7 +101,13 @@ export class PublicController {
         : null,
       brandColor: business.brandColor,
       style: resolveCardStyle(
-        campaign ?? { cardColor: null, stampIcon: null, rewardIcon: null, cardImagePath: null },
+        campaign ?? {
+          cardColor: null,
+          stampIcon: null,
+          rewardIcon: null,
+          cardImagePath: null,
+          cardImageTint: true,
+        },
         business,
         this.config.apiPublicUrl,
       ),

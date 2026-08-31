@@ -13,6 +13,7 @@ import { OtpLogin } from '@/components/auth/otp-login';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { Badge, EmptyState, PageLoader, Panel } from '@/components/ui/surface';
 import { StampGrid } from '@/components/stamp-grid';
+import { cardBackground } from '@/lib/card-bg';
 
 const POLL_MS = 4000;
 
@@ -213,11 +214,7 @@ function LiveCard({ membershipId }: { membershipId: string }) {
         {/* The card itself */}
         <div
           className="rounded-3xl bg-cover bg-center p-6 text-white shadow-2xl shadow-zinc-900/20"
-          style={{
-            background: c.style.cardImageUrl
-              ? `linear-gradient(135deg, ${c.style.color}e6 0%, ${c.style.color}99 45%, #18181bd9 100%), url(${c.style.cardImageUrl}) center/cover`
-              : `linear-gradient(135deg, ${c.style.color} 0%, ${c.style.color}cc 55%, #18181b 100%)`,
-          }}
+          style={{ background: cardBackground(c.style) }}
         >
           <div className="flex items-center gap-3">
             <LogoAvatar name={c.business.name} logoUrl={c.business.logoUrl} size="md" />

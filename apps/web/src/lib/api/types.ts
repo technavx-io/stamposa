@@ -98,6 +98,7 @@ export interface Business {
   stampIcon: string | null;
   rewardIcon: string | null;
   cardImageUrl: string | null;
+  cardImageTint: boolean;
   category: string | null;
   timezone: string;
   consentText: string | null;
@@ -121,6 +122,7 @@ export interface Campaign {
   stampIcon: string | null;
   rewardIcon: string | null;
   cardImageUrl: string | null;
+  cardImageTint: boolean;
   memberCount: number;
   createdAt: string;
 }
@@ -195,6 +197,7 @@ export interface CardStyle {
   stampIcon: string | null;
   rewardIcon: string | null;
   cardImageUrl: string | null;
+  imageTinted: boolean;
 }
 
 export interface Card {

@@ -48,6 +48,7 @@ export class CampaignsService {
         cardColor: dto.cardColor ?? null,
         stampIcon: dto.stampIcon ?? null,
         rewardIcon: dto.rewardIcon ?? null,
+        ...(dto.cardImageTint !== undefined ? { cardImageTint: dto.cardImageTint } : {}),
       },
     });
     return this.dto(campaign, 0);
@@ -82,6 +83,7 @@ export class CampaignsService {
         ...(dto.cardColor !== undefined ? { cardColor: dto.cardColor } : {}),
         ...(dto.stampIcon !== undefined ? { stampIcon: dto.stampIcon } : {}),
         ...(dto.rewardIcon !== undefined ? { rewardIcon: dto.rewardIcon } : {}),
+        ...(dto.cardImageTint !== undefined ? { cardImageTint: dto.cardImageTint } : {}),
       },
       include: { _count: { select: { memberships: true } } },
     });

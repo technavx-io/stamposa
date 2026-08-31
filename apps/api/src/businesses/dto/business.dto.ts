@@ -35,6 +35,9 @@ export class BusinessDto {
   @ApiProperty({ nullable: true, type: String, description: 'Default card background image URL' })
   cardImageUrl: string | null;
 
+  @ApiProperty({ example: true, description: 'Tint the card image with the colour, or show image + scrim only' })
+  cardImageTint: boolean;
+
   @ApiProperty({ nullable: true, type: String })
   category: string | null;
 
@@ -78,6 +81,7 @@ export function toBusinessDto(business: Business, opts: BusinessDtoOptions): Bus
     stampIcon: business.stampIcon,
     rewardIcon: business.rewardIcon,
     cardImageUrl: business.cardImagePath ? `${opts.apiPublicUrl}${business.cardImagePath}` : null,
+    cardImageTint: business.cardImageTint,
     category: business.category,
     timezone: business.timezone,
     consentText: business.consentText,

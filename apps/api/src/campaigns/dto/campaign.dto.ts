@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Campaign, CampaignStatus } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Length, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Length, Matches, Max, MaxLength, Min } from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
@@ -78,6 +78,11 @@ export class CreateCampaignDto {
   @IsString()
   @MaxLength(8)
   rewardIcon?: string | null;
+
+  @ApiPropertyOptional({ description: 'Tint the card image with the colour (true) or show image + scrim only (false)' })
+  @IsOptional()
+  @IsBoolean()
+  cardImageTint?: boolean;
 }
 
 export class UpdateCampaignDto extends PartialType(CreateCampaignDto) {
@@ -124,6 +129,9 @@ export class CampaignDto {
   @ApiProperty({ nullable: true, type: String, description: 'Card background image URL' })
   cardImageUrl: string | null;
 
+  @ApiProperty({ example: true, description: 'Tint the card image with the colour, or show image + scrim only' })
+  cardImageTint: boolean;
+
   @ApiProperty({ example: 42, description: 'Customers enrolled in this campaign' })
   memberCount: number;
 
@@ -150,6 +158,7 @@ export function toCampaignDto(
     rewardIcon: campaign.rewardIcon,
     cardImageUrl:
       campaign.cardImagePath && apiPublicUrl ? `${apiPublicUrl}${campaign.cardImagePath}` : null,
+    cardImageTint: campaign.cardImageTint,
     memberCount: memberCount ?? campaign._count?.memberships ?? 0,
     createdAt: campaign.createdAt,
   };

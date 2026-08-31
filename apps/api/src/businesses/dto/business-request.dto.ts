@@ -47,6 +47,11 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
   @MaxLength(8)
   rewardIcon?: string | null;
 
+  @ApiPropertyOptional({ description: 'Tint the card image with the colour, or show image + scrim only' })
+  @IsOptional()
+  @IsBoolean()
+  cardImageTint?: boolean;
+
   @ApiPropertyOptional({ example: 'cafe' })
   @IsOptional()
   @IsString()

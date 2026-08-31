@@ -114,6 +114,9 @@ model Business {
   stampIcon     String? @map("stamp_icon")
   rewardIcon    String? @map("reward_icon")
   cardImagePath String? @map("card_image_path")
+  /// When a card image is set: true tints it with the card colour; false
+  /// shows the image with only a legibility scrim.
+  cardImageTint Boolean @default(true) @map("card_image_tint")
   /// Vertical (cafe, salon, gym…) — drives defaults and reporting cohorts.
   category   String?
   /// IANA zone. "Today" in every merchant metric is computed in this zone.
@@ -211,6 +214,7 @@ model Campaign {
   stampIcon     String? @map("stamp_icon")
   rewardIcon    String? @map("reward_icon")
   cardImagePath String? @map("card_image_path")
+  cardImageTint Boolean @default(true) @map("card_image_tint")
 
   /// Max stamps one customer can earn per day. Null = unlimited.
   dailyStampCap Int?    @map("daily_stamp_cap")

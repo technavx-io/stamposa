@@ -20,6 +20,7 @@ import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { Modal } from '@/components/ui/modal';
 import { Panel, PanelHeader } from '@/components/ui/surface';
 import { CardImageField, EmojiChoice, REWARD_EMOJIS, STAMP_EMOJIS } from '@/components/merchant/card-style-fields';
+import { cardBackground } from '@/lib/card-bg';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Business name is required').max(80),
@@ -63,6 +64,7 @@ export default function SettingsPage() {
   const [brandColor, setBrandColor] = useState(business.brandColor ?? '#4F46E5');
   const [stampIcon, setStampIcon] = useState(business.stampIcon ?? '');
   const [rewardIcon, setRewardIcon] = useState(business.rewardIcon ?? '');
+  const [imageTint, setImageTint] = useState(business.cardImageTint);
   const [consentText, setConsentText] = useState<string | null>(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -429,9 +431,11 @@ export default function SettingsPage() {
               <div
                 className="rounded-2xl bg-cover bg-center p-4 text-white"
                 style={{
-                  background: business.cardImageUrl
-                    ? `linear-gradient(135deg, ${brandColor}e6 0%, ${brandColor}99 45%, #18181bd9 100%), url(${business.cardImageUrl}) center/cover`
-                    : `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}dd 60%, #18181b 100%)`,
+                  background: cardBackground({
+                    color: brandColor,
+                    cardImageUrl: business.cardImageUrl,
+                    imageTinted: imageTint,
+                  }),
                 }}
               >
                 <p className="text-sm font-semibold">{business.name}</p>
@@ -476,8 +480,20 @@ export default function SettingsPage() {
                   uploading={uploadCardImage.isPending}
                   removing={removeCardImage.isPending}
                 />
+                {business.cardImageUrl && (
+                  <label className="flex items-center gap-2 text-[13px] text-body">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-brand-600"
+                      checked={imageTint}
+                      onChange={(e) => setImageTint(e.target.checked)}
+                    />
+                    Tint the image with the brand colour
+                  </label>
+                )}
                 <p className="text-[12px] text-muted">
-                  PNG, JPEG or WebP, up to 4 MB. A dark overlay keeps text readable.
+                  PNG, JPEG or WebP, up to 4 MB. Untick the tint to show the image on its own (a soft
+                  dark scrim keeps text readable).
                 </p>
               </div>
 
@@ -487,13 +503,15 @@ export default function SettingsPage() {
                 disabled={
                   brandColor.toLowerCase() === (business.brandColor ?? '').toLowerCase() &&
                   stampIcon === (business.stampIcon ?? '') &&
-                  rewardIcon === (business.rewardIcon ?? '')
+                  rewardIcon === (business.rewardIcon ?? '') &&
+                  imageTint === business.cardImageTint
                 }
                 onClick={() =>
                   saveField.mutate({
                     brandColor,
                     stampIcon: stampIcon || null,
                     rewardIcon: rewardIcon || null,
+                    cardImageTint: imageTint,
                   })
                 }
               >

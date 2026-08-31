@@ -54,6 +54,9 @@ export class CardStyleDto {
 
   @ApiProperty({ nullable: true, type: String, description: 'Card background image URL' })
   cardImageUrl: string | null;
+
+  @ApiProperty({ description: 'When an image is set: true tints it with the colour, false = scrim only' })
+  imageTinted: boolean;
 }
 
 export class StampDto {

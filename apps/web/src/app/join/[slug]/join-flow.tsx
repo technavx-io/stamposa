@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { EmptyState, PageLoader, Panel } from '@/components/ui/surface';
 import { StampGrid } from '@/components/stamp-grid';
+import { joinBackground } from '@/lib/card-bg';
 
 export function JoinFlow({ slug }: { slug: string }) {
   const router = useRouter();
@@ -68,11 +69,7 @@ export function JoinFlow({ slug }: { slug: string }) {
   return (
     <div
       className="flex min-h-dvh flex-col items-center px-4 pb-10"
-      style={{
-        background: b.style.cardImageUrl
-          ? `linear-gradient(to bottom, ${b.style.color}e6 0%, ${b.style.color}aa 25%, #18181be6 70%, #09090b 100%), url(${b.style.cardImageUrl}) center/cover fixed`
-          : `linear-gradient(to bottom, ${b.style.color} 0%, ${b.style.color}bb 25%, #18181b 70%, #09090b 100%)`,
-      }}
+      style={{ background: joinBackground(b.style) }}
     >
       {/* Business header */}
       <div className="flex w-full max-w-md flex-col items-center pt-12 pb-8 text-center text-white">
