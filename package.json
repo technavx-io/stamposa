@@ -1,6 +1,6 @@
 {
   "name": "stamposa",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Multi-tenant SaaS loyalty platform — Phase 1 (merchant portal, staff console, customer cards)",
   "workspaces": [
@@ -18,7 +18,9 @@
     "db:migrate": "npm run prisma:migrate -w apps/api",
     "db:deploy": "npm run prisma:deploy -w apps/api",
     "db:seed": "npm run prisma:seed -w apps/api",
-    "db:studio": "npm run prisma:studio -w apps/api"
+    "db:studio": "npm run prisma:studio -w apps/api",
+    "version:set": "node scripts/set-version.mjs",
+    "version:show": "node -p \"require('./package.json').version\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

@@ -52,6 +52,9 @@ services:
       CORS_ORIGINS: https://${APP_DOMAIN}
       UPLOAD_DIR: ./uploads
       OTP_DEV_EXPOSE: 'false'
+      APP_VERSION: ${APP_VERSION:-}
+      GIT_SHA: ${GIT_SHA:-}
+      BUILT_AT: ${BUILT_AT:-}
     volumes:
       - uploads:/repo/apps/api/uploads
     depends_on:
@@ -120,6 +123,9 @@ services:
         NEXT_PUBLIC_SENTRY_DSN: ${WEB_SENTRY_DSN:-}
         NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN}
         NEXT_PUBLIC_APP_URL: https://${PORTAL_DOMAIN:-app.${APP_DOMAIN}}
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-}
+        NEXT_PUBLIC_GIT_SHA: ${GIT_SHA:-}
+        NEXT_PUBLIC_BUILT_AT: ${BUILT_AT:-}
     restart: unless-stopped
     depends_on:
       - api

@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { badRequest } from './common/exceptions';
 import { AppConfigService } from './config/app-config.service';
+import { BUILD_INFO } from './config/version';
 
 function flattenValidationErrors(errors: ValidationError[], parent = ''): string[] {
   return errors.flatMap((error) => {
@@ -89,6 +90,9 @@ async function bootstrap(): Promise<void> {
 
   await app.listen(config.port);
   logger.log(`API listening on http://localhost:${config.port} (docs at /docs)`);
+  logger.log(
+    `Stamposa API v${BUILD_INFO.version} · commit ${BUILD_INFO.commit} · built ${BUILD_INFO.builtAt}`,
+  );
 }
 
 void bootstrap();

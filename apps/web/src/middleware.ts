@@ -37,5 +37,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Skip Next's own assets and static files — only page requests need routing.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|screens/|.*\\.(?:png|jpg|jpeg|svg|ico|webp|txt|xml)$).*)'],
+  // /version is excluded deliberately: it must answer on BOTH hostnames so a
+  // deploy can be verified per-host, rather than redirecting to the other one.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|version|screens/|.*\\.(?:png|jpg|jpeg|svg|ico|webp|txt|xml)$).*)'],
 };
