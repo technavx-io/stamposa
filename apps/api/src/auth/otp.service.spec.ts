@@ -2,6 +2,8 @@ import { OtpService } from './otp.service';
 import { RedisService } from '../redis/redis.service';
 import { AppConfigService } from '../config/app-config.service';
 import { SmsProvider } from '../sms/sms.types';
+import { EmailProvider } from '../email/email.types';
+import { Identifier } from '../common/identifier.service';
 import { DomainException } from '../common/exceptions';
 
 /** In-memory stand-in for the RedisService surface OtpService uses. */
@@ -36,17 +38,20 @@ class FakeRedis {
   }
 }
 
-const PHONE = '+919876500001';
+const PHONE: Identifier = { kind: 'PHONE', value: '+919876500001' };
+const EMAIL: Identifier = { kind: 'EMAIL', value: 'customer@example.com' };
 
 describe('OtpService', () => {
   let redis: FakeRedis;
   let sms: { sendOtp: jest.Mock };
+  let email: { sendEmail: jest.Mock };
   let service: OtpService;
   let devExpose: boolean;
 
   beforeEach(() => {
     redis = new FakeRedis();
     sms = { sendOtp: jest.fn().mockResolvedValue(undefined) };
+    email = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     devExpose = true;
     const config = {
       get otpDevExpose() {
@@ -58,13 +63,18 @@ describe('OtpService', () => {
       redis as unknown as RedisService,
       config,
       sms as unknown as SmsProvider,
+      email as unknown as EmailProvider,
     );
   });
 
   it('sends a 6-digit code and exposes it in dev mode', async () => {
     const result = await service.requestCode('MERCHANT', PHONE);
     expect(result.devCode).toMatch(/^\d{6}$/);
-    expect(sms.sendOtp).toHaveBeenCalledWith(PHONE, result.devCode!, expect.stringContaining(result.devCode!));
+    expect(sms.sendOtp).toHaveBeenCalledWith(
+      PHONE.value,
+      result.devCode!,
+      expect.stringContaining(result.devCode!),
+    );
   });
 
   it('hides the code when dev exposure is off', async () => {
@@ -120,4 +130,50 @@ describe('OtpService', () => {
     const retry = await service.requestCode('CUSTOMER', PHONE);
     expect(retry.expiresInSec).toBeGreaterThan(0);
   });
+
+  // ── Email-identified customers ──────────────────────────────────────────
+  // The reason this path exists: customer sign-in was phone-only, which is
+  // unusable until Indian DLT/SMS approval lands.
+
+  it('delivers the code by email when the identifier is an email', async () => {
+    const result = await service.requestCode('CUSTOMER', EMAIL);
+    expect(email.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: EMAIL.value,
+        subject: expect.stringContaining(result.devCode!),
+        text: expect.stringContaining(result.devCode!),
+      }),
+    );
+    expect(sms.sendOtp).not.toHaveBeenCalled();
+  });
+
+  it('never sends an SMS for an email identity, or an email for a phone', async () => {
+    await service.requestCode('CUSTOMER', PHONE);
+    expect(sms.sendOtp).toHaveBeenCalledTimes(1);
+    expect(email.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('verifies a code that was delivered by email', async () => {
+    const { devCode } = await service.requestCode('CUSTOMER', EMAIL);
+    await expect(service.verifyCode('CUSTOMER', EMAIL, devCode!)).resolves.toBeUndefined();
+  });
+
+  it('keeps phone and email identities in separate namespaces', async () => {
+    // Same person, two identities, two accounts — a code issued to one must
+    // not authenticate the other.
+    const phoneCode = await service.requestCode('CUSTOMER', PHONE);
+    await expect(
+      service.verifyCode('CUSTOMER', EMAIL, phoneCode.devCode!),
+    ).rejects.toMatchObject({ constructor: DomainException });
+  });
+
+  it('clears the cooldown when an email send fails, so resend works at once', async () => {
+    email.sendEmail.mockRejectedValueOnce(new Error('smtp down'));
+    await expect(service.requestCode('CUSTOMER', EMAIL)).rejects.toMatchObject({
+      constructor: DomainException,
+    });
+    // Not locked out behind the 60s cooldown.
+    await expect(service.requestCode('CUSTOMER', EMAIL)).resolves.toBeDefined();
+  });
+
 });

@@ -124,7 +124,7 @@ export function JoinFlow({ slug }: { slug: string }) {
                 {session.actor.name ? `Hi ${session.actor.name.split(' ')[0]}!` : 'Welcome back!'}
               </h2>
               <p className="mt-1 text-sm text-muted">
-                Get your {b.name} card on {session.actor.phone}.
+                Get your {b.name} card on {session.actor.phone ?? session.actor.email}.
               </p>
             </div>
             <ConsentCheckbox
@@ -148,15 +148,15 @@ export function JoinFlow({ slug }: { slug: string }) {
                 setSwitching(false);
               }}
             >
-              Use a different phone number
+              Use a different phone or email
             </button>
           </div>
         ) : (
           <>
             <OtpLogin
               role="CUSTOMER"
-              title="Join with your phone"
-              subtitle="One quick OTP — no app, no password, no spam."
+              title="Join with your phone or email"
+              subtitle="One quick code — no app, no password, no spam."
               allowRegistration
               nameLabel="Your name"
               submitLabel="Join program"

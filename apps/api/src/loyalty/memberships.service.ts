@@ -27,6 +27,7 @@ import {
   toMembershipListItemDto,
   toStampDto,
 } from './loyalty.presenters';
+import { Identifier } from '../common/identifier.service';
 
 const CODE_CREATE_ATTEMPTS = 5;
 const RECENT_STAMPS_ON_CARD = 15;
@@ -148,15 +149,18 @@ export class MembershipsService {
   // ── Business surfaces (staff console + merchant portal) ───────────────
 
   /**
-   * Counter enrolment: staff types the customer's phone and they're in —
-   * no OTP dance at the till. The customer proves ownership of the phone
-   * whenever they first log in themselves; until then the card simply
+   * Counter enrolment: staff types the customer's phone OR email and they're
+   * in — no OTP dance at the till. The customer proves ownership of that
+   * identity whenever they first log in themselves; until then the card simply
    * collects stamps. Consent is only recorded when the customer explicitly
    * agreed at the counter (channel "counter" marks it staff-attested).
+   *
+   * Accepting either identity is what lets a shop enrol customers before SMS
+   * delivery is available.
    */
   async enrollAtCounter(params: {
     businessId: string;
-    phone: string;
+    identifier: Identifier;
     name?: string;
     marketingConsent?: boolean;
     staffId: string;
@@ -178,11 +182,19 @@ export class MembershipsService {
       throw conflict('JOIN_UNAVAILABLE', 'No live campaign to enrol customers into right now.');
     }
 
-    let customer = await this.prisma.customer.findUnique({ where: { phone: params.phone } });
+    // Match on whichever identity staff typed. A person enrolled by phone and
+    // later by email becomes two customers — deduplicating across identities
+    // needs a merge tool, which is deliberately out of scope here.
+    const identity =
+      params.identifier.kind === 'PHONE'
+        ? { phone: params.identifier.value }
+        : { email: params.identifier.value };
+
+    let customer = await this.prisma.customer.findUnique({ where: identity });
     const isNewCustomer = !customer;
     if (!customer) {
       customer = await this.prisma.customer.create({
-        data: { phone: params.phone, name: params.name?.trim() || null },
+        data: { ...identity, name: params.name?.trim() || null },
       });
     } else if (!customer.name && params.name?.trim()) {
       customer = await this.prisma.customer.update({
@@ -259,9 +271,9 @@ export class MembershipsService {
   }
 
   /**
-   * Counter search: matches phone digits, customer code or name — always
-   * scoped to the caller's business. Empty query returns recently stamped
-   * members as a convenience for busy counters.
+   * Counter search: matches phone digits, email, customer code or name —
+   * always scoped to the caller's business. Empty query returns recently
+   * stamped members as a convenience for busy counters.
    */
   async searchForBusiness(businessId: string, query: string, limit = 10): Promise<MembershipListItemDto[]> {
     const q = query.trim();
@@ -280,6 +292,8 @@ export class MembershipsService {
       }
       if (/[a-zA-Z]/.test(q)) {
         filters.push({ customer: { name: { contains: q, mode: 'insensitive' } } });
+        // Email-identified customers are found the same way as phone ones.
+        filters.push({ customer: { email: { contains: q.toLowerCase() } } });
       }
       if (filters.length === 0) {
         return [];
@@ -305,6 +319,7 @@ export class MembershipsService {
     if (q.length > 0) {
       const filters: Prisma.CustomerMembershipWhereInput[] = [
         { customer: { name: { contains: q, mode: 'insensitive' } } },
+        { customer: { email: { contains: q.toLowerCase() } } },
       ];
       const digits = q.replace(/[^\d]/g, '');
       if (digits.length >= 3) filters.push({ customer: { phone: { contains: digits } } });

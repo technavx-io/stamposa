@@ -131,7 +131,7 @@ export class AnalyticsService {
   async topCustomers(businessId: string, limit = 8) {
     const rows = await this.prisma.customerMembership.findMany({
       where: { businessId, totalStamps: { gt: 0 } },
-      include: { customer: { select: { name: true, phone: true } } },
+      include: { customer: { select: { name: true, phone: true, email: true } } },
       orderBy: [{ totalStamps: 'desc' }, { lastStampAt: 'desc' }],
       take: limit,
     });
@@ -139,6 +139,8 @@ export class AnalyticsService {
       membershipId: m.id,
       name: m.customer.name,
       phone: m.customer.phone,
+      email: m.customer.email,
+      contact: m.customer.phone ?? m.customer.email ?? '—',
       totalStamps: m.totalStamps,
       completedCount: m.completedCount,
       lastStampAt: m.lastStampAt,

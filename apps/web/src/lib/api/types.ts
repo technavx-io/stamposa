@@ -228,7 +228,11 @@ export interface JoinResult {
 export interface CustomerSummary {
   id: string;
   name: string | null;
-  phone: string;
+  /** A customer has a phone OR an email — exactly one is guaranteed. */
+  phone: string | null;
+  email: string | null;
+  /** Whichever identity they have, ready to display. Prefer this in UI. */
+  contact: string;
 }
 
 export interface MembershipListItem {
@@ -405,7 +409,9 @@ export interface SeriesPoint {
 export interface TopCustomer {
   membershipId: string;
   name: string | null;
-  phone: string;
+  phone: string | null;
+  email: string | null;
+  contact: string;
   totalStamps: number;
   completedCount: number;
   lastStampAt: string | null;

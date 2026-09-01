@@ -21,7 +21,7 @@ const clients = {
   CUSTOMER: customerClient,
 } as const;
 
-type Step = 'phone' | 'code' | 'name';
+type Step = 'identifier' | 'code' | 'name';
 
 export interface OtpLoginProps {
   role: ActorRole;
@@ -46,9 +46,10 @@ export function OtpLogin({
 }: OtpLoginProps) {
   const api = useMemo(() => authApi(role, clients[role]), [role]);
 
-  const [step, setStep] = useState<Step>('phone');
-  const [phoneInput, setPhoneInput] = useState('');
-  const [phoneE164, setPhoneE164] = useState('');
+  const [step, setStep] = useState<Step>('identifier');
+  const [identifierInput, setIdentifierInput] = useState('');
+  /** The normalised value the code was actually sent to. */
+  const [sentTo, setSentTo] = useState('');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [registrationToken, setRegistrationToken] = useState('');
@@ -64,17 +65,33 @@ export function OtpLogin({
     return () => clearInterval(t);
   }, [resendIn > 0]); // eslint-disable-line react-hooks/exhaustive-deps -- restart only on active/inactive flip
 
-  const requestCode = async (targetPhone?: string) => {
+  const requestCode = async (target?: string) => {
     setError(null);
-    const parsed = parsePhoneNumberFromString(targetPhone ?? phoneInput, DEFAULT_REGION);
-    if (!parsed || !parsed.isValid()) {
-      setError('Enter a valid phone number. Include the country code if outside India.');
-      return;
+    const raw = (target ?? identifierInput).trim();
+
+    // Anything with an "@" is an email attempt; otherwise validate it as a
+    // phone number here so the person gets an immediate, specific error
+    // instead of a round trip. The server normalises either way.
+    let value: string;
+    if (raw.includes('@')) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
+        setError('Enter a valid email address.');
+        return;
+      }
+      value = raw.toLowerCase();
+    } else {
+      const parsed = parsePhoneNumberFromString(raw, DEFAULT_REGION);
+      if (!parsed || !parsed.isValid()) {
+        setError('Enter a valid phone number or an email address.');
+        return;
+      }
+      value = parsed.number;
     }
+
     setBusy(true);
     try {
-      const res = await api.requestOtp(parsed.number);
-      setPhoneE164(parsed.number);
+      const res = await api.requestOtp(value);
+      setSentTo(value);
       setDevCode(res.devCode ?? null);
       setResendIn(res.resendInSec);
       setCode('');
@@ -92,12 +109,12 @@ export function OtpLogin({
     setError(null);
     setBusy(true);
     try {
-      const result = await api.verifyOtp(phoneE164, fullCode);
+      const result = await api.verifyOtp(sentTo, fullCode);
       if (result.status === 'AUTHENTICATED' && result.session) {
         finish(result.session);
       } else if (result.registrationToken) {
         if (!allowRegistration) {
-          setError('No account found for this phone number.');
+          setError('No account found for that phone number or email.');
           return;
         }
         setRegistrationToken(result.registrationToken);
@@ -141,7 +158,7 @@ export function OtpLogin({
         {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       </div>
 
-      {step === 'phone' && (
+      {step === 'identifier' && (
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -150,18 +167,19 @@ export function OtpLogin({
           }}
         >
           <Field
-            label="Phone number"
+            label="Phone number or email"
             error={error ?? undefined}
             hint={`Numbers without a country code are treated as ${DEFAULT_REGION === 'IN' ? '+91 (India)' : DEFAULT_REGION}.`}
           >
             {(p) => (
               <Input
                 {...p}
-                type="tel"
-                autoComplete="tel"
+                type="text"
+                inputMode="email"
+                autoComplete="username"
                 placeholder="+91 98765 43210"
-                value={phoneInput}
-                onChange={(e) => setPhoneInput(e.target.value)}
+                value={identifierInput}
+                onChange={(e) => setIdentifierInput(e.target.value)}
                 autoFocus
                 required
               />
@@ -178,12 +196,12 @@ export function OtpLogin({
           <button
             type="button"
             onClick={() => {
-              setStep('phone');
+              setStep('identifier');
               setError(null);
             }}
             className="flex items-center gap-1 text-sm text-muted transition-colors hover:text-strong"
           >
-            <ArrowLeft className="size-4" /> {formatPhone(phoneE164)}
+            <ArrowLeft className="size-4" /> {sentTo.includes('@') ? sentTo : formatPhone(sentTo)}
           </button>
 
           <Field label="Enter the 6-digit code" error={error ?? undefined}>
@@ -219,7 +237,7 @@ export function OtpLogin({
             <button
               type="button"
               disabled={resendIn > 0 || busy}
-              onClick={() => void requestCode(phoneE164)}
+              onClick={() => void requestCode(sentTo)}
               className="font-medium text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-muted"
             >
               {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend code'}
@@ -237,7 +255,7 @@ export function OtpLogin({
           }}
         >
           <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[13px] text-emerald-700">
-            {formatPhone(phoneE164)} verified. One last thing —
+            {sentTo.includes('@') ? sentTo : formatPhone(sentTo)} verified. One last thing —
           </p>
           <Field label={nameLabel} error={error ?? undefined}>
             {(p) => (

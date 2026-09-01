@@ -22,7 +22,7 @@ import { BusinessesService } from '../businesses/businesses.service';
 import { BusinessDto } from '../businesses/dto/business.dto';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PasswordService } from '../common/password.service';
-import { PhoneService } from '../common/phone.service';
+import { IdentifierService } from '../common/identifier.service';
 import { badRequest } from '../common/exceptions';
 import {
   AddStampResultDto,
@@ -104,12 +104,15 @@ class UndoStampDto {
 }
 
 class EnrollDto {
-  @ApiProperty({ example: '+91 98765 43210', description: "The customer's phone" })
+  @ApiProperty({
+    example: '+91 98765 43210',
+    description: "The customer's phone number or email address — either identifies them",
+  })
   @IsString()
   @Transform(trim)
-  @MinLength(6)
-  @MaxLength(20)
-  phone: string;
+  @MinLength(3)
+  @MaxLength(120)
+  identifier: string;
 
   @ApiPropertyOptional({ example: 'Asha Patel' })
   @IsOptional()
@@ -184,7 +187,7 @@ export class StaffConsoleController {
     private readonly campaigns: CampaignsService,
     private readonly businesses: BusinessesService,
     private readonly console: StaffConsoleService,
-    private readonly phones: PhoneService,
+    private readonly identifiers: IdentifierService,
     private readonly passwords: PasswordService,
     private readonly prisma: PrismaService,
   ) {}
@@ -243,7 +246,7 @@ export class StaffConsoleController {
 
   @Post('enroll')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Enrol a customer at the counter by phone (no OTP needed)' })
+  @ApiOperation({ summary: 'Enrol a customer at the counter by phone or email (no OTP needed)' })
   @ApiOkResponse({ type: EnrollResultDto })
   enroll(
     @CurrentStaff() staff: StaffWithBusiness,
@@ -252,7 +255,7 @@ export class StaffConsoleController {
   ): Promise<EnrollResultDto> {
     return this.memberships.enrollAtCounter({
       businessId: staff.businessId,
-      phone: this.phones.normalize(dto.phone),
+      identifier: this.identifiers.normalize(dto.identifier),
       name: dto.name,
       marketingConsent: dto.marketingConsent,
       staffId: staff.id,

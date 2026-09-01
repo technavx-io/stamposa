@@ -14,6 +14,7 @@ import { AuditActorType, PlatformAdmin } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { badRequest, conflict, notFound } from '../common/exceptions';
 import { PhoneService } from '../common/phone.service';
+import { IdentifierService } from '../common/identifier.service';
 import { formatCode } from '../common/utils/codes.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -52,6 +53,7 @@ export class AdminController {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly phones: PhoneService,
+    private readonly identifiers: IdentifierService,
   ) {}
 
   // ── Dashboard ─────────────────────────────────────────────────────────
@@ -173,16 +175,17 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @RequireCapability('customers.lookup')
   @ApiOperation({
-    summary: 'Find one customer by exact phone. Reason mandatory; always audit-logged.',
+    summary: 'Find one customer by exact phone or email. Reason mandatory; always audit-logged.',
   })
   async lookupCustomer(
     @CurrentAdmin() admin: PlatformAdmin,
     @Body() dto: CustomerLookupDto,
     @RequestContext() meta: Meta,
   ) {
-    const phone = this.phones.normalize(dto.phone);
+    // Customers are identified by phone OR email; support looking up either.
+    const identifier = this.identifiers.normalize(dto.phone);
     const customer = await this.prisma.customer.findUnique({
-      where: { phone },
+      where: this.identifiers.whereClause(identifier),
       include: {
         memberships: {
           include: { business: { select: { id: true, name: true } }, campaign: { select: { name: true } } },
@@ -200,7 +203,7 @@ export class AdminController {
       action: 'customer.looked_up',
       targetType: 'customer',
       targetId: customer?.id ?? null,
-      targetLabel: this.phones.mask(phone),
+      targetLabel: this.identifiers.mask(identifier),
       reason: dto.reason,
       metadata: { found: customer !== null },
       ipAddress: meta.ipAddress,
@@ -216,6 +219,8 @@ export class AdminController {
         id: customer.id,
         name: customer.name,
         phone: customer.phone,
+        email: customer.email,
+        contact: customer.phone ?? customer.email ?? '—',
         erasedAt: customer.erasedAt,
         joinedAt: customer.createdAt,
         memberships: customer.memberships.map((m) => ({
@@ -256,14 +261,22 @@ export class AdminController {
     if (customer.erasedAt) {
       throw conflict('ALREADY_ERASED', 'This customer was already erased.');
     }
-    const maskedPhone = this.phones.mask(customer.phone);
+    // Either identity may be the one on file; mask whichever exists for the audit entry.
+    const maskedPhone = customer.phone ? this.phones.mask(customer.phone) : (customer.email ?? 'unknown');
 
     await this.prisma.$transaction([
-      // Identity: phone becomes an opaque unique sentinel, so the real
-      // number is freed for a future fresh registration.
+      // Identity: BOTH phone and email become opaque unique sentinels, so the
+      // real values are freed for a future fresh registration. Erasing only
+      // one would leave the person still identifiable — and still reachable —
+      // by the other, which is the whole point of the request.
       this.prisma.customer.update({
         where: { id: customer.id },
-        data: { phone: `erased:${customer.id}`, name: null, erasedAt: new Date() },
+        data: {
+          phone: customer.phone ? `erased:${customer.id}` : null,
+          email: customer.email ? `erased:${customer.id}@erased.invalid` : null,
+          name: null,
+          erasedAt: new Date(),
+        },
       }),
       // Merchant-held notes about the person are personal data too.
       this.prisma.customerMembership.updateMany({

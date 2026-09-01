@@ -3,18 +3,24 @@ import { Transform } from 'class-transformer';
 import { IsEmail, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RequestOtpDto {
-  @ApiProperty({ example: '+91 98765 00001', description: 'Any format; normalised to E.164 server-side' })
+  @ApiProperty({
+    example: '+91 98765 00001',
+    description:
+      'Phone number or email address. Phones accept any format and are normalised to ' +
+      'E.164 server-side; emails are lowercased. Customers may use either — staff and ' +
+      'merchants must use a phone here, since they already have email+password sign-in.',
+  })
   @IsString()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  @MinLength(6)
-  @MaxLength(20)
-  phone: string;
+  @MinLength(3)
+  @MaxLength(120)
+  identifier: string;
 }
 
 export class VerifyOtpDto extends RequestOtpDto {
   @ApiProperty({ example: '123456' })
   @IsString()
-  @Matches(/^\d{6}$/, { message: 'Code must be the 6-digit number from the SMS.' })
+  @Matches(/^\d{6}$/, { message: 'Code must be the 6-digit number we sent you.' })
   code: string;
 }
 

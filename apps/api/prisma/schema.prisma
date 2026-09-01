@@ -176,12 +176,22 @@ model Staff {
 /// Global customer identity keyed by phone. Not tenant-scoped by design —
 /// tenant data lives on CustomerMembership.
 model Customer {
-  id    String  @id @default(cuid())
-  phone String  @unique
-  name  String?
+  id String @id @default(cuid())
 
-  /// DPDP/GDPR erasure: identity fields are anonymised in place (phone
-  /// becomes an opaque sentinel) and this marks when. Ledger rows survive,
+  /// A customer is identified by a phone number OR an email address —
+  /// whichever they gave. Both are optional individually but at least one
+  /// must be present; that is enforced by a CHECK constraint in the
+  /// migration, because Prisma cannot express "one of these two".
+  ///
+  /// This exists so the product can launch before Indian DLT/SMS approval
+  /// comes through: an email-only customer is a complete customer.
+  phone String? @unique
+  email String? @unique
+
+  name String?
+
+  /// DPDP/GDPR erasure: identity fields are anonymised in place (phone and
+  /// email become opaque sentinels) and this marks when. Ledger rows survive,
   /// keyed only by opaque ids.
   erasedAt DateTime? @map("erased_at")
 

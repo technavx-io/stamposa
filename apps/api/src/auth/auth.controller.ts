@@ -90,10 +90,10 @@ export class AuthController {
   @Throttle(OTP_THROTTLE)
   @Post('customer/otp/request')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send a login/registration OTP to a customer phone' })
+  @ApiOperation({ summary: 'Send a login/registration OTP to a customer phone or email' })
   @ApiOkResponse({ type: OtpRequestedDto })
   requestCustomerOtp(@Body() dto: RequestOtpDto): Promise<OtpRequestedDto> {
-    return this.auth.requestOtp('CUSTOMER', dto.phone);
+    return this.auth.requestOtp('CUSTOMER', dto.identifier);
   }
 
   @Public()
@@ -103,7 +103,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify customer OTP — logs in, or returns a registration token for new phones' })
   @ApiOkResponse({ type: AuthResultDto })
   verifyCustomerOtp(@Body() dto: VerifyOtpDto): Promise<AuthResultDto> {
-    return this.auth.verifyOtp('CUSTOMER', dto.phone, dto.code);
+    return this.auth.verifyOtp('CUSTOMER', dto.identifier, dto.code);
   }
 
   @Public()

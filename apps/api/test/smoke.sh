@@ -243,15 +243,30 @@ check "staff /today hides team view" "null" "$(curl -s $API/staff/today -H "Auth
 check "manager /today includes team + totals" "true" "$(curl -s $API/staff/today -H "Authorization: Bearer $S2TOK" | jq '.team != null and .totals != null')"
 
 echo "— Staff panel: counter enrolment"
-E=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"phone":"+919815555001","name":"Enrolled Ed","marketingConsent":true}')
+E=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"identifier":"+919815555001","name":"Enrolled Ed","marketingConsent":true}')
 check "counter enrol creates a new customer" "true" "$(echo "$E" | jq -r .isNewCustomer)"
 EMEM=$(echo "$E" | jq -r .card.id)
-E2=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"phone":"+919815555001"}')
+E2=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"identifier":"+919815555001"}')
 check "re-enrol is idempotent" "true" "$(echo "$E2" | jq -r .alreadyMember)"
 CN=$(curl -s "$API/merchant/customers/$EMEM/consents" -H "Authorization: Bearer $MTOK")
 check "counter consent recorded (channel=counter)" "counter" "$(echo "$CN" | jq -r '.[0].channel')"
-EBAD=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"phone":"12"}')
+EBAD=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"identifier":"1"}')
 check "enrol with a bad phone → 400" "400" "$(echo "$EBAD" | jq -r .statusCode)"
+
+# A customer identified by email is a complete customer — this is what lets a
+# shop enrol and serve people before SMS delivery is available.
+EE=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"identifier":"Counter.Customer@Example.com","name":"Email Ellie"}')
+check "counter enrol by email creates a customer" "true" "$(echo "$EE" | jq -r .isNewCustomer)"
+EEMEM=$(echo "$EE" | jq -r .card.id)
+check "email is normalised to lowercase" "counter.customer@example.com" "$(echo "$EE" | jq -r .card.customer.email)"
+check "email customer has no phone" "null" "$(echo "$EE" | jq -r .card.customer.phone)"
+check "contact falls back to the email" "counter.customer@example.com" "$(echo "$EE" | jq -r .card.customer.contact)"
+EE2=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"identifier":"COUNTER.CUSTOMER@example.com"}')
+check "re-enrol by email is idempotent regardless of case" "true" "$(echo "$EE2" | jq -r .alreadyMember)"
+ESRCH=$(curl -s "$API/staff/customers/search?q=counter.customer" -H "Authorization: Bearer $S1TOK")
+check "counter search finds an email customer" "$EEMEM" "$(echo "$ESRCH" | jq -r '.[0].id')"
+EBADM=$(curl -s -X POST $API/staff/enroll -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d '{"identifier":"not-an-email@"}')
+check "enrol with a malformed email → 400" "400" "$(echo "$EBADM" | jq -r .statusCode)"
 
 echo "— Staff panel: undo"
 A=$(curl -s -X POST $API/staff/stamps -H "Authorization: Bearer $S1TOK" -H 'Content-Type: application/json' -d "{\"membershipId\":\"$EMEM\"}")

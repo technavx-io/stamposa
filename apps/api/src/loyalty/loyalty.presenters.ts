@@ -73,12 +73,28 @@ export function toRedemptionRowDto(
         : null,
     voidedAt: r.voidedAt,
     membershipId: r.membershipId,
-    customer: {
-      id: r.membership.customer.id,
-      name: r.membership.customer.name,
-      phone: r.membership.customer.phone,
-    },
+    customer: toCustomerIdentity(r.membership.customer),
     customerCode: formatCode(r.membership.code),
+  };
+}
+
+
+/**
+ * A customer is identified by a phone number OR an email address. Callers get
+ * both raw fields (for export and lookup) and a single `contact` string to
+ * display, so no UI has to re-derive which identity exists.
+ */
+export function toCustomerIdentity(
+  customer: Pick<Customer, 'id' | 'name' | 'phone' | 'email'>,
+): { id: string; name: string | null; phone: string | null; email: string | null; contact: string } {
+  return {
+    id: customer.id,
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email,
+    // The CHECK constraint guarantees one of these is set; the fallback is
+    // only reachable for an erased customer, whose identity is intentionally gone.
+    contact: customer.phone ?? customer.email ?? '—',
   };
 }
 
@@ -141,11 +157,7 @@ export function toMembershipListItemDto(m: MembershipWithCustomerCampaign): Memb
     tags: m.tags,
     blockedAt: m.blockedAt,
     blockedReason: m.blockedReason,
-    customer: {
-      id: m.customer.id,
-      name: m.customer.name,
-      phone: m.customer.phone,
-    },
+    customer: toCustomerIdentity(m.customer),
     stampCount: m.stampCount,
     stampsRequired: m.campaign.stampsRequired,
     completedCount: m.completedCount,

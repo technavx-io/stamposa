@@ -28,6 +28,7 @@ export class ExportService {
         'customer_code',
         'name',
         'phone',
+        'email',
         'programme',
         'stamps_on_card',
         'stamps_required',
@@ -42,7 +43,8 @@ export class ExportService {
       rows.map((m) => [
         formatCode(m.code),
         m.customer.name ?? '',
-        m.customer.phone,
+        m.customer.phone ?? '',
+        m.customer.email ?? '',
         m.campaign.name,
         m.stampCount,
         m.campaign.stampsRequired,
@@ -62,7 +64,7 @@ export class ExportService {
       where: { businessId: business.id },
       include: {
         staff: { select: { name: true } },
-        membership: { include: { customer: { select: { name: true, phone: true } } } },
+        membership: { include: { customer: { select: { name: true, phone: true, email: true } } } },
       },
       orderBy: { createdAt: 'desc' },
       take: MAX_ROWS,
@@ -74,6 +76,7 @@ export class ExportService {
         'customer_code',
         'customer_name',
         'customer_phone',
+        'customer_email',
         'change',
         'type',
         'issued_by',
@@ -84,7 +87,8 @@ export class ExportService {
         s.createdAt.toISOString(),
         formatCode(s.membership.code),
         s.membership.customer.name ?? '',
-        s.membership.customer.phone,
+        s.membership.customer.phone ?? '',
+        s.membership.customer.email ?? '',
         s.delta,
         s.issuerType.toLowerCase(),
         issuerLabel(s.issuerType, s.staff?.name),
@@ -99,19 +103,20 @@ export class ExportService {
       where: { businessId: business.id },
       include: {
         redeemedStaff: { select: { name: true } },
-        membership: { include: { customer: { select: { name: true, phone: true } } } },
+        membership: { include: { customer: { select: { name: true, phone: true, email: true } } } },
       },
       orderBy: { createdAt: 'desc' },
       take: MAX_ROWS,
     });
 
     return toCsv(
-      ['voucher_code', 'reward', 'customer_name', 'customer_phone', 'status', 'earned_at', 'redeemed_at', 'redeemed_by'],
+      ['voucher_code', 'reward', 'customer_name', 'customer_phone', 'customer_email', 'status', 'earned_at', 'redeemed_at', 'redeemed_by'],
       rows.map((r) => [
         formatCode(r.code),
         r.rewardText,
         r.membership.customer.name ?? '',
-        r.membership.customer.phone,
+        r.membership.customer.phone ?? '',
+        r.membership.customer.email ?? '',
         r.status.toLowerCase(),
         r.createdAt.toISOString(),
         r.redeemedAt?.toISOString() ?? '',

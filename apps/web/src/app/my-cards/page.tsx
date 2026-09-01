@@ -31,7 +31,7 @@ export default function MyCardsPage() {
           <OtpLogin
             role="CUSTOMER"
             title="My loyalty cards"
-            subtitle="Verify your phone to see every card you've collected."
+            subtitle="Verify your phone or email to see every card you've collected."
             allowRegistration
             onAuthenticated={() => undefined}
           />
@@ -57,7 +57,7 @@ export default function MyCardsPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-strong">My cards</h1>
             <p className="mt-0.5 text-sm text-muted">
               {session.actor.name ? `${session.actor.name} · ` : ''}
-              {session.actor.phone}
+              {session.actor.phone ?? session.actor.email}
             </p>
           </div>
           <button

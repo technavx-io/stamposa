@@ -34,7 +34,7 @@ import type {
 import { staffSession } from '@/lib/auth/session';
 import { useStoredSession } from '@/lib/auth/use-stored-session';
 import { useDebounced } from '@/lib/use-debounced';
-import { cn, formatPhone, timeAgo } from '@/lib/utils';
+import { cn, timeAgo } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Field, Input, PasswordInput } from '@/components/ui/field';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
@@ -381,7 +381,7 @@ export default function StaffConsolePage() {
                   title={debouncedQuery ? 'No customer found' : 'No stamps yet today'}
                   description={
                     debouncedQuery
-                      ? 'Check the phone number or ask for their customer code (like 7F3K-9QZP).'
+                      ? 'Check the phone number or email, or ask for their customer code (like 7F3K-9QZP).'
                       : 'Search any customer, scan their card QR, or enrol someone new.'
                   }
                 />
@@ -449,7 +449,7 @@ export default function StaffConsolePage() {
               </p>
               <p className="mt-1 text-sm text-amber-800">
                 {redeemTarget.membership.customer.name ?? 'Customer'} ·{' '}
-                {formatPhone(redeemTarget.membership.customer.phone)}
+                {redeemTarget.membership.customer.contact}
               </p>
               <p className="mt-2 font-mono text-xs tracking-widest text-amber-700">
                 Voucher {redeemTarget.reward.formattedCode}
@@ -547,7 +547,7 @@ function EnrollModal({
   businessName: string;
   onEnrolled: (card: MembershipListItem, alreadyMember: boolean, withStamp: boolean) => void;
 }) {
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [name, setName] = useState('');
   const [consent, setConsent] = useState(false);
   const [firstStamp, setFirstStamp] = useState(true);
@@ -555,12 +555,12 @@ function EnrollModal({
   const enroll = useMutation({
     mutationFn: () =>
       staffApi.enroll({
-        phone,
+        identifier,
         name: name.trim() || undefined,
         marketingConsent: consent || undefined,
       }),
     onSuccess: (result) => {
-      setPhone('');
+      setIdentifier('');
       setName('');
       setConsent(false);
       onEnrolled(result.card, result.alreadyMember, firstStamp);
@@ -575,23 +575,24 @@ function EnrollModal({
       open={open}
       onClose={onClose}
       title="Enrol a customer"
-      description="Type their phone number — no OTP needed at the counter. They can open their card any time by logging in with that number."
+      description="Type their phone number or email — no OTP needed at the counter. They can open their card any time by signing in with whichever you use here."
     >
       <form
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          if (phone.trim().length >= 6) enroll.mutate();
+          if (identifier.trim().length >= 3) enroll.mutate();
         }}
       >
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-body">Phone number</label>
+          <label className="mb-1.5 block text-[13px] font-medium text-body">
+            Phone number or email
+          </label>
           <Input
             autoFocus
-            inputMode="tel"
-            placeholder="+91 98765 43210"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+91 98765 43210 or name@example.com"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
           />
         </div>
         <div>
@@ -625,7 +626,7 @@ function EnrollModal({
           <Button
             type="submit"
             variant="brand"
-            disabled={phone.trim().length < 6}
+            disabled={identifier.trim().length < 3}
             loading={enroll.isPending}
           >
             <UserPlus className="size-4" /> Enrol
@@ -719,7 +720,7 @@ function CustomerResult({
               )}
             </p>
             <p className="mt-0.5 text-[13px] text-muted">
-              {formatPhone(m.customer.phone)} · <span className="font-mono">{m.formattedCode}</span>
+              {m.customer.contact} · <span className="font-mono">{m.formattedCode}</span>
               {m.lastStampAt && <> · last stamp {timeAgo(m.lastStampAt)}</>}
             </p>
             <div className="mt-3">

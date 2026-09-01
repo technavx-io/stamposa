@@ -121,7 +121,7 @@ export default function AdminCustomerLookupPage() {
                 </div>
                 <div>
                   <p className="font-mono text-[10.5px] tracking-wider text-slate-500 uppercase">Phone</p>
-                  <p className="mt-0.5 text-sm text-slate-900">{formatPhone(result.customer.phone)}</p>
+                  <p className="mt-0.5 text-sm text-slate-900">{result.customer.contact}</p>
                 </div>
                 <div>
                   <p className="font-mono text-[10.5px] tracking-wider text-slate-500 uppercase">Joined</p>
@@ -166,7 +166,7 @@ export default function AdminCustomerLookupPage() {
           open={eraseOpen}
           onClose={() => setEraseOpen(false)}
           customerId={result.customer.id}
-          customerLabel={result.customer.name ?? formatPhone(result.customer.phone)}
+          customerLabel={result.customer.name ?? result.customer.contact}
           membershipCount={result.customer.memberships.length}
           onErased={() => {
             setEraseOpen(false);

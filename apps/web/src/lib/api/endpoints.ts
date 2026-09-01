@@ -59,10 +59,12 @@ function sessionApi(client: ApiClient) {
 
 export function authApi(role: ActorRole, client: ApiClient) {
   return {
-    requestOtp: (phone: string) =>
-      client.post<OtpRequested>(`/auth/${rolePath[role]}/otp/request`, { phone }, { anonymous: true }),
-    verifyOtp: (phone: string, code: string) =>
-      client.post<AuthResult>(`/auth/${rolePath[role]}/otp/verify`, { phone, code }, { anonymous: true }),
+    // `identifier` is a phone number or an email address — customers may use
+    // either, which is what lets them sign in before SMS delivery exists.
+    requestOtp: (identifier: string) =>
+      client.post<OtpRequested>(`/auth/${rolePath[role]}/otp/request`, { identifier }, { anonymous: true }),
+    verifyOtp: (identifier: string, code: string) =>
+      client.post<AuthResult>(`/auth/${rolePath[role]}/otp/verify`, { identifier, code }, { anonymous: true }),
     register: (registrationToken: string, name: string) =>
       client.post<AuthSession>(`/auth/${rolePath[role]}/register`, { registrationToken, name }, { anonymous: true }),
     me: () => client.get<Me>('/auth/me'),
@@ -293,7 +295,7 @@ export const staffApi = {
     staffClient.post<AddStampResult>('/staff/stamps', { membershipId }),
   undoStamp: (membershipId: string) =>
     staffClient.post<UndoStampResult>('/staff/stamps/undo', { membershipId }),
-  enroll: (data: { phone: string; name?: string; marketingConsent?: boolean }) =>
+  enroll: (data: { identifier: string; name?: string; marketingConsent?: boolean }) =>
     staffClient.post<EnrollResult>('/staff/enroll', data),
   today: () => staffClient.get<TodaySummary>('/staff/today'),
   redeem: (input: { redemptionId?: string; code?: string }) =>

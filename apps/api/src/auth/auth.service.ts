@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { conflict, forbidden, notFound, unauthorized } from '../common/exceptions';
+import { badRequest, conflict, forbidden, notFound, unauthorized } from '../common/exceptions';
 import { PasswordService } from '../common/password.service';
 import { PhoneService } from '../common/phone.service';
 import { AppConfigService } from '../config/app-config.service';
@@ -18,6 +18,7 @@ import {
 import { EmailVerificationService } from './email-verification.service';
 import { OtpService } from './otp.service';
 import { TokenService } from './token.service';
+import { Identifier, IdentifierService } from '../common/identifier.service';
 
 interface ActorRecord {
   id: string;
@@ -33,6 +34,7 @@ export class AuthService {
     private readonly otp: OtpService,
     private readonly tokens: TokenService,
     private readonly phones: PhoneService,
+    private readonly identifiers: IdentifierService,
     private readonly passwords: PasswordService,
     private readonly config: AppConfigService,
     private readonly emailVerification: EmailVerificationService,
@@ -153,8 +155,9 @@ export class AuthService {
 
   // ── Customer: phone + OTP (unchanged) ─────────────────────────────────
 
-  async requestOtp(role: ActorRole, rawPhone: string): Promise<OtpRequestedDto> {
-    const phone = this.phones.normalize(rawPhone);
+  async requestOtp(role: ActorRole, rawIdentifier: string): Promise<OtpRequestedDto> {
+    const identifier = this.resolveIdentifier(role, rawIdentifier);
+    const phone = identifier.value;
 
     if (role === 'STAFF') {
       // Staff accounts are created by merchants — fail before sending SMS.
@@ -194,12 +197,13 @@ export class AuthService {
       }
     }
 
-    return this.otp.requestCode(role, phone);
+    return this.otp.requestCode(role, identifier);
   }
 
-  async verifyOtp(role: ActorRole, rawPhone: string, code: string): Promise<AuthResultDto> {
-    const phone = this.phones.normalize(rawPhone);
-    await this.otp.verifyCode(role, phone, code);
+  async verifyOtp(role: ActorRole, rawIdentifier: string, code: string): Promise<AuthResultDto> {
+    const identifier = this.resolveIdentifier(role, rawIdentifier);
+    const phone = identifier.value;
+    await this.otp.verifyCode(role, identifier, code);
 
     switch (role) {
       case 'MERCHANT': {
@@ -211,8 +215,11 @@ export class AuthService {
         return this.authenticated(role, merchant, merchant.business);
       }
       case 'CUSTOMER': {
-        const customer = await this.prisma.customer.findUnique({ where: { phone } });
-        if (!customer) return this.registrationRequired(role, phone);
+        // Look up by whichever identity they signed in with.
+        const customer = await this.prisma.customer.findUnique({
+          where: this.identifiers.whereClause(identifier),
+        });
+        if (!customer) return this.registrationRequired(role, identifier.value);
         return this.authenticated(role, customer, null);
       }
       case 'STAFF': {
@@ -250,13 +257,23 @@ export class AuthService {
   }
 
   async registerCustomer(registrationToken: string, name: string): Promise<AuthSessionDto> {
-    const phone = await this.tokens.verifyRegistrationToken(registrationToken, 'CUSTOMER');
+    // The token carries the verified identifier verbatim. It is self-describing
+    // — an email contains "@" — so no token format change was needed to support
+    // both kinds.
+    const verified = await this.tokens.verifyRegistrationToken(registrationToken, 'CUSTOMER');
+    const identifier = this.identifiers.normalize(verified);
+    const identity =
+      identifier.kind === 'PHONE' ? { phone: identifier.value } : { email: identifier.value };
+
     try {
-      const customer = await this.prisma.customer.create({ data: { phone, name } });
+      const customer = await this.prisma.customer.create({ data: { ...identity, name } });
       return this.buildSession('CUSTOMER', customer, null);
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        const customer = await this.prisma.customer.findUniqueOrThrow({ where: { phone } });
+        // Registered in a parallel request — treat as login.
+        const customer = await this.prisma.customer.findUniqueOrThrow({
+          where: this.identifiers.whereClause(identifier),
+        });
         return this.buildSession('CUSTOMER', customer, null);
       }
       throw e;
@@ -296,6 +313,24 @@ export class AuthService {
           business: null,
         };
     }
+  }
+
+  /**
+   * Customers may identify with a phone number OR an email address. Staff and
+   * merchants stay phone-only on this path: both already have email+password
+   * sign-in, and their accounts are created by someone else (a merchant adds
+   * staff; a merchant signs up with a verified email), so an email-OTP route
+   * for them would be a second, weaker way into the same account.
+   */
+  private resolveIdentifier(role: ActorRole, raw: string): Identifier {
+    const identifier = this.identifiers.normalize(raw);
+    if (role !== 'CUSTOMER' && identifier.kind === 'EMAIL') {
+      throw badRequest(
+        'PHONE_REQUIRED',
+        'Enter your phone number, or sign in with your email and password instead.',
+      );
+    }
+    return identifier;
   }
 
   private async registrationRequired(role: ActorRole, phone: string): Promise<AuthResultDto> {

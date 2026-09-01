@@ -104,7 +104,7 @@ async function main() {
     const customer = await prisma.customer.create({
       data: { phone: spec.phone, name: spec.name },
     });
-    customers.push({ id: customer.id, phone: customer.phone });
+    customers.push({ id: customer.id, phone: spec.phone });
 
     // Spread the customer's stamps over the past ~45 days, oldest first.
     const stampDays = Array.from({ length: spec.totalStamps }, () => Math.floor(rand() * 45))

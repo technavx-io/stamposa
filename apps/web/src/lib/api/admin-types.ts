@@ -195,7 +195,9 @@ export interface CustomerLookupResult {
   customer: {
     id: string;
     name: string | null;
-    phone: string;
+    phone: string | null;
+    email: string | null;
+    contact: string;
     erasedAt: string | null;
     joinedAt: string;
     memberships: {

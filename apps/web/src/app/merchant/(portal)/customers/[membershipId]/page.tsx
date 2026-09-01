@@ -150,7 +150,7 @@ export default function CustomerDetailPage({
             {m.customer.name ?? 'Unnamed customer'}
           </h1>
           <p className="mt-0.5 text-sm text-muted">
-            {formatPhone(m.customer.phone)} · <span className="font-mono">{m.formattedCode}</span> ·
+            {m.customer.contact} · <span className="font-mono">{m.formattedCode}</span> ·
             joined {formatDate(m.joinedAt)}
           </p>
         </div>

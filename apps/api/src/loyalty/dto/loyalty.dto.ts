@@ -160,8 +160,19 @@ export class CustomerSummaryDto {
   @ApiProperty({ nullable: true, type: String })
   name: string | null;
 
-  @ApiProperty({ example: '+919876501101' })
-  phone: string;
+  @ApiProperty({ nullable: true, type: String, example: '+919876501101' })
+  phone: string | null;
+
+  @ApiProperty({ nullable: true, type: String, example: 'ami@example.com' })
+  email: string | null;
+
+  /**
+   * Whichever identity this customer actually has, ready to display. Exactly
+   * one of phone/email is guaranteed present (enforced by a CHECK constraint),
+   * but which one varies — so the UI renders this rather than deciding.
+   */
+  @ApiProperty({ example: '+91 98765 01101' })
+  contact: string;
 }
 
 export class MembershipListItemDto {
