@@ -16,6 +16,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { ThemeToggleCompact } from '@/components/ui/theme-toggle';
 
+import { appHref } from '@/lib/hosts';
+
 export const metadata: Metadata = {
   title: 'Guide',
   description:
@@ -547,7 +549,7 @@ export default function GuidePage() {
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggleCompact />
-            <Link href="/merchant/login">
+            <Link href={appHref("/merchant/login")}>
               <Button variant="brand" size="sm" className="whitespace-nowrap">Sign in</Button>
             </Link>
           </div>
@@ -625,11 +627,11 @@ export default function GuidePage() {
             <p className="mt-2 text-[13px] text-muted">Collect stamps. Earn rewards. No app needed.</p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-body">
-            <Link href="/merchant/login" className="transition-colors hover:text-strong">
+            <Link href={appHref("/merchant/login")} className="transition-colors hover:text-strong">
               <Store className="mr-1.5 inline size-3.5" aria-hidden />Merchant sign in
             </Link>
-            <Link href="/staff/login" className="transition-colors hover:text-strong">Staff login</Link>
-            <Link href="/my-cards" className="transition-colors hover:text-strong">My cards</Link>
+            <Link href={appHref("/staff/login")} className="transition-colors hover:text-strong">Staff login</Link>
+            <Link href={appHref("/my-cards")} className="transition-colors hover:text-strong">My cards</Link>
           </nav>
         </div>
       </footer>

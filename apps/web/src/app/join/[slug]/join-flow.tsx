@@ -17,6 +17,8 @@ import { EmptyState, PageLoader, Panel } from '@/components/ui/surface';
 import { StampGrid } from '@/components/stamp-grid';
 import { joinBackground } from '@/lib/card-bg';
 
+import { siteHref } from '@/lib/hosts';
+
 export function JoinFlow({ slug }: { slug: string }) {
   const router = useRouter();
   const { session, ready } = useStoredSession('CUSTOMER');
@@ -54,7 +56,7 @@ export function JoinFlow({ slug }: { slug: string }) {
             title="Business not found"
             description="This join link doesn't exist. Double-check the QR code or ask the business for a new one."
             action={
-              <Link href="/" className="text-sm font-medium text-brand-600">
+              <Link href={siteHref("/")} className="text-sm font-medium text-brand-600">
                 Go home
               </Link>
             }

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Stamp } from 'lucide-react';
 
+import { siteHref } from '@/lib/hosts';
+
 /** Centered narrow layout for login/onboarding screens. */
 export function AuthShell({
   children,
@@ -14,7 +16,7 @@ export function AuthShell({
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-5">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-strong">
+        <Link href={siteHref("/")} className="flex items-center gap-2 font-semibold tracking-tight text-strong">
           <span className="flex size-8 items-center justify-center rounded-lg bg-brand-600 text-white">
             <Stamp className="size-4" />
           </span>

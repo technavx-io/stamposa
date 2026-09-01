@@ -22,6 +22,8 @@ import { ThemeToggleCompact } from '@/components/ui/theme-toggle';
 import { CounterDemo } from '@/components/marketing/counter-demo';
 import { StampDemo } from '@/components/marketing/stamp-demo';
 
+import { appHref } from '@/lib/hosts';
+
 /** Everything a shop gets, grouped by the person who touches it. */
 const roles = [
   {
@@ -106,10 +108,10 @@ export default function LandingPage() {
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggleCompact />
-            <Link href="/staff/login">
+            <Link href={appHref("/staff/login")}>
               <Button variant="ghost" size="sm" className="whitespace-nowrap">Staff login</Button>
             </Link>
-            <Link href="/merchant/login">
+            <Link href={appHref("/merchant/login")}>
               <Button variant="brand" size="sm" className="whitespace-nowrap">Merchant sign in</Button>
             </Link>
           </div>
@@ -132,12 +134,12 @@ export default function LandingPage() {
             customer list.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/merchant/login">
+            <Link href={appHref("/merchant/login")}>
               <Button variant="brand" size="lg" className="rounded-xl">
                 Start your program <ArrowRight className="size-4" />
               </Button>
             </Link>
-            <Link href="/join/brew-and-bean">
+            <Link href={appHref("/join/brew-and-bean")}>
               <Button variant="secondary" size="lg" className="rounded-xl">
                 <ScanLine className="size-4" /> Try a demo card
               </Button>
@@ -325,7 +327,7 @@ export default function LandingPage() {
               counted in your own timezone, so a late close does not split one night in two.
             </p>
             <Link
-              href="/merchant/login"
+              href={appHref("/merchant/login")}
               className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-brand-600 transition-colors hover:text-brand-700"
             >
               See it with demo data <ArrowRight className="size-4" />
@@ -421,12 +423,12 @@ export default function LandingPage() {
             Set up your card, print the QR, and stamp your first customer today.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/merchant/login">
+            <Link href={appHref("/merchant/login")}>
               <Button variant="brand" size="lg" className="rounded-xl">
                 Start your program <ArrowRight className="size-4" />
               </Button>
             </Link>
-            <Link href="/join/brew-and-bean">
+            <Link href={appHref("/join/brew-and-bean")}>
               <Button
                 size="lg"
                 className="rounded-xl border border-white/25 bg-transparent text-white hover:bg-white/10"
@@ -456,13 +458,13 @@ export default function LandingPage() {
             <Link href="/guide" className="transition-colors hover:text-strong">
               <BookOpen className="mr-1.5 inline size-3.5" aria-hidden />Guide
             </Link>
-            <Link href="/merchant/login" className="transition-colors hover:text-strong">
+            <Link href={appHref("/merchant/login")} className="transition-colors hover:text-strong">
               <Store className="mr-1.5 inline size-3.5" aria-hidden />Merchant sign in
             </Link>
-            <Link href="/staff/login" className="transition-colors hover:text-strong">
+            <Link href={appHref("/staff/login")} className="transition-colors hover:text-strong">
               Staff login
             </Link>
-            <Link href="/my-cards" className="transition-colors hover:text-strong">
+            <Link href={appHref("/my-cards")} className="transition-colors hover:text-strong">
               My cards
             </Link>
           </nav>

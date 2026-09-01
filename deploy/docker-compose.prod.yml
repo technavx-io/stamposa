@@ -118,6 +118,8 @@ services:
         NEXT_PUBLIC_API_URL: https://${API_DOMAIN}
         NEXT_PUBLIC_DEFAULT_PHONE_REGION: ${DEFAULT_PHONE_REGION:-IN}
         NEXT_PUBLIC_SENTRY_DSN: ${WEB_SENTRY_DSN:-}
+        NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN}
+        NEXT_PUBLIC_APP_URL: https://${PORTAL_DOMAIN:-app.${APP_DOMAIN}}
     restart: unless-stopped
     depends_on:
       - api
