@@ -39,3 +39,6 @@ deploy/.env.production
 
 # CI workflow — needs a workflow-scoped token to push; kept local for now
 .github/workflows/
+
+# Local editor/agent tooling (launch.json points at machine-specific paths).
+.claude/
