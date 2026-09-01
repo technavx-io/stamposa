@@ -26,7 +26,17 @@ echo "→ Starting data stores…"
 echo "→ Applying database migrations…"
 "${COMPOSE[@]}" --profile tools run --rm migrate
 
+echo "→ Ensuring platform-admin accounts exist…"
+"${COMPOSE[@]}" --profile tools run --rm seed-admins
+
 if [ "${1:-}" = "--seed" ]; then
+  echo "⚠  --seed runs the DEVELOPMENT seed: it WIPES ALL DATA and inserts demo"
+  echo "   tenants (Brew & Bean, Glow Salon). Never run this on a live database."
+  read -r -p "   Type 'wipe' to proceed, anything else to abort: " confirm
+  if [ "$confirm" != "wipe" ]; then
+    echo "   Aborted — nothing was wiped."
+    exit 1
+  fi
   echo "→ Seeding demo data…"
   "${COMPOSE[@]}" --profile tools run --rm seed
 fi

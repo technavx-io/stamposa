@@ -92,6 +92,24 @@ services:
       postgres:
         condition: service_healthy
 
+  # Idempotent, non-destructive: creates the three platform-admin accounts if
+  # missing (no wipe, no demo data). deploy.sh runs this on every deploy; the
+  # initial password comes from SEED_ADMIN_PASSWORD in .env.production.
+  seed-admins:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+      target: build
+    profiles: ['tools']
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://loyalty:${POSTGRES_PASSWORD}@postgres:5432/loyalty_platform?schema=public
+    working_dir: /repo
+    command: ['npm', 'run', '-w', 'apps/api', 'prisma:seed:admins']
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   web:
     build:
       context: ..
