@@ -158,4 +158,14 @@ describe('GoogleWalletService builders', () => {
     expect(cls.programName).toBe('Coffee Card');
     expect(cls.programLogo.sourceUri.uri).toBe('https://api.example.com/uploads/logos/x.png');
   });
+
+  it('falls back to the bundled Stamposa logo when the business has none', () => {
+    // Google Wallet rejects a class with no programLogo, so a logo-less
+    // merchant must still get a valid (branded) default — otherwise their
+    // customers' passes silently never load.
+    const m = membership();
+    const cls = service.buildClass({ ...m.business, logoPath: null }, m.campaign) as any;
+    expect(cls.programLogo.sourceUri.uri).toBe('https://api.example.com/assets/wallet/logo.png');
+    expect(cls.programLogo.contentDescription.defaultValue.value).toBe('Stamposa');
+  });
 });

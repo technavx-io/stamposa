@@ -64,16 +64,25 @@ export class GoogleWalletService {
       reviewStatus: 'UNDER_REVIEW',
       hexBackgroundColor: business.brandColor ?? '#4F46E5',
       countryCode: 'IN',
-      ...(business.logoPath
-        ? {
-            programLogo: {
-              sourceUri: { uri: `${this.config.apiPublicUrl}${business.logoPath}` },
-              contentDescription: {
-                defaultValue: { language: 'en', value: `${business.name} logo` },
-              },
-            },
-          }
-        : {}),
+      // Google Wallet REQUIRES a program logo — a class without one is rejected
+      // outright ("LoyaltyClass cannot be created without a program logo"), and
+      // the pass then never loads. Use the merchant's own logo when they have
+      // uploaded one, otherwise fall back to the bundled Stamposa mark served at
+      // /assets/wallet/logo.png. Google fetches this URL server-side, so it must
+      // be publicly reachable over HTTPS.
+      programLogo: {
+        sourceUri: {
+          uri: business.logoPath
+            ? `${this.config.apiPublicUrl}${business.logoPath}`
+            : `${this.config.apiPublicUrl}/assets/wallet/logo.png`,
+        },
+        contentDescription: {
+          defaultValue: {
+            language: 'en',
+            value: business.logoPath ? `${business.name} logo` : 'Stamposa',
+          },
+        },
+      },
     };
   }
 

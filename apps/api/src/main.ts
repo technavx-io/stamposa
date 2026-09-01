@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { badRequest } from './common/exceptions';
 import { AppConfigService } from './config/app-config.service';
 import { BUILD_INFO } from './config/version';
+import { join } from 'node:path';
 
 function flattenValidationErrors(errors: ValidationError[], parent = ''): string[] {
   return errors.flatMap((error) => {
@@ -55,6 +56,14 @@ async function bootstrap(): Promise<void> {
   });
 
   app.use('/uploads', express.static(config.uploadDir, { index: false, maxAge: '7d' }));
+
+  // Bundled brand assets (e.g. the default wallet program logo Google fetches
+  // when a merchant hasn't uploaded their own). Shipped inside the image, so
+  // the path is relative to the compiled app, not the uploads volume.
+  app.use(
+    '/assets',
+    express.static(join(process.cwd(), 'assets'), { index: false, maxAge: '30d' }),
+  );
 
   app.setGlobalPrefix('v1');
 
