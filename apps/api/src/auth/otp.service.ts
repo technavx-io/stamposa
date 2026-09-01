@@ -4,6 +4,7 @@ import { badRequest, serviceUnavailable, tooManyRequests } from '../common/excep
 import { Identifier } from '../common/identifier.service';
 import { AppConfigService } from '../config/app-config.service';
 import { EMAIL_PROVIDER, EmailProvider } from '../email/email.types';
+import { verificationCodeEmail } from '../email/email-templates';
 import { RedisService } from '../redis/redis.service';
 import { SMS_PROVIDER, SmsProvider } from '../sms/sms.types';
 import { ActorRole } from './auth.types';
@@ -75,15 +76,25 @@ export class OtpService {
     const stored: StoredOtp = { hash: this.hash(target, code), attempts: 0 };
     await this.redis.setWithTtl(this.key('code', role, target), JSON.stringify(stored), OTP_TTL_SEC);
 
-    const message = `${code} is your Stamposa verification code. It expires in 5 minutes.`;
     try {
       if (identifier.kind === 'PHONE') {
-        await this.sms.sendOtp(target, code, message);
+        // DLT-approved SMS templates are plain text with the code as a variable.
+        await this.sms.sendOtp(
+          target,
+          code,
+          `${code} is your Stamposa verification code. It expires in 5 minutes.`,
+        );
       } else {
+        const mail = verificationCodeEmail({
+          code,
+          expiresMin: Math.round(OTP_TTL_SEC / 60),
+          purpose: 'signin',
+        });
         await this.email.sendEmail({
           to: target,
-          subject: `${code} is your Stamposa sign-in code`,
-          text: `${message}\n\nIf you didn't try to sign in to Stamposa, you can ignore this email.`,
+          subject: mail.subject,
+          text: mail.text,
+          html: mail.html,
         });
       }
     } catch {

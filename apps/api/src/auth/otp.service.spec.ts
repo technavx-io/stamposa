@@ -142,8 +142,14 @@ describe('OtpService', () => {
         to: EMAIL.value,
         subject: expect.stringContaining(result.devCode!),
         text: expect.stringContaining(result.devCode!),
+        // The email must carry an HTML part with the code, or recipients get a
+        // bare plain-text fallback — the whole reason for the template.
+        html: expect.stringContaining(result.devCode!),
       }),
     );
+    const { html } = email.sendEmail.mock.calls[0][0];
+    expect(html).toContain('<!doctype html>');
+    expect(html).toContain('Stamposa');
     expect(sms.sendOtp).not.toHaveBeenCalled();
   });
 

@@ -4,6 +4,7 @@ import { badRequest, serviceUnavailable, tooManyRequests } from '../common/excep
 import { AppConfigService } from '../config/app-config.service';
 import { EMAIL_PROVIDER, EmailProvider } from '../email/email.types';
 import { RedisService } from '../redis/redis.service';
+import { verificationCodeEmail } from '../email/email-templates';
 
 const CODE_TTL_SEC = 900; // 15 min — email is slower to reach than SMS
 const RESEND_COOLDOWN_SEC = 60;
@@ -63,11 +64,12 @@ export class EmailVerificationService {
     await this.redis.setWithTtl(this.key('code', email), JSON.stringify(stored), CODE_TTL_SEC);
 
     try {
-      await this.email.sendEmail({
-        to: email,
-        subject: `${code} is your Stamposa verification code`,
-        text: `Welcome to Stamposa!\n\nYour verification code is ${code}. It expires in 15 minutes.\n\nIf you didn't create a Stamposa account, you can ignore this email.`,
+      const mail = verificationCodeEmail({
+        code,
+        expiresMin: Math.round(CODE_TTL_SEC / 60),
+        purpose: 'signup',
       });
+      await this.email.sendEmail({ to: email, subject: mail.subject, text: mail.text, html: mail.html });
     } catch {
       // A failed send must not lock the person out: clear the code and the
       // resend cooldown so tapping "resend" works immediately.
