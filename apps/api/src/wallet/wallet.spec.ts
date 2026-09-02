@@ -207,4 +207,35 @@ describe('renderStampCard', () => {
       renderStampCard({ stampCount: 10, stampsRequired: 10, brandColorHex: '#0D9488', width: 400, height: 200 }),
     ).not.toThrow();
   });
+
+  it('composites the merchant stamp + reward emoji when set', () => {
+    // A café's ☕ / 🎁 card — the composite path (bundled Twemoji PNGs) must run
+    // and still yield a valid image.
+    const png = renderStampCard({
+      stampCount: 3,
+      stampsRequired: 6,
+      brandColorHex: '#6D4534',
+      width: 1032,
+      height: 336,
+      stampIcon: '☕',
+      rewardIcon: '🎁',
+    });
+    expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    expect(png.readUInt32BE(16)).toBe(1032);
+  });
+
+  it('falls back to a plain disc for an emoji outside the bundled set', () => {
+    // Not a preset (and no bundled PNG): must degrade to the disc, not throw.
+    expect(() =>
+      renderStampCard({
+        stampCount: 2,
+        stampsRequired: 4,
+        brandColorHex: '#4F46E5',
+        width: 400,
+        height: 200,
+        stampIcon: '🦄',
+        rewardIcon: '🛸',
+      }),
+    ).not.toThrow();
+  });
 });

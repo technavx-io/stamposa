@@ -6,8 +6,10 @@ import { notFound } from '../common/exceptions';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplePassService, PassMembership } from './apple-pass.service';
 import { renderStampCard } from './stamp-card-image';
+import { AppConfigService } from '../config/app-config.service';
 import { ApplePushService } from './apple-push.service';
 import { GoogleWalletService } from './google-wallet.service';
+import { resolveCardStyle } from '../loyalty/card-style.util';
 
 /**
  * Ties the two wallets to the loyalty domain. Loyalty services call
@@ -25,6 +27,7 @@ export class WalletService {
     private readonly apple: ApplePassService,
     private readonly google: GoogleWalletService,
     private readonly push: ApplePushService,
+    private readonly config: AppConfigService,
   ) {}
 
   availability() {
@@ -55,10 +58,13 @@ export class WalletService {
   /** The stamp-progress banner PNG for a card — the Google hero image. */
   async heroImage(membershipId: string): Promise<Buffer> {
     const m = await this.passMembership(membershipId);
+    const style = resolveCardStyle(m.campaign, m.business, this.config.apiPublicUrl);
     return renderStampCard({
       stampCount: m.stampCount,
       stampsRequired: m.campaign.stampsRequired,
-      brandColorHex: m.business.brandColor ?? '#4F46E5',
+      brandColorHex: style.color,
+      stampIcon: style.stampIcon,
+      rewardIcon: style.rewardIcon,
       width: 1032,
       height: 336,
     });

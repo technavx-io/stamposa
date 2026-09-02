@@ -8,6 +8,7 @@ import forge from 'node-forge';
 import { AppConfigService } from '../config/app-config.service';
 import { renderStampCard } from './stamp-card-image';
 import { formatCode } from '../common/utils/codes.util';
+import { resolveCardStyle } from '../loyalty/card-style.util';
 
 export type PassMembership = CustomerMembership & {
   business: Business;
@@ -191,11 +192,13 @@ export class ApplePassService {
    * matches the count. Apple picks @2x or @3x by device; both are provided.
    */
   private stripAssets(m: PassMembership): Record<string, Buffer> {
-    const brand = m.business.brandColor ?? '#4F46E5';
+    const style = resolveCardStyle(m.campaign, m.business, this.config.apiPublicUrl);
     const args = {
       stampCount: m.stampCount,
       stampsRequired: m.campaign.stampsRequired,
-      brandColorHex: brand,
+      brandColorHex: style.color,
+      stampIcon: style.stampIcon,
+      rewardIcon: style.rewardIcon,
     };
     // Apple store-card strip is 375x123pt.
     return {
