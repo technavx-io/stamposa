@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { PHONE_AUTH_ENABLED } from '@/lib/features';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Gift, LogOut, WalletCards } from 'lucide-react';
@@ -31,7 +32,7 @@ export default function MyCardsPage() {
           <OtpLogin
             role="CUSTOMER"
             title="My loyalty cards"
-            subtitle="Verify your phone or email to see every card you've collected."
+            subtitle={PHONE_AUTH_ENABLED ? "Verify your phone or email to see every card you've collected." : "Verify your email to see every card you've collected."}
             allowRegistration
             onAuthenticated={() => undefined}
           />

@@ -9,6 +9,7 @@ import { authApi } from '@/lib/api/endpoints';
 import type { ActorRole, AuthSession } from '@/lib/api/types';
 import { sessionFor } from '@/lib/auth/session';
 import { formatPhone } from '@/lib/utils';
+import { PHONE_AUTH_ENABLED } from '@/lib/features';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 import { OtpInput } from '@/components/ui/otp-input';
@@ -71,9 +72,10 @@ export function OtpLogin({
 
     // Anything with an "@" is an email attempt; otherwise validate it as a
     // phone number here so the person gets an immediate, specific error
-    // instead of a round trip. The server normalises either way.
+    // instead of a round trip. The server normalises either way. When phone
+    // sign-in is disabled (no SMS gateway yet), only email is accepted.
     let value: string;
-    if (raw.includes('@')) {
+    if (raw.includes('@') || !PHONE_AUTH_ENABLED) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
         setError('Enter a valid email address.');
         return;
@@ -114,7 +116,7 @@ export function OtpLogin({
         finish(result.session);
       } else if (result.registrationToken) {
         if (!allowRegistration) {
-          setError('No account found for that phone number or email.');
+          setError(PHONE_AUTH_ENABLED ? 'No account found for that phone number or email.' : 'No account found for that email.');
           return;
         }
         setRegistrationToken(result.registrationToken);
@@ -167,9 +169,13 @@ export function OtpLogin({
           }}
         >
           <Field
-            label="Phone number or email"
+            label={PHONE_AUTH_ENABLED ? "Phone number or email" : "Email address"}
             error={error ?? undefined}
-            hint={`Numbers without a country code are treated as ${DEFAULT_REGION === 'IN' ? '+91 (India)' : DEFAULT_REGION}.`}
+            hint={
+              PHONE_AUTH_ENABLED
+                ? `Numbers without a country code are treated as ${DEFAULT_REGION === 'IN' ? '+91 (India)' : DEFAULT_REGION}.`
+                : undefined
+            }
           >
             {(p) => (
               <Input
@@ -177,7 +183,7 @@ export function OtpLogin({
                 type="text"
                 inputMode="email"
                 autoComplete="username"
-                placeholder="+91 98765 43210"
+                placeholder={PHONE_AUTH_ENABLED ? "+91 98765 43210" : "you@example.com"}
                 value={identifierInput}
                 onChange={(e) => setIdentifierInput(e.target.value)}
                 autoFocus

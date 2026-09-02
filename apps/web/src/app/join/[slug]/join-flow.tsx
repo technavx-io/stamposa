@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { PHONE_AUTH_ENABLED } from '@/lib/features';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -148,14 +149,14 @@ export function JoinFlow({ slug }: { slug: string }) {
                 setSwitching(false);
               }}
             >
-              Use a different phone or email
+              {PHONE_AUTH_ENABLED ? 'Use a different phone or email' : 'Use a different email'}
             </button>
           </div>
         ) : (
           <>
             <OtpLogin
               role="CUSTOMER"
-              title="Join with your phone or email"
+              title={PHONE_AUTH_ENABLED ? "Join with your phone or email" : "Join with your email"}
               subtitle="One quick code — no app, no password, no spam."
               allowRegistration
               nameLabel="Your name"

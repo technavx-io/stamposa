@@ -1,6 +1,6 @@
 {
   "name": "stamposa",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "description": "Multi-tenant SaaS loyalty platform — Phase 1 (merchant portal, staff console, customer cards)",
   "workspaces": [

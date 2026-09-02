@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { PHONE_AUTH_ENABLED } from '@/lib/features';
 import { use, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Gift, RotateCcw, Stamp, Wallet, WalletCards } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function CardPage({ params }: { params: Promise<{ membershipId: s
           <OtpLogin
             role="CUSTOMER"
             title="Verify to view your card"
-            subtitle="Enter the phone number this card belongs to."
+            subtitle={PHONE_AUTH_ENABLED ? "Enter the phone number this card belongs to." : "Enter the email this card belongs to."}
             allowRegistration
             onAuthenticated={() => undefined}
           />
@@ -192,7 +193,7 @@ function LiveCard({ membershipId }: { membershipId: string }) {
         <Panel className="w-full max-w-sm">
           <EmptyState
             title="Card not found"
-            description="This card doesn't belong to the phone number you verified."
+            description={PHONE_AUTH_ENABLED ? "This card doesn't belong to the phone number you verified." : "This card doesn't belong to the email you verified."}
             action={
               <Link href="/my-cards" className="text-sm font-medium text-brand-600">
                 See my cards

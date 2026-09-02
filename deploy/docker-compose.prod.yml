@@ -126,6 +126,7 @@ services:
         NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-}
         NEXT_PUBLIC_GIT_SHA: ${GIT_SHA:-}
         NEXT_PUBLIC_BUILT_AT: ${BUILT_AT:-}
+        NEXT_PUBLIC_PHONE_AUTH_ENABLED: ${PHONE_AUTH_ENABLED:-false}
     restart: unless-stopped
     depends_on:
       - api
