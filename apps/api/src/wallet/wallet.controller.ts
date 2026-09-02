@@ -88,6 +88,29 @@ export class CustomerWalletController {
     }
     return this.wallet.googleSaveLink(membershipId, customer.id);
   }
+
+  /**
+   * The stamp-progress banner (Google's hero image). Public and unauthenticated
+   * because Google fetches it server-side — it can't present a customer token.
+   * It reveals only a stamp count for a hard-to-guess membership id, which the
+   * pass already shows; no name or personal data is in the image.
+   */
+  @Public()
+  @Get('hero.png')
+  @ApiExcludeEndpoint()
+  async heroImage(
+    @Param('membershipId') membershipId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const png = await this.wallet.heroImage(membershipId);
+    res.set({
+      'Content-Type': 'image/png',
+      // Short cache: the URL is cache-busted per stamp, but a small TTL avoids
+      // hammering the renderer if Google retries.
+      'Cache-Control': 'public, max-age=300',
+    });
+    res.send(png);
+  }
 }
 
 /**

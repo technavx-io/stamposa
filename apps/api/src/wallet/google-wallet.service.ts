@@ -99,6 +99,20 @@ export class GoogleWalletService {
         label: 'Stamps',
         balance: { string: `${m.stampCount} / ${m.campaign.stampsRequired}` },
       },
+      // The stamp-progress banner. The ?v= is the current count, so the URL
+      // changes when a stamp lands and Google re-fetches instead of serving a
+      // cached image. Google pulls this server-side, so it must be public.
+      heroImage: {
+        sourceUri: {
+          uri: `${this.config.apiPublicUrl}/v1/customer/cards/${m.id}/wallet/hero.png?v=${m.stampCount}`,
+        },
+        contentDescription: {
+          defaultValue: {
+            language: 'en',
+            value: `${m.stampCount} of ${m.campaign.stampsRequired} stamps collected`,
+          },
+        },
+      },
       secondaryLoyaltyPoints: {
         label: 'Rewards ready',
         balance: { string: `${pending}` },

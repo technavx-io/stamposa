@@ -1,6 +1,7 @@
 import { AppConfigService } from '../config/app-config.service';
 import { ApplePassService, hexToRgb, PassMembership } from './apple-pass.service';
 import { GoogleWalletService } from './google-wallet.service';
+import { renderStampCard } from './stamp-card-image';
 
 const fakeConfig = {
   apiPublicUrl: 'https://api.example.com',
@@ -103,7 +104,10 @@ describe('ApplePassService.buildPassJson', () => {
     expect(pass.webServiceURL).toBe('https://api.example.com/v1/wallet/apple');
     expect(pass.authenticationToken).toBe('tok123');
     expect(pass.backgroundColor).toBe('rgb(13,148,136)');
-    expect(pass.storeCard.primaryFields[0].value).toBe('4 of 10');
+    // Count moved to a header field so the strip image (the stamp visual) is
+    // the hero of the card rather than being overlaid by a big number.
+    expect(pass.storeCard.primaryFields).toEqual([]);
+    expect(pass.storeCard.headerFields[0].value).toBe('4/10');
     expect(pass.storeCard.secondaryFields[0].value).toBe('6 more · Free coffee');
     expect(pass.barcodes[0].message).toBe('AB2C-D3EF');
     expect(pass.storeCard.backFields.some((f: any) => f.key === 'terms')).toBe(true);
@@ -167,5 +171,40 @@ describe('GoogleWalletService builders', () => {
     const cls = service.buildClass({ ...m.business, logoPath: null }, m.campaign) as any;
     expect(cls.programLogo.sourceUri.uri).toBe('https://api.example.com/assets/wallet/logo.png');
     expect(cls.programLogo.contentDescription.defaultValue.value).toBe('Stamposa');
+  });
+
+  it('attaches a stamp-progress hero image, cache-busted by the count', () => {
+    const obj = service.buildObject(membership()) as any;
+    // The ?v= must be the current stamp count so Google re-fetches the banner
+    // when progress changes instead of serving a stale cached image.
+    expect(obj.heroImage.sourceUri.uri).toBe(
+      'https://api.example.com/v1/customer/cards/mem_1/wallet/hero.png?v=4',
+    );
+  });
+});
+
+describe('renderStampCard', () => {
+  it('produces a valid PNG (magic bytes) at the requested size', () => {
+    const png = renderStampCard({
+      stampCount: 3,
+      stampsRequired: 4,
+      brandColorHex: '#4F46E5',
+      width: 750,
+      height: 246,
+    });
+    // PNG signature.
+    expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    // IHDR width/height are big-endian uint32 at offsets 16 and 20.
+    expect(png.readUInt32BE(16)).toBe(750);
+    expect(png.readUInt32BE(20)).toBe(246);
+  });
+
+  it('handles a zero-progress card and a fully-stamped card without throwing', () => {
+    expect(() =>
+      renderStampCard({ stampCount: 0, stampsRequired: 8, brandColorHex: '#FBBF24', width: 400, height: 200 }),
+    ).not.toThrow();
+    expect(() =>
+      renderStampCard({ stampCount: 10, stampsRequired: 10, brandColorHex: '#0D9488', width: 400, height: 200 }),
+    ).not.toThrow();
   });
 });

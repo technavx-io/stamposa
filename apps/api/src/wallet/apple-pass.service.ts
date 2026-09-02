@@ -6,6 +6,7 @@ import { Business, Campaign, Customer, CustomerMembership, Redemption } from '@p
 import JSZip from 'jszip';
 import forge from 'node-forge';
 import { AppConfigService } from '../config/app-config.service';
+import { renderStampCard } from './stamp-card-image';
 import { formatCode } from '../common/utils/codes.util';
 
 export type PassMembership = CustomerMembership & {
@@ -54,13 +55,18 @@ export class ApplePassService {
       foregroundColor: 'rgb(255,255,255)',
       labelColor: 'rgb(255,255,255)',
       storeCard: {
-        primaryFields: [
+        // The stamp progress is shown visually in the strip image (a row of
+        // filled/empty stamps), so the count lives as a small header field in
+        // the top corner rather than as a big number that would sit on top of
+        // the strip.
+        headerFields: [
           {
             key: 'stamps',
             label: 'STAMPS',
-            value: `${m.stampCount} of ${m.campaign.stampsRequired}`,
+            value: `${m.stampCount}/${m.campaign.stampsRequired}`,
           },
         ],
+        primaryFields: [],
         secondaryFields: [
           pending > 0
             ? {
@@ -114,6 +120,7 @@ export class ApplePassService {
     const files: Record<string, Buffer> = {
       'pass.json': Buffer.from(JSON.stringify(this.buildPassJson(m, authToken)), 'utf8'),
       ...this.iconAssets(),
+      ...this.stripAssets(m),
     };
 
     const manifest: Record<string, string> = {};
@@ -175,6 +182,27 @@ export class ApplePassService {
       this.logger.log('Loaded wallet pass icon assets');
     }
     return this.icons;
+  }
+
+  /**
+   * The strip image is the punch card: a row of stamps rendered for this
+   * membership's current progress, in the merchant's brand colour. Regenerated
+   * on every pass build (and the pass rebuilds on every stamp), so it always
+   * matches the count. Apple picks @2x or @3x by device; both are provided.
+   */
+  private stripAssets(m: PassMembership): Record<string, Buffer> {
+    const brand = m.business.brandColor ?? '#4F46E5';
+    const args = {
+      stampCount: m.stampCount,
+      stampsRequired: m.campaign.stampsRequired,
+      brandColorHex: brand,
+    };
+    // Apple store-card strip is 375x123pt.
+    return {
+      'strip.png': renderStampCard({ ...args, width: 375, height: 123 }),
+      'strip@2x.png': renderStampCard({ ...args, width: 750, height: 246 }),
+      'strip@3x.png': renderStampCard({ ...args, width: 1125, height: 369 }),
+    };
   }
 }
 

@@ -5,6 +5,7 @@ import { RedemptionStatus } from '@prisma/client';
 import { notFound } from '../common/exceptions';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplePassService, PassMembership } from './apple-pass.service';
+import { renderStampCard } from './stamp-card-image';
 import { ApplePushService } from './apple-push.service';
 import { GoogleWalletService } from './google-wallet.service';
 
@@ -49,6 +50,18 @@ export class WalletService {
     });
     if (!m) throw notFound('CARD_NOT_FOUND', 'Card not found.');
     return m;
+  }
+
+  /** The stamp-progress banner PNG for a card — the Google hero image. */
+  async heroImage(membershipId: string): Promise<Buffer> {
+    const m = await this.passMembership(membershipId);
+    return renderStampCard({
+      stampCount: m.stampCount,
+      stampsRequired: m.campaign.stampsRequired,
+      brandColorHex: m.business.brandColor ?? '#4F46E5',
+      width: 1032,
+      height: 336,
+    });
   }
 
   /** The WalletPass row for a card, created on first use. */
