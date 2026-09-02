@@ -7,6 +7,7 @@ import {
   Check,
   Download,
   Gift,
+  Newspaper,
   QrCode,
   RotateCcw,
   ScanLine,
@@ -105,6 +106,7 @@ export default function LandingPage() {
             <a href="#roles" className="transition-colors hover:text-strong">What you get</a>
             <a href="#included" className="transition-colors hover:text-strong">Features</a>
             <Link href="/guide" className="transition-colors hover:text-strong">Guide</Link>
+            <Link href="/blog" className="transition-colors hover:text-strong">Blog</Link>
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggleCompact />
@@ -457,6 +459,9 @@ export default function LandingPage() {
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-body">
             <Link href="/guide" className="transition-colors hover:text-strong">
               <BookOpen className="mr-1.5 inline size-3.5" aria-hidden />Guide
+            </Link>
+            <Link href="/blog" className="transition-colors hover:text-strong">
+              <Newspaper className="mr-1.5 inline size-3.5" aria-hidden />Blog
             </Link>
             <Link href={appHref("/merchant/login")} className="transition-colors hover:text-strong">
               <Store className="mr-1.5 inline size-3.5" aria-hidden />Merchant sign in

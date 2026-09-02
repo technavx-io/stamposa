@@ -1,7 +1,8 @@
 /**
  * Two hostnames serve this one Next.js app:
  *
- *   stamposa.com      — the informational site. Only "/" and "/guide".
+ *   stamposa.com      — the informational site. Only "/", "/guide" and the
+ *                       blog ("/blog" and every post under it).
  *   app.stamposa.com  — everything a visitor performs: the merchant, staff and
  *                       admin portals, plus the customer surfaces (join, card,
  *                       my-cards).
@@ -18,11 +19,16 @@
 export const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL ?? '';
 export const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
-/** Paths that belong on the informational site. Everything else is the app. */
-export const SITE_PATHS = ['/', '/guide'] as const;
+/** Exact paths that belong on the informational site. */
+export const SITE_PATHS = ['/', '/guide', '/blog'] as const;
 
+/** Path prefixes whose whole subtree is informational (blog posts). */
+export const SITE_PREFIXES = ['/blog/'] as const;
+
+/** True when a path belongs on the informational site; everything else is the app. */
 export function isSitePath(pathname: string): boolean {
-  return (SITE_PATHS as readonly string[]).includes(pathname);
+  if ((SITE_PATHS as readonly string[]).includes(pathname)) return true;
+  return SITE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 /** Link to something a visitor performs — always on the app host. */

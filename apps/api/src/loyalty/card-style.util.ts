@@ -12,6 +12,8 @@ export interface CardStyle {
   rewardIcon: string | null;
   /** Absolute URL of the card background image, or null. */
   cardImageUrl: string | null;
+  /** The stored /uploads relative path of that image (for server-side reads), or null. */
+  cardImagePath: string | null;
   /** When an image is set: true tints it with the colour; false = image + scrim only. */
   imageTinted: boolean;
 }
@@ -36,19 +38,22 @@ export function resolveCardStyle(
   apiPublicUrl: string,
 ): CardStyle {
   let cardImageUrl: string | null = null;
+  let cardImagePath: string | null = null;
   let imageTinted = true;
   if (campaign.cardImagePath) {
-    cardImageUrl = `${apiPublicUrl}${campaign.cardImagePath}`;
+    cardImagePath = campaign.cardImagePath;
     imageTinted = campaign.cardImageTint;
   } else if (business.cardImagePath) {
-    cardImageUrl = `${apiPublicUrl}${business.cardImagePath}`;
+    cardImagePath = business.cardImagePath;
     imageTinted = business.cardImageTint;
   }
+  if (cardImagePath) cardImageUrl = `${apiPublicUrl}${cardImagePath}`;
   return {
     color: campaign.cardColor ?? business.brandColor ?? DEFAULT_CARD_COLOR,
     stampIcon: campaign.stampIcon ?? business.stampIcon ?? null,
     rewardIcon: campaign.rewardIcon ?? business.rewardIcon ?? null,
     cardImageUrl,
+    cardImagePath,
     imageTinted,
   };
 }

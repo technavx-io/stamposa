@@ -1,7 +1,7 @@
 import { AppConfigService } from '../config/app-config.service';
 import { ApplePassService, hexToRgb, PassMembership } from './apple-pass.service';
 import { GoogleWalletService } from './google-wallet.service';
-import { renderStampCard } from './stamp-card-image';
+import { renderStampCard, renderCardBanner } from './stamp-card-image';
 
 const fakeConfig = {
   apiPublicUrl: 'https://api.example.com',
@@ -237,5 +237,39 @@ describe('renderStampCard', () => {
         rewardIcon: '🛸',
       }),
     ).not.toThrow();
+  });
+
+
+  it('composites a background image (tinted and scrim) into a valid banner', async () => {
+    // A tiny solid PNG stands in for a merchant's uploaded card image.
+    const bg = renderStampCard({ stampCount: 0, stampsRequired: 1, brandColorHex: '#e11d48', width: 64, height: 64 });
+    for (const imageTinted of [true, false]) {
+      const png = await renderCardBanner({
+        stampCount: 2,
+        stampsRequired: 4,
+        brandColorHex: '#6D28D9',
+        width: 1032,
+        height: 336,
+        stampIcon: '☕',
+        rewardIcon: '🎁',
+        backgroundImage: bg,
+        imageTinted,
+      });
+      expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+      expect(png.readUInt32BE(16)).toBe(1032);
+    }
+  });
+
+  it('falls back to the gradient when the background image is undecodable', async () => {
+    const png = await renderCardBanner({
+      stampCount: 1,
+      stampsRequired: 4,
+      brandColorHex: '#4F46E5',
+      width: 400,
+      height: 200,
+      backgroundImage: Buffer.from('not an image'),
+      imageTinted: true,
+    });
+    expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
   });
 });

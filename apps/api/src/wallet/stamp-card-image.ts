@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 import { PNG } from 'pngjs';
+import sharp from 'sharp';
 
 /**
  * Renders the stamp progress as a PNG banner that mirrors the card the
@@ -28,6 +29,23 @@ interface RGB {
   r: number;
   g: number;
   b: number;
+}
+
+/**
+ * Read an uploaded card image (/uploads/...) from disk for compositing. Returns
+ * null if it's missing or escapes the uploads root — the renderer then falls
+ * back to the gradient rather than failing.
+ */
+export function readUploadedImage(uploadDir: string, publicPath: string): Buffer | null {
+  try {
+    const rel = publicPath.replace(/^\/uploads\//, '');
+    const abs = join(uploadDir, rel);
+    // Defence in depth: never read outside the uploads root.
+    if (!abs.startsWith(uploadDir)) return null;
+    return readFileSync(abs);
+  } catch {
+    return null;
+  }
 }
 
 const EMOJI_DIR = join(process.cwd(), 'assets', 'wallet', 'emoji');
@@ -96,15 +114,67 @@ export interface StampCardOptions {
 }
 
 export function renderStampCard(opts: StampCardOptions): Buffer {
-  const { width: W, height: H } = opts;
+  const png = new PNG({ width: opts.width, height: opts.height });
+  fillGradient(png, parseHex(opts.brandColorHex || '#4F46E5'));
+  drawStamps(png, opts);
+  return PNG.sync.write(png);
+}
+
+/**
+ * The async variant used in production: same stamp card, but when the merchant
+ * set a background image it is decoded (any of PNG/JPEG/WebP via sharp),
+ * cover-fit to the banner, and tinted or scrimmed for legibility before the
+ * stamps are drawn on top — mirroring the in-app card. Falls back to the brand
+ * gradient if there is no image or it can't be decoded, so a bad upload never
+ * breaks the pass.
+ */
+export async function renderCardBanner(
+  opts: StampCardOptions & { backgroundImage?: Buffer | null; imageTinted?: boolean },
+): Promise<Buffer> {
+  const png = new PNG({ width: opts.width, height: opts.height });
   const brand = parseHex(opts.brandColorHex || '#4F46E5');
-  const white: RGB = { r: 255, g: 255, b: 255 };
-  const amber: RGB = { r: 251, g: 191, b: 36 }; // reward accent (matches the app)
 
-  const png = new PNG({ width: W, height: H });
+  let painted = false;
+  if (opts.backgroundImage) {
+    try {
+      const W = opts.width;
+      const H = opts.height;
+      const tinted = opts.imageTinted !== false;
+      // Overlay: a brand wash when tinted (keeps the merchant's colour identity
+      // over the photo), or a plain dark scrim otherwise — either way dark
+      // enough that the white stamp discs stay legible.
+      const overlay = tinted
+        ? { r: brand.r, g: brand.g, b: brand.b, alpha: 0.5 }
+        : { r: 0, g: 0, b: 0, alpha: 0.34 };
+      const overlayPng = await sharp({
+        create: { width: W, height: H, channels: 4, background: overlay },
+      })
+        .png()
+        .toBuffer();
+      const composed = await sharp(opts.backgroundImage)
+        .resize(W, H, { fit: 'cover' })
+        .composite([{ input: overlayPng, blend: 'over' }])
+        .png()
+        .toBuffer();
+      const decoded = PNG.sync.read(composed);
+      // decoded is exactly WxH RGBA — copy it in as the base.
+      decoded.data.copy(png.data);
+      painted = true;
+    } catch {
+      painted = false; // fall through to the gradient
+    }
+  }
+  if (!painted) fillGradient(png, brand);
+  drawStamps(png, opts);
+  return PNG.sync.write(png);
+}
+
+/** Fill a fresh PNG with the brand gradient background. */
+function fillGradient(png: PNG, brand: RGB): void {
+  const W = png.width;
+  const H = png.height;
   const buf = png.data;
-
-  // Brand gradient background for depth.
+  const white: RGB = { r: 255, g: 255, b: 255 };
   const top = mix(brand, white, 0.06);
   const bottom = mix(brand, { r: 0, g: 0, b: 0 }, 0.08);
   for (let y = 0; y < H; y++) {
@@ -117,6 +187,15 @@ export function renderStampCard(opts: StampCardOptions): Buffer {
       buf[i + 3] = 255;
     }
   }
+}
+
+/** Draw the stamp row(s) onto a PNG that already has its background. */
+function drawStamps(png: PNG, opts: StampCardOptions): void {
+  const W = png.width;
+  const H = png.height;
+  const buf = png.data;
+  const white: RGB = { r: 255, g: 255, b: 255 };
+  const amber: RGB = { r: 251, g: 191, b: 36 };
 
   const total = Math.max(1, opts.stampsRequired);
   const collected = Math.max(0, Math.min(total, opts.stampCount));
@@ -165,17 +244,16 @@ export function renderStampCard(opts: StampCardOptions): Buffer {
     }
   };
 
-  // Composite an emoji (RGBA), bilinear-scaled to a box of side `d` centred at (cx,cy).
-  const drawEmoji = (img: RGBA, cx: number, cy: number, d: number, globalAlpha = 1) => {
-    const x0 = Math.round(cx - d / 2);
-    const y0 = Math.round(cy - d / 2);
-    for (let dy = 0; dy < d; dy++) {
-      const sy = ((dy + 0.5) / d) * img.height - 0.5;
+  const drawEmoji = (img: RGBA, cx: number, cy: number, dsize: number, globalAlpha = 1) => {
+    const x0 = Math.round(cx - dsize / 2);
+    const y0 = Math.round(cy - dsize / 2);
+    for (let dy = 0; dy < dsize; dy++) {
+      const sy = ((dy + 0.5) / dsize) * img.height - 0.5;
       const y1 = Math.max(0, Math.min(img.height - 1, Math.floor(sy)));
       const y2 = Math.min(img.height - 1, y1 + 1);
       const fy = sy - y1;
-      for (let dx = 0; dx < d; dx++) {
-        const sx = ((dx + 0.5) / d) * img.width - 0.5;
+      for (let dx = 0; dx < dsize; dx++) {
+        const sx = ((dx + 0.5) / dsize) * img.width - 0.5;
         const x1 = Math.max(0, Math.min(img.width - 1, Math.floor(sx)));
         const x2 = Math.min(img.width - 1, x1 + 1);
         const fx = sx - x1;
@@ -207,21 +285,15 @@ export function renderStampCard(opts: StampCardOptions): Buffer {
     const isReward = n === total - 1;
 
     if (isReward) {
-      // Reward slot: always show the reward emoji (bright when earned, dimmer
-      // when still to come), on a white disc when earned or an amber ring when not.
       if (filled) disc(cx, cy, radius, white, 1);
       else ring(cx, cy, radius, amber, 0.85);
       if (rewardEmoji) drawEmoji(rewardEmoji, cx, cy, radius * 1.5, filled ? 1 : 0.85);
       else if (!filled) disc(cx, cy, radius * 0.5, amber, 0.9);
     } else if (filled) {
-      // Collected stamp: white disc, with the merchant's stamp emoji on top.
       disc(cx, cy, radius, white, 1);
       if (stampEmoji) drawEmoji(stampEmoji, cx, cy, radius * 1.5, 1);
     } else {
-      // Yet to collect: a faint ring.
       ring(cx, cy, radius, white, 0.45);
     }
   }
-
-  return PNG.sync.write(png);
 }

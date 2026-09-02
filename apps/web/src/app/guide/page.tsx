@@ -5,6 +5,7 @@ import {
   BookOpen,
   Gift,
   Info,
+  Newspaper,
   QrCode,
   ScanLine,
   ShoppingBag,
@@ -546,6 +547,7 @@ export default function GuidePage() {
             <a href="#owner" className="transition-colors hover:text-strong">Business owner</a>
             <a href="#staff" className="transition-colors hover:text-strong">Counter staff</a>
             <a href="#customer" className="transition-colors hover:text-strong">Customer</a>
+            <Link href="/blog" className="transition-colors hover:text-strong">Blog</Link>
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggleCompact />
@@ -627,6 +629,9 @@ export default function GuidePage() {
             <p className="mt-2 text-[13px] text-muted">Collect stamps. Earn rewards. No app needed.</p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-body">
+            <Link href="/blog" className="transition-colors hover:text-strong">
+              <Newspaper className="mr-1.5 inline size-3.5" aria-hidden />Blog
+            </Link>
             <Link href={appHref("/merchant/login")} className="transition-colors hover:text-strong">
               <Store className="mr-1.5 inline size-3.5" aria-hidden />Merchant sign in
             </Link>

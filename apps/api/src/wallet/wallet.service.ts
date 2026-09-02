@@ -5,7 +5,7 @@ import { RedemptionStatus } from '@prisma/client';
 import { notFound } from '../common/exceptions';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplePassService, PassMembership } from './apple-pass.service';
-import { renderStampCard } from './stamp-card-image';
+import { renderCardBanner, readUploadedImage } from './stamp-card-image';
 import { AppConfigService } from '../config/app-config.service';
 import { ApplePushService } from './apple-push.service';
 import { GoogleWalletService } from './google-wallet.service';
@@ -59,12 +59,17 @@ export class WalletService {
   async heroImage(membershipId: string): Promise<Buffer> {
     const m = await this.passMembership(membershipId);
     const style = resolveCardStyle(m.campaign, m.business, this.config.apiPublicUrl);
-    return renderStampCard({
+    const backgroundImage = style.cardImagePath
+      ? readUploadedImage(this.config.uploadDir, style.cardImagePath)
+      : null;
+    return renderCardBanner({
       stampCount: m.stampCount,
       stampsRequired: m.campaign.stampsRequired,
       brandColorHex: style.color,
       stampIcon: style.stampIcon,
       rewardIcon: style.rewardIcon,
+      backgroundImage,
+      imageTinted: style.imageTinted,
       width: 1032,
       height: 336,
     });

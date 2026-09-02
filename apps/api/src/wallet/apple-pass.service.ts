@@ -6,7 +6,7 @@ import { Business, Campaign, Customer, CustomerMembership, Redemption } from '@p
 import JSZip from 'jszip';
 import forge from 'node-forge';
 import { AppConfigService } from '../config/app-config.service';
-import { renderStampCard } from './stamp-card-image';
+import { renderCardBanner, readUploadedImage } from './stamp-card-image';
 import { formatCode } from '../common/utils/codes.util';
 import { resolveCardStyle } from '../loyalty/card-style.util';
 
@@ -121,7 +121,7 @@ export class ApplePassService {
     const files: Record<string, Buffer> = {
       'pass.json': Buffer.from(JSON.stringify(this.buildPassJson(m, authToken)), 'utf8'),
       ...this.iconAssets(),
-      ...this.stripAssets(m),
+      ...(await this.stripAssets(m)),
     };
 
     const manifest: Record<string, string> = {};
@@ -191,21 +191,27 @@ export class ApplePassService {
    * on every pass build (and the pass rebuilds on every stamp), so it always
    * matches the count. Apple picks @2x or @3x by device; both are provided.
    */
-  private stripAssets(m: PassMembership): Record<string, Buffer> {
+  private async stripAssets(m: PassMembership): Promise<Record<string, Buffer>> {
     const style = resolveCardStyle(m.campaign, m.business, this.config.apiPublicUrl);
+    const backgroundImage = style.cardImagePath
+      ? readUploadedImage(this.config.uploadDir, style.cardImagePath)
+      : null;
     const args = {
       stampCount: m.stampCount,
       stampsRequired: m.campaign.stampsRequired,
       brandColorHex: style.color,
       stampIcon: style.stampIcon,
       rewardIcon: style.rewardIcon,
+      backgroundImage,
+      imageTinted: style.imageTinted,
     };
-    // Apple store-card strip is 375x123pt.
-    return {
-      'strip.png': renderStampCard({ ...args, width: 375, height: 123 }),
-      'strip@2x.png': renderStampCard({ ...args, width: 750, height: 246 }),
-      'strip@3x.png': renderStampCard({ ...args, width: 1125, height: 369 }),
-    };
+    // Apple store-card strip is 375x123pt; provide @1x/@2x/@3x.
+    const [s1, s2, s3] = await Promise.all([
+      renderCardBanner({ ...args, width: 375, height: 123 }),
+      renderCardBanner({ ...args, width: 750, height: 246 }),
+      renderCardBanner({ ...args, width: 1125, height: 369 }),
+    ]);
+    return { 'strip.png': s1, 'strip@2x.png': s2, 'strip@3x.png': s3 };
   }
 }
 
