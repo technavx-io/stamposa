@@ -9,6 +9,7 @@ import {
   Gift,
   KeyRound,
   LogOut,
+  MessageSquarePlus,
   PartyPopper,
   Plus,
   RotateCcw,
@@ -33,6 +34,7 @@ import type {
 } from '@/lib/api/types';
 import { staffSession } from '@/lib/auth/session';
 import { useStoredSession } from '@/lib/auth/use-stored-session';
+import { FeedbackDialog } from '@/components/feedback/feedback-dialog';
 import { useDebounced } from '@/lib/use-debounced';
 import { cn, timeAgo } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -224,6 +226,18 @@ export default function StaffConsolePage() {
             >
               <BookOpen className="size-4" />
             </a>
+            <FeedbackDialog
+              send={staffApi.sendFeedback}
+              renderTrigger={(openDialog) => (
+                <button
+                  onClick={openDialog}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"
+                  title="Send feedback"
+                >
+                  <MessageSquarePlus className="size-4" />
+                </button>
+              )}
+            />
             <button
               onClick={() => setChangePwOpen(true)}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"

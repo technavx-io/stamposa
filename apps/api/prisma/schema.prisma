@@ -138,6 +138,7 @@ model Business {
   consents     Consent[]
   auditEntries AuditLog[]
   impersonations ImpersonationSession[]
+  feedback     Feedback[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -444,6 +445,7 @@ model PlatformAdmin {
   auditEntries        AuditLog[]
   impersonations      ImpersonationSession[]
   suspendedBusinesses Business[] @relation("BusinessSuspendedBy")
+  handledFeedback     Feedback[] @relation("FeedbackHandledBy")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -509,4 +511,70 @@ model ImpersonationSession {
   @@index([adminId, startedAt])
   @@index([businessId, startedAt])
   @@map("impersonation_sessions")
+}
+
+/// Which kind of tenant user left the feedback. Distinct from AuditActorType:
+/// customers can leave feedback, and there is no SYSTEM author.
+enum FeedbackAuthorType {
+  MERCHANT
+  STAFF
+  CUSTOMER
+}
+
+/// What the feedback is about, for triage in the admin panel.
+enum FeedbackCategory {
+  BUG
+  SUGGESTION
+  PRAISE
+  OTHER
+}
+
+/// Operator triage state.
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  RESOLVED
+}
+
+/// Product feedback left by a tenant user (merchant, staff or customer),
+/// surfaced only in the platform admin panel. Never shown to other tenants.
+model Feedback {
+  id String @id @default(cuid())
+
+  authorType FeedbackAuthorType @map("author_type")
+  /// merchant/staff/customer id. Nullable so the row survives account
+  /// deletion or DPDP erasure of the author.
+  authorId   String?            @map("author_id")
+  /// Display label (name/email) captured at write time, so the entry stays
+  /// legible after the author is deleted or anonymised.
+  authorLabel String            @map("author_label")
+
+  /// Tenant the author belongs to. Always set for merchant/staff; null for a
+  /// customer with no single implied business. SetNull keeps feedback if the
+  /// business is later deleted.
+  businessId String?   @map("business_id")
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  category FeedbackCategory @default(OTHER)
+  /// Optional 1–5 star rating.
+  rating   Int?
+  message  String
+
+  status      FeedbackStatus @default(NEW)
+  /// The admin who last changed the status.
+  handledById String?        @map("handled_by_id")
+  handledBy   PlatformAdmin? @relation("FeedbackHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
+  handledAt   DateTime?      @map("handled_at")
+
+  /// Extra context captured at submit time (e.g. app version, page).
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([authorType, createdAt])
+  @@index([businessId, createdAt])
+  @@map("feedback")
 }

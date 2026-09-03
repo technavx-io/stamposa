@@ -73,6 +73,22 @@ export function authApi(role: ActorRole, client: ApiClient) {
   };
 }
 
+// ── Feedback (shared by every tenant role) ──────────────────────────────
+
+export type FeedbackCategory = 'BUG' | 'SUGGESTION' | 'PRAISE' | 'OTHER';
+
+export interface FeedbackInput {
+  category: FeedbackCategory;
+  /** Optional 1–5 star rating. */
+  rating?: number;
+  message: string;
+}
+
+/** POST /feedback — the author is derived from the token, not the body. */
+function submitFeedback(client: ApiClient) {
+  return (input: FeedbackInput) => client.post<{ id: string }>('/feedback', input);
+}
+
 // ── Merchant portal ─────────────────────────────────────────────────────
 
 export const merchantApi = {
@@ -272,6 +288,7 @@ export const merchantApi = {
     transactions: '/merchant/export/transactions.csv',
     rewards: '/merchant/export/rewards.csv',
   },
+  sendFeedback: submitFeedback(merchantClient),
 };
 
 // ── Staff console ───────────────────────────────────────────────────────
@@ -300,6 +317,7 @@ export const staffApi = {
   today: () => staffClient.get<TodaySummary>('/staff/today'),
   redeem: (input: { redemptionId?: string; code?: string }) =>
     staffClient.post<RedeemResult>('/staff/redemptions/redeem', input),
+  sendFeedback: submitFeedback(staffClient),
 };
 
 // ── Customer portal ─────────────────────────────────────────────────────
@@ -322,6 +340,7 @@ export const customerApi = {
     customerClient.post<{ saveUrl: string }>(`/customer/cards/${membershipId}/wallet/google`),
   appleWalletPath: (membershipId: string) =>
     `/customer/cards/${membershipId}/wallet/apple.pkpass`,
+  sendFeedback: submitFeedback(customerClient),
 };
 
 // ── Public ──────────────────────────────────────────────────────────────

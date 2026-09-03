@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { PHONE_AUTH_ENABLED } from '@/lib/features';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Gift, LogOut, WalletCards } from 'lucide-react';
+import { ChevronRight, Gift, LogOut, MessageSquarePlus, WalletCards } from 'lucide-react';
 import { customerApi } from '@/lib/api/endpoints';
+import { FeedbackDialog } from '@/components/feedback/feedback-dialog';
 import { customerSession } from '@/lib/auth/session';
 import { useStoredSession } from '@/lib/auth/use-stored-session';
 import { OtpLogin } from '@/components/auth/otp-login';
@@ -61,12 +62,26 @@ export default function MyCardsPage() {
               {session.actor.phone ?? session.actor.email}
             </p>
           </div>
-          <button
-            onClick={() => void logout()}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"
-          >
-            <LogOut className="size-4" /> Sign out
-          </button>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <FeedbackDialog
+              send={customerApi.sendFeedback}
+              renderTrigger={(openDialog) => (
+                <button
+                  onClick={openDialog}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"
+                  title="Send feedback"
+                >
+                  <MessageSquarePlus className="size-4" />
+                </button>
+              )}
+            />
+            <button
+              onClick={() => void logout()}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-strong"
+            >
+              <LogOut className="size-4" /> Sign out
+            </button>
+          </div>
         </div>
 
         {!cards.data || cards.data.length === 0 ? (

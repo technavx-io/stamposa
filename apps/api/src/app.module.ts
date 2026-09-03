@@ -22,6 +22,7 @@ import { ThrottlerRedisStorage } from './redis/throttler-redis.storage';
 import { StaffConsoleModule } from './staff-console/staff-console.module';
 import { WalletModule } from './wallet/wallet.module';
 import { StaffManagementModule } from './staff-management/staff-management.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { StaffManagementModule } from './staff-management/staff-management.modul
     LoyaltyModule,
     AnalyticsModule,
     StaffManagementModule,
+    FeedbackModule,
     StaffConsoleModule,
     WalletModule,
     CustomerPortalModule,

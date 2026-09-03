@@ -27,6 +27,8 @@ import { useMerchant } from '@/lib/auth/merchant-context';
 import { cn } from '@/lib/utils';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { FeedbackDialog } from '@/components/feedback/feedback-dialog';
+import { MessageSquarePlus } from 'lucide-react';
 
 const nav = [
   { href: '/merchant/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -205,6 +207,17 @@ function SidebarContent({
         })}
       </nav>
       <div className="space-y-2 border-t border-line-soft p-3">
+        <FeedbackDialog
+          send={merchantApi.sendFeedback}
+          renderTrigger={(openDialog) => (
+            <button
+              onClick={() => {
+                onNavigate?.();
+                openDialog();
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-body transition-colors hover:bg-surface-2 hover:text-strong"
+            >
+              <MessageSquarePlus className="size-4.5 text-muted" />
         <div className="px-2">
           <ThemeToggle className="w-full justify-center" />
         </div>

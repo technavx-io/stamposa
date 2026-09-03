@@ -37,6 +37,10 @@ export const ADMIN_CAPABILITIES = {
   'customers.erase': ['SUPER_ADMIN'],
   /** Read the audit log. */
   'audit.read': ['SUPER_ADMIN', 'OPS', 'SUPPORT', 'FINANCE', 'ANALYST'],
+  /** Read tenant feedback (merchant / staff / customer). */
+  'feedback.read': ['SUPER_ADMIN', 'OPS', 'SUPPORT', 'ANALYST'],
+  /** Triage feedback (new / reviewed / resolved). */
+  'feedback.manage': ['SUPER_ADMIN', 'OPS', 'SUPPORT'],
   /** Manage the platform's own team. */
   'team.manage': ['SUPER_ADMIN'],
   /** Read platform-wide operational health. */

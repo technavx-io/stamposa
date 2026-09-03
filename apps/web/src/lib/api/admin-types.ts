@@ -14,6 +14,8 @@ export type AdminCapability =
   | 'customers.lookup'
   | 'customers.erase'
   | 'audit.read'
+  | 'feedback.read'
+  | 'feedback.manage'
   | 'team.manage'
   | 'platform.read';
 
@@ -233,6 +235,27 @@ export interface AuditEntry {
 }
 
 // ── Team ────────────────────────────────────────────────────────────────
+
+export type FeedbackAuthorType = 'MERCHANT' | 'STAFF' | 'CUSTOMER';
+export type FeedbackCategory = 'BUG' | 'SUGGESTION' | 'PRAISE' | 'OTHER';
+export type FeedbackStatus = 'NEW' | 'REVIEWED' | 'RESOLVED';
+
+export interface FeedbackEntry {
+  id: string;
+  authorType: FeedbackAuthorType;
+  authorLabel: string;
+  businessId: string | null;
+  businessName: string | null;
+  category: FeedbackCategory;
+  rating: number | null;
+  message: string;
+  status: FeedbackStatus;
+  handledByName: string | null;
+  handledAt: string | null;
+  createdAt: string;
+}
+
+export type FeedbackCounts = Record<FeedbackStatus, number>;
 
 export interface AdminTeamMember {
   id: string;

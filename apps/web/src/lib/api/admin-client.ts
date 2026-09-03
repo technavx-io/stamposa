@@ -14,6 +14,10 @@ import type {
   AuditEntry,
   CreateAdminResult,
   CustomerLookupResult,
+  FeedbackAuthorType,
+  FeedbackCounts,
+  FeedbackEntry,
+  FeedbackStatus,
   ImpersonationResult,
   MerchantFilter,
 } from './admin-types';
@@ -198,6 +202,27 @@ export const adminApi = {
       })}`,
     ),
   auditActions: () => client.request<string[]>('/admin/audit/actions'),
+
+  // Feedback
+  feedback: (params: {
+    status?: FeedbackStatus;
+    authorType?: FeedbackAuthorType;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) =>
+    client.request<Paginated<FeedbackEntry>>(
+      `/admin/feedback?${qs({
+        status: params.status,
+        authorType: params.authorType,
+        search: params.search,
+        page: params.page ?? 1,
+        limit: params.limit ?? 25,
+      })}`,
+    ),
+  feedbackCounts: () => client.request<FeedbackCounts>('/admin/feedback/counts'),
+  setFeedbackStatus: (id: string, status: FeedbackStatus) =>
+    client.request<FeedbackEntry>(`/admin/feedback/${id}`, { method: 'PATCH', body: { status } }),
 
   // Team
   team: () => client.request<AdminTeamMember[]>('/admin/team'),
