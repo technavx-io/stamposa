@@ -96,6 +96,9 @@ model Business {
   logoPath String? @map("logo_path")
   address  String?
   phone    String?
+  /// Where customers are sent to leave a Google review (a g.page short link,
+  /// a Maps share link, or a search.google.com/local/writereview URL).
+  googleReviewUrl String? @map("google_review_url")
 
   /// Set by a platform admin. While set: merchant + staff logins are blocked,
   /// stamping stops, and the public join page shows "programme paused".

@@ -21,6 +21,47 @@ export class QrResult {
 }
 
 @Injectable()
+/**
+ * Merchants paste whatever Google gave them: a g.page short link, a Maps
+ * share link, the full "write a review" URL, or just the Place ID from
+ * Business Profile. Everything is stored as an https URL a phone can open;
+ * a bare Place ID becomes the canonical write-review link. Non-Google hosts
+ * are rejected so the button on the customer card can never lead elsewhere.
+ */
+export function normaliseGoogleReviewLink(raw: string | null): string | null {
+  const value = (raw ?? '').trim();
+  if (!value) return null;
+
+  // Place IDs look like "ChIJN1t_tDeuEmsRUsoyG83frY4" — no dots, no slashes.
+  if (/^[A-Za-z0-9_-]{20,}$/.test(value) && !value.includes('.')) {
+    return `https://search.google.com/local/writereview?placeid=${value}`;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+  } catch {
+    throw badRequest('INVALID_REVIEW_LINK', 'That does not look like a link. Paste the review link from Google.');
+  }
+  const host = url.hostname.toLowerCase();
+  const isGoogle =
+    host === 'g.page' ||
+    host === 'goo.gl' ||
+    host === 'maps.app.goo.gl' ||
+    host === 'google.com' ||
+    host.endsWith('.google.com') ||
+    /^google\.[a-z.]{2,6}$/.test(host) ||
+    /\.google\.[a-z.]{2,6}$/.test(host);
+  if (!isGoogle) {
+    throw badRequest(
+      'INVALID_REVIEW_LINK',
+      'Paste a Google link — from your Business Profile, Google Maps, or a g.page short link.',
+    );
+  }
+  url.protocol = 'https:';
+  return url.toString();
+}
+
 export class BusinessesService {
   constructor(
     private readonly prisma: PrismaService,
@@ -54,6 +95,9 @@ export class BusinessesService {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.address !== undefined ? { address: dto.address || null } : {}),
         ...(dto.phone !== undefined ? { phone: dto.phone || null } : {}),
+        ...(dto.googleReviewUrl !== undefined
+          ? { googleReviewUrl: normaliseGoogleReviewLink(dto.googleReviewUrl) }
+          : {}),
         ...(dto.brandColor !== undefined ? { brandColor: dto.brandColor || null } : {}),
         ...(dto.stampIcon !== undefined ? { stampIcon: dto.stampIcon } : {}),
         ...(dto.rewardIcon !== undefined ? { rewardIcon: dto.rewardIcon } : {}),

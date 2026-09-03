@@ -20,6 +20,9 @@ export class BusinessDto {
   @ApiProperty({ nullable: true, type: String })
   phone: string | null;
 
+  @ApiProperty({ nullable: true, type: String, example: 'https://g.page/r/CaBcDeFgHiJkL/review' })
+  googleReviewUrl: string | null;
+
   @ApiProperty({ example: 'http://localhost:3000/join/brew-and-bean', description: 'Customer registration link encoded in the QR code' })
   joinUrl: string;
 
@@ -76,6 +79,7 @@ export function toBusinessDto(business: Business, opts: BusinessDtoOptions): Bus
     logoUrl: business.logoPath ? `${opts.apiPublicUrl}${business.logoPath}` : null,
     address: business.address,
     phone: business.phone,
+    googleReviewUrl: business.googleReviewUrl,
     joinUrl: `${opts.webAppUrl}/join/${business.slug}`,
     brandColor: business.brandColor,
     stampIcon: business.stampIcon,

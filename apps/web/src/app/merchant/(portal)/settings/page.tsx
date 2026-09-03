@@ -21,6 +21,7 @@ import { Modal } from '@/components/ui/modal';
 import { Panel, PanelHeader } from '@/components/ui/surface';
 import { CardImageField, EmojiChoice, REWARD_EMOJIS, STAMP_EMOJIS } from '@/components/merchant/card-style-fields';
 import { cardBackground } from '@/lib/card-bg';
+import { Star } from 'lucide-react';
 
 const schema = z.object({
   name: z.string().trim().min(2, 'Business name is required').max(80),
@@ -66,6 +67,7 @@ export default function SettingsPage() {
   const [rewardIcon, setRewardIcon] = useState(business.rewardIcon ?? '');
   const [imageTint, setImageTint] = useState(business.cardImageTint);
   const [consentText, setConsentText] = useState<string | null>(null);
+  const [reviewLink, setReviewLink] = useState<string | null>(null);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
 
@@ -251,6 +253,56 @@ export default function SettingsPage() {
               >
                 Save wording
               </Button>
+            </div>
+          </Panel>
+
+          <Panel>
+            <PanelHeader
+              title="Google reviews"
+              description="Add your review link and every customer card gets a “Leave a Google review” button."
+            />
+            <div className="space-y-3 p-5">
+              <Field
+                label="Google review link"
+                optional
+                hint="In Google Business Profile, choose “Ask for reviews” and copy the link. A Google Maps share link or your Place ID works too."
+              >
+                {(p) => (
+                  <Input
+                    {...p}
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://g.page/r/…/review"
+                    value={reviewLink ?? business.googleReviewUrl ?? ''}
+                    onChange={(e) => setReviewLink(e.target.value)}
+                  />
+                )}
+              </Field>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  size="sm"
+                  loading={saveField.isPending}
+                  disabled={reviewLink === null || reviewLink.trim() === (business.googleReviewUrl ?? '')}
+                  onClick={() =>
+                    saveField
+                      .mutateAsync({ googleReviewUrl: reviewLink?.trim() ?? '' })
+                      .then(() => setReviewLink(null))
+                      .catch(() => undefined)
+                  }
+                >
+                  Save link
+                </Button>
+                {business.googleReviewUrl && (
+                  <a
+                    href={business.googleReviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline"
+                  >
+                    <Star className="size-4" /> Open review page
+                  </a>
+                )}
+              </div>
             </div>
           </Panel>
 

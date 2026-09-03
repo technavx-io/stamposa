@@ -67,6 +67,7 @@ async function main() {
       merchantId: merchant.id,
       name: 'Brew & Bean Coffee',
       slug: 'brew-and-bean',
+      googleReviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
       address: '12 MG Road, Indiranagar, Bengaluru 560038',
       phone: '+919876500011',
     },

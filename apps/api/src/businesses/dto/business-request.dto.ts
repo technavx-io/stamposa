@@ -65,6 +65,18 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
   @MaxLength(64)
   timezone?: string;
 
+  @ApiPropertyOptional({
+    example: 'https://g.page/r/CaBcDeFgHiJkL/review',
+    description:
+      'Google review link shown on customer cards. Accepts a g.page / Maps share link, ' +
+      'a search.google.com/local/writereview URL, or a bare Place ID; \'\' clears it',
+  })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(400)
+  googleReviewUrl?: string | null;
+
   @ApiPropertyOptional({ description: 'Wording customers agree to when enrolling' })
   @IsOptional()
   @IsString()

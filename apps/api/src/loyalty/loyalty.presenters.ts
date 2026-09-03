@@ -120,6 +120,7 @@ export function toCardDto(m: MembershipWithBusinessCampaign, urls: PresenterUrls
       logoUrl: m.business.logoPath ? `${urls.apiPublicUrl}${m.business.logoPath}` : null,
       address: m.business.address,
       brandColor: m.business.brandColor,
+      googleReviewUrl: m.business.googleReviewUrl,
     },
     campaign: toCardCampaign(m.campaign),
     style: resolveCardStyle(m.campaign, m.business, urls.apiPublicUrl),

@@ -93,6 +93,7 @@ export interface Business {
   logoUrl: string | null;
   address: string | null;
   phone: string | null;
+  googleReviewUrl: string | null;
   joinUrl: string;
   brandColor: string | null;
   stampIcon: string | null;
@@ -151,6 +152,7 @@ export interface CardBusiness {
   logoUrl: string | null;
   address: string | null;
   brandColor: string | null;
+  googleReviewUrl: string | null;
 }
 
 export interface CardCampaign {

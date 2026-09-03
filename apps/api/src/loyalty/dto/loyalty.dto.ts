@@ -19,6 +19,9 @@ export class CardBusinessDto {
 
   @ApiProperty({ nullable: true, type: String, example: '#4F46E5' })
   brandColor: string | null;
+
+  @ApiProperty({ nullable: true, type: String, description: 'Where "Leave a Google review" sends the customer' })
+  googleReviewUrl: string | null;
 }
 
 export class CardCampaignDto {

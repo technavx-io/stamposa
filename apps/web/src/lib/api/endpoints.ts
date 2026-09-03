@@ -127,6 +127,7 @@ export const merchantApi = {
     name?: string;
     address?: string;
     phone?: string;
+    googleReviewUrl?: string | null;
     brandColor?: string;
     stampIcon?: string | null;
     rewardIcon?: string | null;

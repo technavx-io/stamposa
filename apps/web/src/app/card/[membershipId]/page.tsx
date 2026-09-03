@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { PHONE_AUTH_ENABLED } from '@/lib/features';
 import { use, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Gift, RotateCcw, Stamp, Wallet, WalletCards } from 'lucide-react';
+import { ExternalLink, Gift, RotateCcw, Stamp, Star, Wallet, WalletCards } from 'lucide-react';
 import { toast } from 'sonner';
 import { customerApi } from '@/lib/api/endpoints';
 import { downloadAuthenticated } from '@/lib/download';
@@ -109,6 +109,33 @@ function WalletButtons({ membershipId }: { membershipId: string }) {
         <PlaceholderWalletButton icon={WalletCards} label="Google Wallet" />
       )}
     </div>
+  );
+}
+
+/**
+ * Sends happy customers to the merchant's Google review page. Only rendered
+ * when the merchant has added a link in Settings; opens in a new tab so the
+ * card stays put behind it.
+ */
+function GoogleReviewPrompt({ businessName, href }: { businessName: string; href: string }) {
+  return (
+    <Panel className="mt-4 flex items-center gap-3 p-4">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+        <Star className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-strong">Enjoying {businessName}?</p>
+        <p className="mt-0.5 text-[13px] text-muted">A quick Google review helps them a lot.</p>
+      </div>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-700"
+      >
+        Review <ExternalLink className="size-3.5" />
+      </a>
+    </Panel>
   );
 }
 
@@ -303,6 +330,10 @@ function LiveCard({ membershipId }: { membershipId: string }) {
         </p>
 
         <WalletButtons membershipId={membershipId} />
+
+        {c.business.googleReviewUrl && (
+          <GoogleReviewPrompt businessName={c.business.name} href={c.business.googleReviewUrl} />
+        )}
 
         {/* Activity */}
         <Panel className="mt-6">
