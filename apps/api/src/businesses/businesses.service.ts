@@ -20,7 +20,6 @@ export class QrResult {
   qrDataUrl: string;
 }
 
-@Injectable()
 /**
  * Merchants paste whatever Google gave them: a g.page short link, a Maps
  * share link, the full "write a review" URL, or just the Place ID from
@@ -62,6 +61,7 @@ export function normaliseGoogleReviewLink(raw: string | null): string | null {
   return url.toString();
 }
 
+@Injectable()
 export class BusinessesService {
   constructor(
     private readonly prisma: PrismaService,
