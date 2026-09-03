@@ -54,3 +54,12 @@ export function initials(name: string | null | undefined): string {
     .map((w) => w[0]!.toUpperCase())
     .join('');
 }
+
+/** Format a paise (INR minor-unit) integer as rupees, e.g. 49900 → "₹499". */
+export function formatRupees(paise: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(paise / 100);
+}

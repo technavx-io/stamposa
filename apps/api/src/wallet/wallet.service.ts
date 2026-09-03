@@ -110,6 +110,77 @@ export class WalletService {
     return { saveUrl };
   }
 
+  /** Passes reachable by a wallet push right now, for the merchant's audience count. */
+  async reachableCount(businessId: string): Promise<{ passHolders: number; appleDevices: number; googleCards: number }> {
+    const passes = await this.prisma.walletPass.findMany({
+      where: { membership: { businessId } },
+      include: { registrations: true },
+    });
+    let appleDevices = 0;
+    let googleCards = 0;
+    let passHolders = 0;
+    for (const p of passes) {
+      const reachable = p.registrations.length > 0 || p.googleObjectId !== null;
+      if (reachable) passHolders++;
+      appleDevices += p.registrations.length;
+      if (p.googleObjectId) googleCards++;
+    }
+    return { passHolders, appleDevices, googleCards };
+  }
+
+  /**
+   * Push a merchant broadcast to every wallet pass of a business. Apple has no
+   * free-form push, so the message is stored on the business (rendered as the
+   * pass's "Latest news" field), every pass is bumped, and each device gets an
+   * APNs nudge to re-fetch — iOS then shows the changed field as a lock-screen
+   * notification. Google fans out from one class addMessage. Best-effort:
+   * a platform outage yields lower tallies, never a thrown error.
+   */
+  async broadcast(
+    businessId: string,
+    message: { id: string; title: string; body: string },
+  ): Promise<{ recipientCount: number; appleDevices: number; googleNotified: boolean }> {
+    // Store the text first: Apple rebuilds the pass on fetch and reads this.
+    await this.prisma.business.update({
+      where: { id: businessId },
+      data: { walletMessage: message.body, walletMessageUpdatedAt: new Date() },
+    });
+
+    const passes = await this.prisma.walletPass.findMany({
+      where: { membership: { businessId } },
+      include: { registrations: true },
+    });
+
+    const appleTokens = passes.flatMap((p) => p.registrations.map((r) => r.pushToken));
+    const hasGoogle = passes.some((p) => p.googleObjectId !== null);
+    const recipientCount = passes.filter(
+      (p) => p.registrations.length > 0 || p.googleObjectId !== null,
+    ).length;
+
+    // Bump every pass so Apple devices see a fresh version on re-fetch.
+    if (passes.length > 0) {
+      await this.prisma.walletPass.updateMany({
+        where: { id: { in: passes.map((p) => p.id) } },
+        data: { appleUpdatedAt: new Date() },
+      });
+    }
+
+    if (this.apple.enabled && appleTokens.length > 0) {
+      await this.push.notify(appleTokens);
+    }
+
+    let googleNotified = false;
+    if (this.google.enabled && hasGoogle) {
+      googleNotified = await this.google.classMessage(businessId, {
+        id: message.id,
+        header: message.title,
+        body: message.body,
+      });
+    }
+
+    return { recipientCount, appleDevices: appleTokens.length, googleNotified };
+  }
+
   /**
    * Fire-and-forget fan-out after a card changes. Call OUTSIDE the domain
    * transaction (`void wallet.cardChanged(id)`).

@@ -166,6 +166,46 @@ export class GoogleWalletService {
     await this.upsert('loyaltyObject', obj.id, obj);
   }
 
+  /**
+   * Broadcast a message to every card holder of a business in one call:
+   * addMessage on the LoyaltyClass fans out to all its objects, and
+   * TEXT_AND_NOTIFY makes Google push a device notification. Returns false
+   * (never throws) when the class doesn't exist yet or the call fails, so a
+   * broadcast still succeeds on the Apple side.
+   */
+  async classMessage(
+    businessId: string,
+    msg: { id: string; header: string; body: string },
+  ): Promise<boolean> {
+    try {
+      const auth = { Authorization: `Bearer ${await this.accessToken()}` };
+      const id = this.classId(businessId);
+      const res = await fetch(
+        `${WALLET_API}/loyaltyClass/${encodeURIComponent(id)}/addMessage`,
+        {
+          method: 'POST',
+          headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: {
+              id: msg.id,
+              header: msg.header,
+              body: msg.body,
+              messageType: 'TEXT_AND_NOTIFY',
+            },
+          }),
+        },
+      );
+      if (!res.ok) {
+        this.logger.warn(`Google Wallet addMessage ${res.status}: ${await res.text()}`);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      this.logger.warn(`Google Wallet addMessage failed: ${(e as Error).message}`);
+      return false;
+    }
+  }
+
   /** Insert-or-patch against the Wallet API; failures log and never throw. */
   private async upsert(kind: 'loyaltyClass' | 'loyaltyObject', id: string, body: unknown) {
     try {

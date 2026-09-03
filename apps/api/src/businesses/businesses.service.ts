@@ -5,6 +5,7 @@ import { slugify, slugSuffix } from '../common/utils/codes.util';
 import { AppConfigService } from '../config/app-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QrService } from '../qr/qr.service';
+import { SubscriptionService } from '../billing/subscription.service';
 import { FILE_STORAGE, FileStorage } from '../storage/storage.types';
 import { BusinessDto, toBusinessDto } from './dto/business.dto';
 import { CreateBusinessDto, UpdateBusinessDto } from './dto/business-request.dto';
@@ -20,7 +21,6 @@ export class QrResult {
   qrDataUrl: string;
 }
 
-@Injectable()
 /**
  * Merchants paste whatever Google gave them: a g.page short link, a Maps
  * share link, the full "write a review" URL, or just the Place ID from
@@ -62,11 +62,13 @@ export function normaliseGoogleReviewLink(raw: string | null): string | null {
   return url.toString();
 }
 
+@Injectable()
 export class BusinessesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfigService,
     private readonly qr: QrService,
+    private readonly subscriptions: SubscriptionService,
     @Inject(FILE_STORAGE) private readonly storage: FileStorage,
   ) {}
 
@@ -85,6 +87,8 @@ export class BusinessesService {
         phone: dto.phone ?? null,
       },
     });
+    // Every new tenant starts on the 30-day Growth trial.
+    await this.subscriptions.createTrial(business.id);
     return this.dto(business);
   }
 

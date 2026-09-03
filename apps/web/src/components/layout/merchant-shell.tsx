@@ -7,9 +7,11 @@ import { Dialog, DialogPanel } from '@headlessui/react';
 import {
   BarChart3,
   BookOpen,
+  CreditCard,
   Gift,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Menu,
   QrCode,
   Receipt,
@@ -38,8 +40,10 @@ const nav = [
   { href: '/merchant/rewards', label: 'Rewards', icon: Gift },
   { href: '/merchant/transactions', label: 'Transactions', icon: Receipt },
   { href: '/merchant/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/merchant/messages', label: 'Messages', icon: Megaphone },
   { href: '/merchant/staff', label: 'Staff', icon: UserCog },
   { href: '/merchant/settings', label: 'Settings', icon: Settings },
+  { href: '/merchant/billing', label: 'Plan', icon: CreditCard },
   { href: '/guide', label: 'Guide', icon: BookOpen },
 ];
 
@@ -218,6 +222,10 @@ function SidebarContent({
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-body transition-colors hover:bg-surface-2 hover:text-strong"
             >
               <MessageSquarePlus className="size-4.5 text-muted" />
+              Send feedback
+            </button>
+          )}
+        />
         <div className="px-2">
           <ThemeToggle className="w-full justify-center" />
         </div>

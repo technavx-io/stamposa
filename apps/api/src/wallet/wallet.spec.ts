@@ -140,6 +140,22 @@ describe('ApplePassService.buildPassJson', () => {
     expect(pass.storeCard.secondaryFields[0].label).toBe('REWARD READY');
     expect(pass.storeCard.secondaryFields[0].value).toBe('Free coffee');
   });
+
+  it('omits the news field when the business has no broadcast', () => {
+    const pass = service.buildPassJson(membership(), 'tok') as any;
+    expect(pass.storeCard.backFields.some((f: any) => f.key === 'news')).toBe(false);
+  });
+
+  it('renders a broadcast as a news field with a changeMessage so iOS notifies', () => {
+    const pass = service.buildPassJson(
+      membership({ business: { ...membership().business, walletMessage: '20% off today!' } }),
+      'tok',
+    ) as any;
+    const news = pass.storeCard.backFields.find((f: any) => f.key === 'news');
+    expect(news).toBeDefined();
+    expect(news.value).toBe('20% off today!');
+    expect(news.changeMessage).toBe('%@');
+  });
 });
 
 describe('GoogleWalletService builders', () => {

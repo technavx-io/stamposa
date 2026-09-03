@@ -24,7 +24,9 @@ function flattenValidationErrors(errors: ValidationError[], parent = ''): string
 }
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  // rawBody keeps the exact request bytes on req.rawBody, which the Dodo
+  // webhook route needs to verify the Standard Webhooks signature.
+  const app = await NestFactory.create(AppModule, { bufferLogs: false, rawBody: true });
   const config = app.get(AppConfigService);
   const logger = new Logger('Bootstrap');
 

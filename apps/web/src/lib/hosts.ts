@@ -20,7 +20,7 @@ export const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL ?? '';
 export const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
 /** Exact paths that belong on the informational site. */
-export const SITE_PATHS = ['/', '/guide', '/blog'] as const;
+export const SITE_PATHS = ['/', '/guide', '/blog', '/pricing'] as const;
 
 /** Path prefixes whose whole subtree is informational (blog posts). */
 export const SITE_PREFIXES = ['/blog/'] as const;

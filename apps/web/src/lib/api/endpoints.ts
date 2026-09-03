@@ -4,6 +4,8 @@ import type {
   AddStampResult,
   AuthResult,
   AuthSession,
+  Broadcast,
+  BroadcastAudience,
   Business,
   Campaign,
   Card,
@@ -15,6 +17,8 @@ import type {
   MembershipDetail,
   MembershipListItem,
   OtpRequested,
+  Plan,
+  SubscriptionState,
   AnalyticsSummary,
   ConsentRecord,
   Paginated,
@@ -161,6 +165,21 @@ export const merchantApi = {
   qrPngUrl: () => `/merchant/business/qr.png`,
 
   dashboard: () => merchantClient.get<Dashboard>('/merchant/dashboard'),
+
+  subscription: () => merchantClient.get<SubscriptionState>('/merchant/subscription'),
+  subscriptionCheckout: (data: {
+    tier: 'STARTER' | 'GROWTH' | 'PRO';
+    interval: 'MONTHLY' | 'YEARLY';
+  }) =>
+    merchantClient.post<{ checkoutUrl: string }>('/merchant/subscription/checkout', data),
+  cancelSubscription: () => merchantClient.post<void>('/merchant/subscription/cancel'),
+
+  // Wallet push broadcasts.
+  broadcastAudience: () =>
+    merchantClient.get<BroadcastAudience>('/merchant/messaging/audience'),
+  listBroadcasts: () => merchantClient.get<Broadcast[]>('/merchant/messaging/broadcasts'),
+  sendBroadcast: (data: { title: string; body: string }) =>
+    merchantClient.post<Broadcast>('/merchant/messaging/broadcasts', data),
 
   createCampaign: (data: {
     name: string;
@@ -349,4 +368,5 @@ export const customerApi = {
 export const publicApi = {
   business: (slug: string) =>
     customerClient.get<PublicBusiness>(`/public/businesses/${slug}`, { anonymous: true }),
+  plans: () => customerClient.get<Plan[]>('/public/plans', { anonymous: true }),
 };

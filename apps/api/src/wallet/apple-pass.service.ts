@@ -87,6 +87,20 @@ export class ApplePassService {
           { key: 'earned', label: 'REWARDS EARNED', value: `${m.completedCount}` },
         ],
         backFields: [
+          // The merchant's latest broadcast. Apple shows a lock-screen
+          // notification when a field's value changes and it carries a
+          // changeMessage — this back field is how a wallet broadcast reaches
+          // the customer. Present only while a message is set.
+          ...(m.business.walletMessage
+            ? [
+                {
+                  key: 'news',
+                  label: 'Latest news',
+                  value: m.business.walletMessage,
+                  changeMessage: '%@',
+                },
+              ]
+            : []),
           { key: 'code', label: 'Customer code', value: formatCode(m.code) },
           {
             key: 'how',

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, Newspaper, Stamp, Store } from 'lucide-react';
+import { BookOpen, Newspaper, Stamp, Store, Tag } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ThemeToggleCompact } from '@/components/ui/theme-toggle';
@@ -11,8 +11,8 @@ import { appHref, siteHref } from '@/lib/hosts';
  * bespoke headers because their in-page anchors differ.
  */
 
-export function SiteHeader({ active }: { active?: 'guide' | 'blog' }) {
-  const link = (key: 'guide' | 'blog') =>
+export function SiteHeader({ active }: { active?: 'guide' | 'blog' | 'pricing' }) {
+  const link = (key: 'guide' | 'blog' | 'pricing') =>
     `transition-colors hover:text-strong ${active === key ? 'text-strong font-medium' : ''}`;
 
   return (
@@ -36,6 +36,9 @@ export function SiteHeader({ active }: { active?: 'guide' | 'blog' }) {
           </Link>
           <Link href={siteHref('/guide')} className={link('guide')}>
             Guide
+          </Link>
+          <Link href={siteHref('/pricing')} className={link('pricing')}>
+            Pricing
           </Link>
           <Link href={siteHref('/blog')} className={link('blog')}>
             Blog
@@ -78,6 +81,10 @@ export function SiteFooter() {
           <Link href={siteHref('/guide')} className="transition-colors hover:text-strong">
             <BookOpen className="mr-1.5 inline size-3.5" aria-hidden />
             Guide
+          </Link>
+          <Link href={siteHref('/pricing')} className="transition-colors hover:text-strong">
+            <Tag className="mr-1.5 inline size-3.5" aria-hidden />
+            Pricing
           </Link>
           <Link href={siteHref('/blog')} className="transition-colors hover:text-strong">
             <Newspaper className="mr-1.5 inline size-3.5" aria-hidden />

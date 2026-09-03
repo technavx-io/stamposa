@@ -143,4 +143,44 @@ export class AppConfigService {
     if (this.isProduction) return true;
     return this.config.get('ADMIN_REQUIRE_2FA', { infer: true });
   }
+
+  /**
+   * Dodo Payments config, or null when billing isn't wired yet (no API key).
+   * `products` maps a "TIER_INTERVAL" key to a Dodo product id; a missing id
+   * is left undefined and surfaced as a clear error only when that plan is
+   * actually purchased, so partial setup never blocks boot.
+   */
+  get dodo(): {
+    environment: Env['DODO_ENVIRONMENT'];
+    apiKey: string;
+    apiBase: string;
+    webhookSecret: string;
+    products: Record<string, string | undefined>;
+  } | null {
+    const g = <K extends keyof Env>(key: K): Env[K] => this.config.get(key, { infer: true });
+    const apiKey = g('DODO_API_KEY');
+    const webhookSecret = g('DODO_WEBHOOK_SECRET');
+    if (!apiKey || !webhookSecret) return null;
+    const environment = g('DODO_ENVIRONMENT');
+    const apiBase = (
+      g('DODO_API_BASE') ??
+      (environment === 'live_mode'
+        ? 'https://live.dodopayments.com'
+        : 'https://test.dodopayments.com')
+    ).replace(/\/$/, '');
+    return {
+      environment,
+      apiKey,
+      apiBase,
+      webhookSecret,
+      products: {
+        STARTER_MONTHLY: g('DODO_PRODUCT_STARTER_MONTHLY'),
+        STARTER_YEARLY: g('DODO_PRODUCT_STARTER_YEARLY'),
+        GROWTH_MONTHLY: g('DODO_PRODUCT_GROWTH_MONTHLY'),
+        GROWTH_YEARLY: g('DODO_PRODUCT_GROWTH_YEARLY'),
+        PRO_MONTHLY: g('DODO_PRODUCT_PRO_MONTHLY'),
+        PRO_YEARLY: g('DODO_PRODUCT_PRO_YEARLY'),
+      },
+    };
+  }
 }

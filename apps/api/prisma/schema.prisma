@@ -133,6 +133,15 @@ model Business {
   notifyWeeklyDigest  Boolean @default(true) @map("notify_weekly_digest")
   notifyStaffInactive Boolean @default(true) @map("notify_staff_inactive")
 
+  /// Latest broadcast the merchant pushed to wallet passes. Apple has no
+  /// free-form push: the lock-screen text is a pass field whose value changed,
+  /// so the current message lives here and every pass renders it as a "Latest
+  /// news" field with a changeMessage. iOS only notifies when the field value
+  /// actually differs, so sending the exact same text twice won't re-notify.
+  /// walletMessageUpdatedAt is kept for ordering/audit, not to force a change.
+  walletMessage          String?   @map("wallet_message")
+  walletMessageUpdatedAt DateTime? @map("wallet_message_updated_at")
+
   staff        Staff[]
   campaigns    Campaign[]
   memberships  CustomerMembership[]
@@ -141,6 +150,8 @@ model Business {
   consents     Consent[]
   auditEntries AuditLog[]
   impersonations ImpersonationSession[]
+  broadcasts   Broadcast[]
+  subscription Subscription?
   feedback     Feedback[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -421,6 +432,107 @@ model AppleWalletRegistration {
   @@unique([deviceLibraryId, walletPassId])
   @@index([deviceLibraryId])
   @@map("apple_wallet_registrations")
+}
+
+enum BroadcastStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
+/// Who a broadcast targets. Only pass holders can receive a wallet push, so
+/// ALL_PASS_HOLDERS is the whole reachable audience today; segments (e.g.
+/// lapsed customers) are additive enum values later.
+enum BroadcastAudience {
+  ALL_PASS_HOLDERS
+}
+
+/// A one-off message the merchant pushes to their customers' wallet passes.
+/// Delivery is best-effort fire-and-forget (Apple APNs nudge + a changed pass
+/// field; Google class addMessage), so the tallies are "attempted", not proven
+/// delivered.
+model Broadcast {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  title    String
+  body     String
+  audience BroadcastAudience @default(ALL_PASS_HOLDERS)
+  status   BroadcastStatus   @default(QUEUED)
+
+  /// Wallet passes reachable when the send started (Apple device registrations
+  /// plus Google objects for this business).
+  recipientCount Int     @default(0) @map("recipient_count")
+  /// Apple device push tokens nudged.
+  appleDevices   Int     @default(0) @map("apple_devices")
+  /// Whether the Google class addMessage call succeeded.
+  googleNotified Boolean @default(false) @map("google_notified")
+  /// Populated when status is FAILED.
+  error          String?
+
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([businessId, createdAt])
+  @@map("broadcasts")
+}
+
+/// The four subscription tiers. Prices, limits and features for each live in
+/// code (src/billing/plans.ts) — this enum is only the identity stored per
+/// tenant, so a price change never needs a migration.
+enum PlanTier {
+  FREE
+  STARTER
+  GROWTH
+  PRO
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+/// TRIALING → on the free trial (entitled as GROWTH). ACTIVE → paid and
+/// current. PAST_DUE → a renewal charge failed (grace period). CANCELED →
+/// won't renew but still active until currentPeriodEnd. EXPIRED → trial or
+/// paid period ended with no payment; the tenant falls back to FREE.
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+/// One subscription per business (the tenant). Absent row is treated as FREE,
+/// so the platform is safe before any backfill. The gateway_* columns stay
+/// null until Razorpay is wired.
+model Subscription {
+  id         String   @id @default(cuid())
+  businessId String   @unique @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  plan     PlanTier           @default(FREE)
+  interval BillingInterval    @default(MONTHLY)
+  status   SubscriptionStatus @default(TRIALING)
+
+  /// When the free trial ends (TRIALING only).
+  trialEndsAt      DateTime? @map("trial_ends_at")
+  /// End of the current paid period (ACTIVE/CANCELED); renewal or expiry date.
+  currentPeriodEnd DateTime? @map("current_period_end")
+  /// Set on CANCELED: the plan stays until currentPeriodEnd, then drops to FREE.
+  cancelAtPeriodEnd Boolean  @default(false) @map("cancel_at_period_end")
+
+  /// Razorpay identifiers, populated once billing is live.
+  gatewayCustomerId     String? @map("gateway_customer_id")
+  gatewaySubscriptionId String? @map("gateway_subscription_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("subscriptions")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

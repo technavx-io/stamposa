@@ -445,3 +445,65 @@ export interface TransactionTotals {
   netStamps: number;
   adjustments: number;
 }
+
+export type BroadcastStatus = 'QUEUED' | 'SENDING' | 'SENT' | 'FAILED';
+
+export interface Broadcast {
+  id: string;
+  title: string;
+  body: string;
+  status: BroadcastStatus;
+  recipientCount: number;
+  appleDevices: number;
+  googleNotified: boolean;
+  sentAt: string | null;
+  createdAt: string;
+}
+
+export interface BroadcastAudience {
+  passHolders: number;
+  appleDevices: number;
+  googleCards: number;
+  sentThisMonth: number;
+  monthlyLimit: number | null;
+}
+
+export type PlanTier = 'FREE' | 'STARTER' | 'GROWTH' | 'PRO';
+
+export interface PlanLimits {
+  staffDevices: number;
+  liveCampaigns: number | null;
+  customers: number | null;
+  broadcastsPerMonth: number | null;
+  analyticsHistoryDays: number | null;
+  cardCustomization: boolean;
+  csvExport: boolean;
+  badgeRemoved: boolean;
+}
+
+export interface Plan {
+  tier: PlanTier;
+  name: string;
+  tagline: string;
+  priceMonthly: number;
+  priceYearly: number;
+  limits: PlanLimits;
+  features: string[];
+  comingSoon: string[];
+  recommended: boolean;
+}
+
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'EXPIRED';
+
+export interface SubscriptionState {
+  plan: PlanTier;
+  effectiveTier: PlanTier;
+  effectivePlanName: string;
+  status: SubscriptionStatus;
+  interval: 'MONTHLY' | 'YEARLY';
+  trialEndsAt: string | null;
+  trialDaysLeft: number | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  billingEnabled: boolean;
+}

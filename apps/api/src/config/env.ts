@@ -76,6 +76,28 @@ export const envSchema = z.object({
   GOOGLE_WALLET_ISSUER_ID: z.string().optional(),
   /** Service-account key JSON (the account must be added to the issuer). */
   GOOGLE_WALLET_SA_KEY_PATH: z.string().optional(),
+
+  // ── Billing: Dodo Payments (Merchant of Record) ──────────────────────
+  //    Paid subscriptions activate only when DODO_API_KEY is present; until
+  //    then the billing screen falls back to a "contact us" CTA. Dodo is the
+  //    seller of record, so it collects and remits tax. One Dodo account
+  //    belongs to the platform; merchants are its customers. Each paid tier
+  //    ×interval maps to a Dodo Product id. See docs/BILLING-SETUP.md.
+  /** Which Dodo environment to talk to. */
+  DODO_ENVIRONMENT: z.enum(['test_mode', 'live_mode']).default('test_mode'),
+  /** Secret API key (Bearer). Absent = billing off, CTA falls back to email. */
+  DODO_API_KEY: z.string().optional(),
+  /** Webhook signing secret (whsec_…) for verifying incoming events. */
+  DODO_WEBHOOK_SECRET: z.string().optional(),
+  /** Override the API base host only if Dodo changes it; otherwise derived. */
+  DODO_API_BASE: z.string().url().optional(),
+  /** Product ids — one per paid tier × interval (Free has no product). */
+  DODO_PRODUCT_STARTER_MONTHLY: z.string().optional(),
+  DODO_PRODUCT_STARTER_YEARLY: z.string().optional(),
+  DODO_PRODUCT_GROWTH_MONTHLY: z.string().optional(),
+  DODO_PRODUCT_GROWTH_YEARLY: z.string().optional(),
+  DODO_PRODUCT_PRO_MONTHLY: z.string().optional(),
+  DODO_PRODUCT_PRO_YEARLY: z.string().optional(),
 }).refine((env) => env.NODE_ENV !== 'production' || env.ADMIN_REQUIRE_2FA, {
   message:
     'ADMIN_REQUIRE_2FA cannot be false in production — admin accounts reach every tenant.',
@@ -98,7 +120,11 @@ export const envSchema = z.object({
       'EMAIL_PROVIDER=smtp needs SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS and SMTP_FROM.',
     path: ['EMAIL_PROVIDER'],
   },
-);
+).refine((env) => !env.DODO_API_KEY || !!env.DODO_WEBHOOK_SECRET, {
+  message:
+    'DODO_API_KEY is set but DODO_WEBHOOK_SECRET is missing — webhooks could not be verified, so subscriptions would never activate.',
+  path: ['DODO_WEBHOOK_SECRET'],
+});
 
 export type Env = z.infer<typeof envSchema>;
 

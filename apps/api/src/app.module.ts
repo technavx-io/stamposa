@@ -21,6 +21,8 @@ import { RedisModule } from './redis/redis.module';
 import { ThrottlerRedisStorage } from './redis/throttler-redis.storage';
 import { StaffConsoleModule } from './staff-console/staff-console.module';
 import { WalletModule } from './wallet/wallet.module';
+import { MessagingModule } from './messaging/messaging.module';
+import { BillingModule } from './billing/billing.module';
 import { StaffManagementModule } from './staff-management/staff-management.module';
 import { FeedbackModule } from './feedback/feedback.module';
 
@@ -47,9 +49,11 @@ import { FeedbackModule } from './feedback/feedback.module';
     LoyaltyModule,
     AnalyticsModule,
     StaffManagementModule,
-    FeedbackModule,
     StaffConsoleModule,
     WalletModule,
+    MessagingModule,
+    BillingModule,
+    FeedbackModule,
     CustomerPortalModule,
     DashboardModule,
     PublicModule,
