@@ -99,8 +99,10 @@ async function bootstrap(): Promise<void> {
 
   app.enableShutdownHooks();
 
-  await app.listen(config.port);
-  logger.log(`API listening on http://localhost:${config.port} (docs at /docs)`);
+  // Bind all interfaces (0.0.0.0), not just loopback — required so Docker's
+  // published port (127.0.0.1:PORT on the host) can reach the app in-container.
+  await app.listen(config.port, '0.0.0.0');
+  logger.log(`API listening on http://0.0.0.0:${config.port} (docs at /docs)`);
   logger.log(
     `Stamposa API v${BUILD_INFO.version} · commit ${BUILD_INFO.commit} · built ${BUILD_INFO.builtAt}`,
   );
