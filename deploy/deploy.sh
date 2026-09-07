@@ -28,6 +28,9 @@ val() { grep "^$1=" deploy/.env.production | cut -d= -f2-; }
 
 # Always deploy exactly what's on the tracked branch — no local drift.
 if [ -d .git ]; then
+  # CloudStick app dirs are owned by the app's user; git refuses to operate on a
+  # repo owned by someone other than the caller (usually root) without this.
+  git config --global --add safe.directory "$(pwd)" 2>/dev/null || true
   echo "→ Pulling latest code…"
   git pull --ff-only
 fi
