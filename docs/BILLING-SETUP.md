@@ -14,7 +14,7 @@ your merchants are its customers.
 
 ## What flips billing on
 
-`apps/api/.env` (see `.env.example`):
+`apps/backend/.env` (see `.env.example`):
 
 ```
 DODO_ENVIRONMENT=test_mode          # or live_mode
@@ -44,7 +44,7 @@ webhook would never activate any subscription.
    **Terms** + **Refund/Cancellation policy** URLs. Dodo requires these and
    shows them on the hosted checkout.
 3. **Create six subscription Products**, one per paid tier × interval. Match the
-   catalog in `apps/api/src/billing/plans.ts`:
+   catalog in `apps/backend/src/billing/plans.ts`:
 
    | Product           | Price   | Billing period |
    | ----------------- | ------- | -------------- |

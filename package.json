@@ -1,24 +1,27 @@
 {
   "name": "stamposa",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
-  "description": "Multi-tenant SaaS loyalty platform — Phase 1 (merchant portal, staff console, customer cards)",
+  "description": "Stamposa — digital loyalty cards. Backend API, the app (portals + customer cards), the marketing website, and the UI package they share.",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
-    "dev:api": "npm run start:dev -w apps/api",
-    "dev:web": "npm run dev -w apps/web",
-    "build": "npm run build -w apps/api && npm run build -w apps/web",
-    "test": "npm run test -w apps/api",
-    "db:migrate": "npm run prisma:migrate -w apps/api",
-    "db:deploy": "npm run prisma:deploy -w apps/api",
-    "db:seed": "npm run prisma:seed -w apps/api",
-    "db:studio": "npm run prisma:studio -w apps/api",
+    "dev": "concurrently -n backend,frontend,website -c blue,green,magenta \"npm:dev:backend\" \"npm:dev:frontend\" \"npm:dev:website\"",
+    "dev:backend": "npm run start:dev -w apps/backend",
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "dev:website": "npm run dev -w apps/website",
+    "build": "npm run build -w apps/backend && npm run build -w apps/frontend && npm run build -w apps/website",
+    "lint": "npm run lint -w apps/backend && npm run lint -w apps/frontend && npm run lint -w apps/website",
+    "test": "npm run test -w apps/backend",
+    "db:migrate": "npm run prisma:migrate -w apps/backend",
+    "db:deploy": "npm run prisma:deploy -w apps/backend",
+    "db:seed": "npm run prisma:seed -w apps/backend",
+    "db:studio": "npm run prisma:studio -w apps/backend",
     "version:set": "node scripts/set-version.mjs",
     "version:show": "node -p \"require('./package.json').version\""
   },

@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* The design system lives in the shared package. The @source line makes
+   Tailwind scan those components too, so classes used only there still get
+   generated for this app. */
+@source "../../../../packages/ui/src";
+@import "../../../../packages/ui/src/styles/theme.css";

@@ -34,7 +34,7 @@ In the MSG91 dashboard, follow **DLT registration**:
 
 ## 3. Configure and deploy
 
-Add to `deploy/.env.production` (or `apps/api/.env` to test locally with
+Add to `/opt/api-docker/.env` on the server (or `apps/backend/.env` to test locally with
 your real account):
 
 ```bash
@@ -44,7 +44,7 @@ MSG91_TEMPLATE_ID=<flow/template id>
 MSG91_SENDER_ID=STMPSA
 ```
 
-Then `./deploy/deploy.sh`. The API refuses to boot if `SMS_PROVIDER=msg91`
+Then recreate the API container (`docker compose up -d` in `/opt/api-docker`). The API refuses to boot if `SMS_PROVIDER=msg91`
 is set with any credential missing, so a typo fails loudly at deploy time
 rather than silently at the first login.
 

@@ -278,9 +278,9 @@ Redis pub/sub — the API already has the Redis plumbing.
 
 - **Unit (Jest):** OTP lifecycle (cooldowns, attempts, role scoping), stamp completion +
   concurrency semantics, code/slug utilities. `npm test` — 19 tests.
-- **E2E smoke script** — `apps/api/test/smoke.sh` (49 assertions): full merchant → customer →
+- **E2E smoke script** — `apps/backend/test/smoke.sh` (49 assertions): full merchant → customer →
   staff journey, tenant isolation, role guards, token rotation. Run it against a freshly
-  seeded API (`npm run db:seed`, then `bash apps/api/test/smoke.sh`); promote to a Jest e2e
+  seeded API (`npm run db:seed`, then `bash apps/backend/test/smoke.sh`); promote to a Jest e2e
   suite when CI lands.
 - **Browser verification:** all 12 Phase 1 features exercised manually via the dev servers,
   including the live cross-tab stamp update.

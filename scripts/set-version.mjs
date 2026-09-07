@@ -4,7 +4,7 @@
  *
  *   npm run version:set -- 0.2.0
  *
- * The API and the web app always carry the SAME version. They are deployed as
+ * The backend, the app, the website and the shared UI package always carry the SAME version. They are deployed as
  * a pair and their contract (route shapes, auth flows) moves together, so
  * letting them drift apart would make "which version is live?" unanswerable —
  * which is the entire point of stamping a version in the first place.
@@ -21,7 +21,7 @@ if (!version || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) {
   process.exit(1);
 }
 
-for (const rel of ['package.json', 'apps/api/package.json', 'apps/web/package.json']) {
+for (const rel of ['package.json', 'apps/backend/package.json', 'apps/frontend/package.json', 'apps/website/package.json', 'packages/ui/package.json']) {
   const path = join(root, rel);
   const pkg = JSON.parse(readFileSync(path, 'utf8'));
   const previous = pkg.version;

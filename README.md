@@ -14,37 +14,40 @@ PostgreSQL · Redis · Phone + OTP + JWT auth · Swagger docs · npm workspaces 
 
 ## Repository layout
 
+Three deployable apps and one shared package, as npm workspaces:
+
 ```
 loyalty-platform/
 ├── apps/
-│   ├── api/                  # NestJS API (port 4000)
-│   │   ├── prisma/           #   schema.prisma, migrations, seed.ts
+│   ├── backend/              # NestJS API → api.stamposa.com (port 4000)
+│   │   ├── prisma/           #   schema.prisma, migrations, seed scripts
+│   │   ├── assets/           #   wallet default logo, Apple pass icons (served at /assets)
+│   │   └── src/              #   auth, businesses, campaigns, loyalty, billing, messaging,
+│   │                         #   wallet, staff-*, customer-portal, dashboard, analytics, …
+│   ├── frontend/             # Next.js app → app.stamposa.com (port 3001 in dev)
 │   │   └── src/
-│   │       ├── auth/         #   OTP + JWT sessions, guards (global, secure-by-default)
-│   │       ├── businesses/   #   business profile, logo upload, QR code
-│   │       ├── campaigns/    #   stamp-card campaigns
-│   │       ├── loyalty/      #   core domain: memberships (cards) + stamps
-│   │       ├── staff-management/  # merchant manages staff accounts
-│   │       ├── staff-console/     # counter surface: search + stamp
-│   │       ├── customer-portal/   # join, my cards, card detail
-│   │       ├── dashboard/    #   merchant overview stats
-│   │       ├── public/       #   unauthenticated join-page data
-│   │       ├── sms/          #   SmsProvider abstraction (console in dev)
-│   │       ├── storage/      #   FileStorage abstraction (local disk in dev)
-│   │       ├── qr/           #   QR generation
-│   │       ├── redis/        #   client + Redis-backed rate limiting
-│   │       ├── prisma/       #   PrismaService
-│   │       ├── config/       #   zod-validated env
-│   │       └── common/       #   filters, interceptors, pagination, utils
-│   └── web/                  # Next.js app (port 3000)
+│   │       ├── app/          #   /merchant/**, /staff/**, /admin/**, /join/[slug], /card/[id], /my-cards
+│   │       ├── components/   #   portal widgets (auth, layout, merchant, admin, feedback, ui)
+│   │       └── lib/          #   typed API client, session stores, feature flags, hooks
+│   └── website/              # Next.js site → stamposa.com (port 3000 in dev)
 │       └── src/
-│           ├── app/          #   /, /merchant/**, /staff/**, /join/[slug], /card/[id], /my-cards
-│           ├── components/   #   design system + feature components
-│           └── lib/          #   typed API client, session stores, hooks
-├── docs/ARCHITECTURE.md      # deeper design doc (tenancy, auth, decisions)
-├── docker-compose.yml        # optional Postgres+Redis (ports 5433/6380)
+│           ├── app/          #   /, /guide, /blog, /blog/[slug], /pricing, sitemap, RSS feed
+│           ├── components/marketing/   # landing demos, prose, site header/footer
+│           └── content/      #   blog posts (plain JSX)
+├── packages/
+│   └── ui/                   # @stamposa/ui — design system both Next apps share:
+│                             #   theme tokens (Tailwind), ThemeProvider, Button, PlanGrid,
+│                             #   host links (appHref/siteHref), monitoring, build stamp
+├── docs/                     # architecture, setup guides for SMS, wallets, billing, monitoring
+├── scripts/set-version.mjs   # moves the product version across all five package.json files
+├── docker-compose.yml        # optional local Postgres+Redis (ports 5433/6380)
 └── package.json              # workspace root
 ```
+
+The website and the app are separate processes in production. Each one's
+middleware redirects paths that belong to the other host, and `packages/ui`
+keeps their look identical. Production deployment is driven from the sibling
+`stamposa-vps/` folder (see its `DEPLOY-NOTES.md`), not from this repo.
 
 ## Prerequisites
 
@@ -63,11 +66,11 @@ cd loyalty-platform
 npm install
 
 # 1) Configure the API environment
-cp apps/api/.env.example apps/api/.env
+cp apps/backend/.env.example apps/backend/.env
 #    → set DATABASE_URL, REDIS_URL, and two `openssl rand -hex 32` JWT secrets
 
 # 2) Configure the web environment
-cp apps/web/.env.example apps/web/.env.local
+# Local dev needs no web env files: apps/frontend and apps/website ship .env.development
 
 # 3) Create + migrate + seed the database
 createdb loyalty_platform          # skip if it exists
@@ -93,7 +96,7 @@ No SMS gateway is wired in development. OTP codes are:
 Production SMS is already wired for **MSG91** (India's DLT-compliant route):
 set `SMS_PROVIDER=msg91` plus three credentials and real texts flow — see
 [docs/SMS-SETUP.md](docs/SMS-SETUP.md). Other gateways are one adapter file
-(`apps/api/src/sms/`).
+(`apps/backend/src/sms/`).
 
 ## Demo accounts (after `npm run db:seed`)
 
@@ -114,7 +117,7 @@ set `SMS_PROVIDER=msg91` plus three credentials and real texts flow — see
 | Ops Admin | `ops@stamposa.com` | `ChangeMe!2026` | Merchants, suspension, impersonation |
 | Support Agent | `support@stamposa.com` | `ChangeMe!2026` | Read + lookup + impersonation |
 
-**Two-factor is controlled by `ADMIN_REQUIRE_2FA` in `apps/api/.env`:**
+**Two-factor is controlled by `ADMIN_REQUIRE_2FA` in `apps/backend/.env`:**
 
 - `false` *(current local default)* — sign in with just email and password. Convenient while
   developing. Each sign-in is still recorded, annotated "Two-factor disabled by configuration",
@@ -137,11 +140,11 @@ browser sessions, so you can play merchant, staff and customer side by side in o
 
 ## Deploying to production
 
-The whole stack ships as a Docker deployment kit for a single VPS — Postgres,
-Redis, API, web and automatic HTTPS. See **[deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md)**;
-the short version is: point two DNS records at the server, fill in
-`deploy/.env.production`, run `./deploy/deploy.sh`. Nightly backups and a CI
-workflow (lint + unit + builds + 196 E2E assertions) are included.
+Production is a single VPS behind CloudStick's nginx: three Docker containers
+(website, app, API) plus Postgres and Redis. Everything is compiled on the
+dev machine and shipped as tarballs by `../stamposa-vps/build-bundles.sh`;
+nothing is built on the server. The procedure, verification and rollback are
+in `../stamposa-vps/DEPLOY-NOTES.md` and the deploy runbook.
 
 ## Phase 1 feature map
 
@@ -241,7 +244,7 @@ wallet passes exactly like the web card.
 
 The integration activates per wallet when platform credentials are configured
 — see [docs/WALLET-SETUP.md](docs/WALLET-SETUP.md). In development,
-`apps/api/test/make-wallet-fixtures.sh` generates self-signed stand-ins so
+`apps/backend/test/make-wallet-fixtures.sh` generates self-signed stand-ins so
 the whole pipeline (signing included) runs and is smoke-tested locally.
 
 ### The admin panel (platform operator console)

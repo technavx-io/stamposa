@@ -4,7 +4,7 @@ The integration is fully built and tested. Each wallet turns on by itself the
 moment its credentials appear in the environment — no code changes. Until
 then, the card page shows the honest "soon" placeholders.
 
-In development, `apps/api/test/make-wallet-fixtures.sh` generates self-signed
+In development, `apps/backend/test/make-wallet-fixtures.sh` generates self-signed
 stand-ins so the whole pipeline runs locally (passes built with them will not
 install on real devices).
 
@@ -72,16 +72,16 @@ change to saved passes itself.
 
 Put the credential files on the server (e.g. `/opt/loyalty-secrets/`), mount
 them into the API container, and add the env vars to
-`deploy/.env.production`. In `deploy/docker-compose.prod.yml` add under
+`/opt/api-docker/.env`. In `stamposa-vps/api-docker/docker-compose.yml` (already done in production) add under
 `api:`:
 
 ```yaml
     volumes:
-      - uploads:/repo/apps/api/uploads
+      - uploads:/repo/apps/backend/uploads
       - /opt/loyalty-secrets:/opt/loyalty-secrets:ro
 ```
 
-Then `./deploy/deploy.sh` — the availability endpoint flips to true and the
+Then recreate the API container (`docker compose up -d` in `/opt/api-docker`) — the availability endpoint flips to true and the
 buttons appear on every customer card.
 
 ## What's on the pass

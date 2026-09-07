@@ -23,14 +23,14 @@ be matched to the exact Sentry event.
 2. Create **two projects**: one *Node.js* (the API) and one *Browser
    JavaScript* (the web app). Each gives you a **DSN** — a public-ish URL
    that identifies the project.
-3. Add to `deploy/.env.production`:
+3. Add to `/opt/api-docker/.env` on the server:
 
    ```bash
    SENTRY_DSN=<the Node project DSN>
    WEB_SENTRY_DSN=<the Browser project DSN>
    ```
 
-4. `./deploy/deploy.sh` — the API DSN is picked up at boot; the web DSN is
+4. Redeploy the API with the `stamposa-vps` kit (`docker compose up -d` recreates the container) — the API DSN is picked up at boot; the web DSN is
    baked into the browser bundle during the image build.
 5. In Sentry: Settings → Alerts → route new-issue alerts to your email (or a
    WhatsApp/Slack webhook later).
@@ -41,7 +41,7 @@ watch the event arrive.
 
 ## Notes
 
-- **Local dev**: set `SENTRY_DSN` in `apps/api/.env` only if you want dev
+- **Local dev**: set `SENTRY_DSN` in `apps/backend/.env` only if you want dev
   errors reported; normally leave it unset.
 - **Performance tracing** is off by default. `SENTRY_TRACES_SAMPLE_RATE=0.1`
   samples 10% of requests if you later want latency breakdowns.
