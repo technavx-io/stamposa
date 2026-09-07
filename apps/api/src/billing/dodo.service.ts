@@ -66,14 +66,16 @@ export class DodoService {
   }
 
   /**
-   * Create a hosted checkout session for a subscription product. Currency and
-   * country are left to Dodo's adaptive currency (buyer's locale); tax is
-   * added and remitted by Dodo as the merchant of record.
+   * Create a hosted checkout session for a subscription product. Billing is
+   * pinned to USD so the amount always matches the catalog (rather than Dodo's
+   * adaptive currency); tax is added and remitted by Dodo as the merchant of
+   * record. The underlying Dodo products must also be priced in USD.
    */
   async createSubscriptionCheckout(params: CheckoutParams): Promise<CheckoutResult> {
     const body = {
       product_cart: [{ product_id: params.productId, quantity: 1 }],
       customer: { email: params.customer.email, name: params.customer.name },
+      billing_currency: 'USD',
       return_url: params.returnUrl,
       metadata: params.metadata,
     };

@@ -20,6 +20,7 @@ import type {
   FeedbackStatus,
   ImpersonationResult,
   MerchantFilter,
+  PromoCode,
 } from './admin-types';
 import type { Paginated } from './types';
 
@@ -232,6 +233,18 @@ export const adminApi = {
     client.request<AdminTeamMember>(`/admin/team/${id}`, { method: 'PATCH', body: input }),
   revokeSessions: (id: string) =>
     client.request<{ revoked: boolean }>(`/admin/team/${id}/revoke-sessions`, { method: 'POST' }),
+
+  // Promo codes
+  promoCodes: () => client.request<PromoCode[]>('/admin/promo-codes'),
+  createPromoCode: (input: {
+    code: string;
+    tier: 'STARTER' | 'GROWTH' | 'PRO';
+    freeMonths: number;
+    maxRedemptions: number;
+    expiresAt?: string;
+  }) => client.request<PromoCode>('/admin/promo-codes', { method: 'POST', body: input }),
+  setPromoActive: (id: string, active: boolean) =>
+    client.request<PromoCode>(`/admin/promo-codes/${id}`, { method: 'PATCH', body: { active } }),
 
   // Health
   health: () => client.request<AdminHealth>('/admin/health'),

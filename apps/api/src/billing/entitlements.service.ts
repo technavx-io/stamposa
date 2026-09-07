@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PlanTier, Subscription } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { Plan, PlanLimits, planFor, TRIAL_PLAN } from './plans';
+import { Plan, PlanLimits, planFor } from './plans';
 
 export interface Entitlements {
   /** The plan the tenant is effectively entitled to right now. */
@@ -33,7 +33,9 @@ export function effectiveTier(sub: Subscription | null): PlanTier {
   const now = Date.now();
   switch (sub.status) {
     case 'TRIALING':
-      return sub.trialEndsAt && sub.trialEndsAt.getTime() > now ? TRIAL_PLAN : 'FREE';
+      // A trial (the default 30-day one, or a longer promo grant) entitles the
+      // business to its own plan tier until trialEndsAt, then drops to FREE.
+      return sub.trialEndsAt && sub.trialEndsAt.getTime() > now ? sub.plan : 'FREE';
     case 'ACTIVE':
     case 'PAST_DUE': // grace period — honour the plan while a retry is pending
       return sub.plan;

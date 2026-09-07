@@ -151,7 +151,7 @@ export default function MessagesPage() {
               {outOfQuota && !noAudience && (
                 <p className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-[13px] text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
                   <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                  You've used all your broadcasts this month. Upgrade your plan for more.
+                  You&apos;ve used all your broadcasts this month. Upgrade your plan for more.
                 </p>
               )}
 

@@ -153,6 +153,7 @@ model Business {
   broadcasts   Broadcast[]
   subscription Subscription?
   feedback     Feedback[]
+  promoRedemptions PromoRedemption[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -533,6 +534,48 @@ model Subscription {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("subscriptions")
+}
+
+/// A redeemable code that grants a business a free run of a plan (e.g. a
+/// founding-member offer). The cap is enforced with an atomic increment of
+/// redeemedCount, so exactly maxRedemptions businesses can ever claim it.
+model PromoCode {
+  id             String    @id @default(cuid())
+  /// Stored uppercase; compared case-insensitively on redemption.
+  code           String    @unique
+  /// Plan tier granted for the free period.
+  tier           PlanTier  @default(GROWTH)
+  /// Length of the free grant, in whole months.
+  freeMonths     Int       @default(6) @map("free_months")
+  /// Total redemptions allowed across all businesses.
+  maxRedemptions Int       @default(30) @map("max_redemptions")
+  /// Denormalised counter, incremented atomically for a race-safe cap.
+  redeemedCount  Int       @default(0) @map("redeemed_count")
+  active         Boolean   @default(true)
+  /// Optional hard stop; the code stops working after this instant.
+  expiresAt      DateTime? @map("expires_at")
+
+  redemptions PromoRedemption[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("promo_codes")
+}
+
+/// One business's claim of a promo code. businessId is unique, so a business
+/// can redeem at most one promo ever.
+model PromoRedemption {
+  id          String    @id @default(cuid())
+  promoCodeId String    @map("promo_code_id")
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  businessId  String    @unique @map("business_id")
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  redeemedAt DateTime @default(now()) @map("redeemed_at")
+
+  @@index([promoCodeId])
+  @@map("promo_redemptions")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -40,10 +40,10 @@ export class PlanDto {
   @ApiProperty()
   tagline: string;
 
-  @ApiProperty({ description: 'Monthly price in paise (₹ minor units)', example: 49900 })
+  @ApiProperty({ description: 'Monthly price in cents (USD minor units)', example: 1900 })
   priceMonthly: number;
 
-  @ApiProperty({ description: 'Yearly price in paise', example: 499000 })
+  @ApiProperty({ description: 'Yearly price in cents', example: 19000 })
   priceYearly: number;
 
   @ApiProperty({ type: PlanLimitsDto })

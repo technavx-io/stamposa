@@ -29,9 +29,14 @@ describe('effectiveTier', () => {
     expect(effectiveTier(null)).toBe('FREE');
   });
 
-  it('grants GROWTH during an active trial', () => {
-    expect(effectiveTier(sub({ status: 'TRIALING', plan: 'FREE', trialEndsAt: future() }))).toBe(
+  it('grants the subscription plan during an active trial', () => {
+    // The default 30-day trial carries plan GROWTH.
+    expect(effectiveTier(sub({ status: 'TRIALING', plan: 'GROWTH', trialEndsAt: future() }))).toBe(
       'GROWTH',
+    );
+    // A promo grant of another tier is honoured for the trial period too.
+    expect(effectiveTier(sub({ status: 'TRIALING', plan: 'PRO', trialEndsAt: future() }))).toBe(
+      'PRO',
     );
   });
 
@@ -79,11 +84,15 @@ describe('toStateDto', () => {
 });
 
 describe('plan catalog', () => {
-  it('matches the locked pricing (paise) and broadcast caps', () => {
+  it('matches the locked pricing (USD cents) and broadcast caps', () => {
     expect(PLANS.FREE.price.monthly).toBe(0);
-    expect(PLANS.STARTER.price.monthly).toBe(19900);
-    expect(PLANS.GROWTH.price.monthly).toBe(49900);
-    expect(PLANS.PRO.price.monthly).toBe(99900);
+    expect(PLANS.STARTER.price.monthly).toBe(900);
+    expect(PLANS.GROWTH.price.monthly).toBe(1900);
+    expect(PLANS.PRO.price.monthly).toBe(3896);
+    // Yearly is two months free (10× the monthly price).
+    expect(PLANS.STARTER.price.yearly).toBe(9000);
+    expect(PLANS.GROWTH.price.yearly).toBe(19000);
+    expect(PLANS.PRO.price.yearly).toBe(39000);
     expect(PLANS.FREE.limits.broadcastsPerMonth).toBe(0);
     expect(PLANS.STARTER.limits.broadcastsPerMonth).toBe(2);
     expect(PLANS.GROWTH.limits.broadcastsPerMonth).toBe(30);

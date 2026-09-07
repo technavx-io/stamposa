@@ -5,9 +5,9 @@ import { PlanTier } from '@prisma/client';
  * features. Only the PlanTier identity is stored per tenant, so changing a
  * price or a limit here never needs a migration.
  *
- * Prices are in paise (INR minor units) to keep money integer-exact. Yearly is
- * two months free. A `null` limit means unlimited. Pricing decided 2026-09-02
- * (value band): Free ₹0 · Starter ₹199 · Growth ₹499 · Pro ₹999.
+ * Prices are in cents (USD minor units) to keep money integer-exact. Yearly is
+ * two months free. A `null` limit means unlimited. Pricing decided 2026-09-05
+ * (value band): Free $0 · Starter $9 · Growth $19 · Pro $39.
  */
 
 /** A quantity limit; null means unlimited. */
@@ -36,7 +36,7 @@ export interface Plan {
   tier: PlanTier;
   name: string;
   tagline: string;
-  /** Price in paise, keyed by billing interval. */
+  /** Price in cents (USD minor units), keyed by billing interval. */
   price: { monthly: number; yearly: number };
   limits: PlanLimits;
   /** Human-readable feature bullets for the pricing page. */
@@ -47,7 +47,7 @@ export interface Plan {
   recommended: boolean;
 }
 
-const RUPEE = 100; // paise per rupee
+const DOLLAR = 100; // cents per dollar
 
 export const PLANS: Record<PlanTier, Plan> = {
   FREE: {
@@ -79,7 +79,7 @@ export const PLANS: Record<PlanTier, Plan> = {
     tier: 'STARTER',
     name: 'Starter',
     tagline: 'For a single outlet finding its regulars.',
-    price: { monthly: 199 * RUPEE, yearly: 1990 * RUPEE },
+    price: { monthly: 9 * DOLLAR, yearly: 90 * DOLLAR },
     limits: {
       staffDevices: 2,
       liveCampaigns: 1,
@@ -105,7 +105,7 @@ export const PLANS: Record<PlanTier, Plan> = {
     tier: 'GROWTH',
     name: 'Growth',
     tagline: 'For a growing brand that markets to its customers.',
-    price: { monthly: 499 * RUPEE, yearly: 4990 * RUPEE },
+    price: { monthly: 19 * DOLLAR, yearly: 190 * DOLLAR },
     limits: {
       staffDevices: 5,
       liveCampaigns: 3,
@@ -132,7 +132,8 @@ export const PLANS: Record<PlanTier, Plan> = {
     tier: 'PRO',
     name: 'Pro',
     tagline: 'For established outlets that want it all.',
-    price: { monthly: 999 * RUPEE, yearly: 9990 * RUPEE },
+    // Monthly matches the Dodo product exactly ($38.96); yearly is $390.
+    price: { monthly: 3896, yearly: 390 * DOLLAR },
     limits: {
       staffDevices: 15,
       liveCampaigns: null,

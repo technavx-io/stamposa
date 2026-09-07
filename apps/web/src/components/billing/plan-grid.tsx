@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Check, Sparkles } from 'lucide-react';
 import type { Plan, PlanTier } from '@/lib/api/types';
-import { cn, formatRupees } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 export type Interval = 'MONTHLY' | 'YEARLY';
@@ -133,7 +133,7 @@ function PlanCard({
           <span className="text-3xl font-bold text-strong">Free</span>
         ) : (
           <>
-            <span className="text-3xl font-bold text-strong">{formatRupees(price)}</span>
+            <span className="text-3xl font-bold text-strong">{formatPrice(price)}</span>
             <span className="text-sm text-muted">/{interval === 'MONTHLY' ? 'mo' : 'yr'}</span>
           </>
         )}

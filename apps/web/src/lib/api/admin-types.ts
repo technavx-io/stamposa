@@ -16,8 +16,21 @@ export type AdminCapability =
   | 'audit.read'
   | 'feedback.read'
   | 'feedback.manage'
+  | 'promos.manage'
   | 'team.manage'
   | 'platform.read';
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  tier: 'FREE' | 'STARTER' | 'GROWTH' | 'PRO';
+  freeMonths: number;
+  maxRedemptions: number;
+  redeemedCount: number;
+  active: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+}
 
 export interface AdminTokens {
   accessToken: string;

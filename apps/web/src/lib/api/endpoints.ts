@@ -173,6 +173,8 @@ export const merchantApi = {
   }) =>
     merchantClient.post<{ checkoutUrl: string }>('/merchant/subscription/checkout', data),
   cancelSubscription: () => merchantClient.post<void>('/merchant/subscription/cancel'),
+  redeemCode: (code: string) =>
+    merchantClient.post<SubscriptionState>('/merchant/subscription/redeem', { code }),
 
   // Wallet push broadcasts.
   broadcastAudience: () =>

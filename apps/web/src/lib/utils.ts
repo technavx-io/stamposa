@@ -55,11 +55,14 @@ export function initials(name: string | null | undefined): string {
     .join('');
 }
 
-/** Format a paise (INR minor-unit) integer as rupees, e.g. 49900 → "₹499". */
-export function formatRupees(paise: number): string {
-  return new Intl.NumberFormat('en-IN', {
+/**
+ * Format a cents (USD minor-unit) integer as a price, e.g. 1900 → "$19".
+ * Whole-dollar amounts drop the ".00"; anything with cents keeps them.
+ */
+export function formatPrice(cents: number): string {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(paise / 100);
+    currency: 'USD',
+    maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  }).format(cents / 100);
 }

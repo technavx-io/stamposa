@@ -41,6 +41,8 @@ export const ADMIN_CAPABILITIES = {
   'feedback.read': ['SUPER_ADMIN', 'OPS', 'SUPPORT', 'ANALYST'],
   /** Triage feedback (new / reviewed / resolved). */
   'feedback.manage': ['SUPER_ADMIN', 'OPS', 'SUPPORT'],
+  /** Create and manage promo codes (free-plan offers). */
+  'promos.manage': ['SUPER_ADMIN', 'OPS'],
   /** Manage the platform's own team. */
   'team.manage': ['SUPER_ADMIN'],
   /** Read platform-wide operational health. */

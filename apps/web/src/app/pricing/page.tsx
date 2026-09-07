@@ -10,6 +10,11 @@ export const metadata: Metadata = {
     'Simple, honest pricing for digital loyalty cards. Start free, upgrade when you want to reach customers. Apple & Google Wallet on every plan.',
 };
 
+// Render at request time, not at build: the marketing site must build without a
+// live backend (Netlify), and plan prices should reflect the API when fetched.
+// The fetch below still caches for an hour, so this doesn't hammer the API.
+export const dynamic = 'force-dynamic';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:4000';
 
 async function getPlans(): Promise<Plan[]> {

@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { AlertTriangle, CalendarClock, Sparkles } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Gift, Sparkles } from 'lucide-react';
 import type { Plan, SubscriptionState, SubscriptionStatus } from '@/lib/api/types';
 import { merchantApi, publicApi } from '@/lib/api/endpoints';
+import { ApiError } from '@/lib/api/client';
 import { formatDate } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
 import { PlanGrid, type Interval } from '@/components/billing/plan-grid';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/field';
 import { Badge, Panel, Spinner } from '@/components/ui/surface';
 import { LoadError } from '@/components/ui/load-error';
 
@@ -69,6 +71,16 @@ export default function BillingPage() {
     onError: () => toast.error("Couldn't cancel the plan. Please try again."),
   });
 
+  const redeem = useMutation({
+    mutationFn: (code: string) => merchantApi.redeemCode(code),
+    onSuccess: async () => {
+      toast.success('Code applied — your free plan is active!');
+      await qc.invalidateQueries({ queryKey: ['merchant', 'subscription'] });
+    },
+    onError: (e) =>
+      toast.error(e instanceof ApiError ? e.message : "That code couldn't be applied."),
+  });
+
   // Returning from a completed Dodo checkout — the webhook may land a moment
   // later, so confirm optimistically and refetch.
   useEffect(() => {
@@ -103,6 +115,13 @@ export default function BillingPage() {
         </div>
       ) : (
         <CurrentPlanCard sub={sub.data} />
+      )}
+
+      {sub.data && (
+        <PromoRedeemCard
+          onRedeem={(code) => redeem.mutate(code)}
+          pending={redeem.isPending}
+        />
       )}
 
       {plans.isError ? (
@@ -144,6 +163,49 @@ export default function BillingPage() {
         </section>
       )}
     </div>
+  );
+}
+
+function PromoRedeemCard({
+  onRedeem,
+  pending,
+}: {
+  onRedeem: (code: string) => void;
+  pending: boolean;
+}) {
+  const [code, setCode] = useState('');
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const c = code.trim();
+    if (c) onRedeem(c);
+  };
+  return (
+    <Panel className="mt-4 p-5">
+      <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+        <div className="min-w-0 flex-1">
+          <label htmlFor="promo" className="flex items-center gap-1.5 text-[13px] font-medium text-strong">
+            <Gift className="size-4 text-brand-600" />
+            Have a promo code?
+          </label>
+          <p className="mt-0.5 text-[12.5px] text-muted">
+            Founding-member and partner codes unlock a free run of a plan.
+          </p>
+        </div>
+        <div className="flex w-full gap-2 sm:w-auto">
+          <Input
+            id="promo"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="ENTER CODE"
+            autoCapitalize="characters"
+            className="w-full font-mono uppercase tracking-wide sm:w-48"
+          />
+          <Button type="submit" variant="secondary" disabled={pending || !code.trim()}>
+            {pending ? 'Applying…' : 'Redeem'}
+          </Button>
+        </div>
+      </form>
+    </Panel>
   );
 }
 
