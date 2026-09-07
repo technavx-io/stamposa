@@ -53,7 +53,7 @@ case "$ROLE" in
     echo "→ Starting the API…";              "${COMPOSE[@]}" up -d api
     echo "→ Waiting for the API health check…"
     for i in $(seq 1 30); do
-      if "${COMPOSE[@]}" exec -T api wget -qO- http://localhost:4000/v1/health >/dev/null 2>&1; then
+      if "${COMPOSE[@]}" exec -T api wget -qO- http://127.0.0.1:4000/v1/health >/dev/null 2>&1; then
         echo "✓ API healthy."; break
       fi
       [ "$i" = 30 ] && { echo "✗ API did not become healthy — check: ${COMPOSE[*]} logs api"; exit 1; }
