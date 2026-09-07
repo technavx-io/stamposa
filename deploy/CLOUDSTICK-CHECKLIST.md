@@ -25,7 +25,7 @@ the `docker` group: `sudo usermod -aG docker $USER` then re-login.
 **b. GitHub access** — the repo is private, so cloning needs auth. Easiest is a
 Personal Access Token (repo:read). You'll clone with:
 ```bash
-git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git .
+git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git
 ```
 (or set up an SSH deploy key and use the `git@github.com:...` URL).
 
@@ -46,9 +46,9 @@ Also decide a strong `SEED_ADMIN_PASSWORD`. Keep all four somewhere safe.
 
 ```bash
 cd /home/proxyuserj2f8tbdu/apps/backend-api
-# dir must be empty for `git clone .`; if it has placeholder files, clear them first
-git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git .
-cd loyalty-platform
+# Clones into a "stamposa/" subfolder (safe even if the slot has default files).
+git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git
+cd stamposa
 cp deploy/env.production.example deploy/.env.production
 nano deploy/.env.production
 ```
@@ -77,8 +77,8 @@ Verify: `https://api.stamposa.com/v1/health` returns ok.
 
 ```bash
 cd /home/proxyuser8mxd72el/apps/stamposawebsite
-git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git .
-cd loyalty-platform
+git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git
+cd stamposa
 cp deploy/env.production.example deploy/.env.production
 nano deploy/.env.production      # SAME values as slot 1, keep WEB_PORT=3000
 ./deploy/deploy.sh web
@@ -92,8 +92,8 @@ enable SSL for `stamposa.com`.
 
 ```bash
 cd /home/proxyuserdk24dtad/apps/frontend-app
-git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git .
-cd loyalty-platform
+git clone https://<YOUR_GITHUB_PAT>@github.com/technavx-io/stamposa.git
+cd stamposa
 cp deploy/env.production.example deploy/.env.production
 nano deploy/.env.production      # SAME values, but set WEB_PORT=3001
 ./deploy/deploy.sh web
@@ -126,7 +126,7 @@ Growth, 6 months, 30 max.
 
 In the slot you changed:
 ```bash
-cd <slot-path>/loyalty-platform
+cd <slot-path>/stamposa
 ./deploy/deploy.sh api     # backend-api slot   (auto-pulls, rebuilds, migrates)
 ./deploy/deploy.sh web     # a web slot
 ```

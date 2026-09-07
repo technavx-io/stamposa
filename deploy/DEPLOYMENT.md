@@ -37,8 +37,8 @@ In **each** slot's app path, clone the repo and create the env file:
 # backend-api slot: /home/proxyuserj2f8tbdu/apps/backend-api
 # frontend-app slot: /home/proxyuserdk24dtad/apps/frontend-app
 # website slot:      /home/proxyuser8mxd72el/apps/stamposawebsite
-git clone https://github.com/technavx-io/stamposa.git .
-cd loyalty-platform
+git clone https://github.com/technavx-io/stamposa.git
+cd stamposa
 cp deploy/env.production.example deploy/.env.production
 # Fill it in (same values in every slot EXCEPT WEB_PORT — see below).
 ```
@@ -99,7 +99,7 @@ Just re-run the script in the relevant slot(s) — it pulls latest, rebuilds, an
 restarts. Migrations run automatically for the API:
 
 ```bash
-cd <slot>/loyalty-platform && ./deploy/deploy.sh api   # or web
+cd <slot>/stamposa && ./deploy/deploy.sh api   # or web
 ```
 
 ## Turning on live payments (later)
