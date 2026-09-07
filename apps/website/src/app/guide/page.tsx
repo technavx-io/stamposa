@@ -12,6 +12,7 @@ import {
   Smartphone,
   Stamp,
   Store,
+  Tag,
   UserRound,
 } from 'lucide-react';
 import { Button } from '@stamposa/ui/components/button';
@@ -547,6 +548,7 @@ export default function GuidePage() {
             <a href="#owner" className="transition-colors hover:text-strong">Business owner</a>
             <a href="#staff" className="transition-colors hover:text-strong">Counter staff</a>
             <a href="#customer" className="transition-colors hover:text-strong">Customer</a>
+            <Link href="/pricing" className="transition-colors hover:text-strong">Pricing</Link>
             <Link href="/blog" className="transition-colors hover:text-strong">Blog</Link>
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -629,6 +631,9 @@ export default function GuidePage() {
             <p className="mt-2 text-[13px] text-muted">Collect stamps. Earn rewards. No app needed.</p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-body">
+            <Link href="/pricing" className="transition-colors hover:text-strong">
+              <Tag className="mr-1.5 inline size-3.5" aria-hidden />Pricing
+            </Link>
             <Link href="/blog" className="transition-colors hover:text-strong">
               <Newspaper className="mr-1.5 inline size-3.5" aria-hidden />Blog
             </Link>

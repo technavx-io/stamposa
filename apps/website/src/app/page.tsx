@@ -15,6 +15,7 @@ import {
   Smartphone,
   Stamp,
   Store,
+  Tag,
   Users,
   Wallet,
 } from 'lucide-react';
@@ -106,6 +107,7 @@ export default function LandingPage() {
             <a href="#roles" className="transition-colors hover:text-strong">What you get</a>
             <a href="#included" className="transition-colors hover:text-strong">Features</a>
             <Link href="/guide" className="transition-colors hover:text-strong">Guide</Link>
+            <Link href="/pricing" className="transition-colors hover:text-strong">Pricing</Link>
             <Link href="/blog" className="transition-colors hover:text-strong">Blog</Link>
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -459,6 +461,9 @@ export default function LandingPage() {
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-body">
             <Link href="/guide" className="transition-colors hover:text-strong">
               <BookOpen className="mr-1.5 inline size-3.5" aria-hidden />Guide
+            </Link>
+            <Link href="/pricing" className="transition-colors hover:text-strong">
+              <Tag className="mr-1.5 inline size-3.5" aria-hidden />Pricing
             </Link>
             <Link href="/blog" className="transition-colors hover:text-strong">
               <Newspaper className="mr-1.5 inline size-3.5" aria-hidden />Blog
