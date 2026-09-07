@@ -1,123 +1,115 @@
-# Deploying to a VPS
+# Stamposa — production deployment (CloudStick, self-hosted Docker)
 
-One server runs everything: Postgres, Redis, the API, the web app, and Caddy
-(which gets and renews HTTPS certificates automatically). Total footprint fits
-comfortably in 2 GB RAM.
+The **one and only** production method. No Netlify, no Render, no Neon — the
+whole platform (including its Postgres database) runs in Docker on your
+CloudStick server.
 
-## What you need
+## Architecture
 
-- A VPS running **Ubuntu 24.04** (2 GB RAM / 2 vCPU is plenty to start —
-  Hetzner, DigitalOcean, Hostinger, any provider works)
-- A **domain** with DNS you control
-- 15 minutes
+Three subdomains, three CloudStick app slots, all on one server:
 
-## 1. Point DNS at the server
+| CloudStick slot     | Domain              | Runs                        | Localhost port |
+| ------------------- | ------------------- | --------------------------- | -------------- |
+| `backend-api`       | `api.stamposa.com`  | API + **Postgres + Redis**  | `API_PORT` (4000) |
+| `frontend-app`      | `app.stamposa.com`  | web (Next.js) container     | `WEB_PORT` (e.g. 3001) |
+| `stamposawebsite`   | `stamposa.com`      | web (Next.js) container     | `WEB_PORT` (e.g. 3000) |
 
-Create three **A records** pointing at your server’s IP:
+- **The web app is one build.** `stamposa.com` and `app.stamposa.com` run the
+  same image; the Next.js middleware serves the marketing site on the first host
+  and the merchant/staff/admin/customer portals on the second. Deploy the same
+  `web` container in both web slots (different `WEB_PORT` each).
+- **CloudStick's nginx terminates HTTPS** and reverse-proxies each domain to the
+  container's localhost port. The containers never bind public ports.
+- **Your database lives here** — a Postgres container in the `backend-api` slot,
+  volume-backed (`pgdata`). Nothing goes to Neon.
 
-| Type | Host | Value |
-|---|---|---|
-| A | `@` (stamposa.com) | `<server IP>` |
-| A | `www` | `<server IP>` |
-| A | `api` | `<server IP>` |
+## Prerequisites (you said these are ready)
 
-On **Namecheap**: Domain List → Manage → Advanced DNS → Add New Record.
-Delete the default "CNAME www → parkingpage" and the URL-redirect record
-first, or they will fight these.
+- Docker + docker compose v2 on the server.
+- DNS A records → the server for `stamposa.com`, `app.stamposa.com`, `api.stamposa.com`.
+- The three CloudStick app slots created (paths under each `proxyuser` home).
 
-Do this first — HTTPS certificates can only be issued once DNS resolves.
+## One-time setup — per slot
 
-## 2. Install Docker on the server
-
-```bash
-curl -fsSL https://get.docker.com | sh
-```
-
-## 3. Get the code onto the server
-
-Either `git clone` your repository, or copy the folder directly from this
-machine:
+In **each** slot's app path, clone the repo and create the env file:
 
 ```bash
-rsync -az --exclude node_modules --exclude .next --exclude uploads \
-  "loyalty-platform/" root@<server-ip>:/opt/loyalty-platform/
-```
-
-## 4. Configure
-
-```bash
-cd /opt/loyalty-platform
+# backend-api slot: /home/proxyuserj2f8tbdu/apps/backend-api
+# frontend-app slot: /home/proxyuserdk24dtad/apps/frontend-app
+# website slot:      /home/proxyuser8mxd72el/apps/stamposawebsite
+git clone https://github.com/technavx-io/stamposa.git .
+cd loyalty-platform
 cp deploy/env.production.example deploy/.env.production
-nano deploy/.env.production
+# Fill it in (same values in every slot EXCEPT WEB_PORT — see below).
 ```
 
-Fill in the domains, and generate real secrets:
+Fill `deploy/.env.production`:
+- `SITE_DOMAIN=stamposa.com`, `APP_DOMAIN=app.stamposa.com`, `API_DOMAIN=api.stamposa.com` (same everywhere).
+- `POSTGRES_PASSWORD`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `SEED_ADMIN_PASSWORD` (same everywhere — the web slots ignore the DB ones, but keeping one file identical avoids drift).
+- **Ports:** `API_PORT=4000` (backend slot); `WEB_PORT` **different in each web slot** — e.g. `3000` in `stamposawebsite`, `3001` in `frontend-app`.
+- Billing: leave `DODO_API_KEY` blank for now (checkout shows a "contact us" CTA); fill LIVE Dodo values later (see `docs/BILLING-SETUP.md`).
+
+## Deploy
+
+**Backend API slot** (`backend-api`):
+```bash
+./deploy/deploy.sh api          # add --seed ONLY on a brand-new empty DB
+```
+This builds the API, starts Postgres + Redis, runs migrations, seeds the admin
+accounts, and starts the API on `127.0.0.1:$API_PORT`.
+
+**Each web slot** (`stamposawebsite`, then `frontend-app`):
+```bash
+./deploy/deploy.sh web
+```
+Builds and starts the web container on `127.0.0.1:$WEB_PORT`.
+
+## Wire the domains in CloudStick
+
+For each app slot, set its site to **reverse-proxy** to the localhost port, and
+let CloudStick issue the SSL certificate:
+
+| Domain             | Reverse-proxy target      |
+| ------------------ | ------------------------- |
+| `api.stamposa.com` | `http://127.0.0.1:4000`   |
+| `app.stamposa.com` | `http://127.0.0.1:3001`   |
+| `stamposa.com`     | `http://127.0.0.1:3000`   |
+
+(If CloudStick expects a raw nginx `location`, it's just:
+`proxy_pass http://127.0.0.1:PORT;` with the usual `proxy_set_header Host $host;`
+and `X-Forwarded-*` headers.)
+
+## Verify
+
+- `https://api.stamposa.com/v1/health` → ok
+- `https://api.stamposa.com/v1/public/plans` → the plan list
+- `https://stamposa.com/pricing` → pricing page
+- `https://app.stamposa.com/admin` → admin sign-in
+
+## Admin sign-in
+
+- URL: **`https://app.stamposa.com/admin`**
+- Seeded account: `owner@stamposa.com`, password = `SEED_ADMIN_PASSWORD`.
+- 2FA is mandatory in production — you enrol an authenticator app on first login.
+- Add more admins (e.g. `technavx@gmail.com`) from **Admin → Team**.
+
+## Every future deploy
+
+Just re-run the script in the relevant slot(s) — it pulls latest, rebuilds, and
+restarts. Migrations run automatically for the API:
 
 ```bash
-openssl rand -hex 32   # run three times: JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, POSTGRES_PASSWORD
+cd <slot>/loyalty-platform && ./deploy/deploy.sh api   # or web
 ```
 
-## 5. Deploy
+## Turning on live payments (later)
 
-```bash
-./deploy/deploy.sh            # first run builds everything (~5 min)
-./deploy/deploy.sh --seed     # use this variant if you want demo data
-```
+1. In the LIVE Dodo dashboard: create the 6 recurring USD products, a live API
+   key, and a webhook → `https://api.stamposa.com/v1/billing/webhook`.
+2. Put `DODO_ENVIRONMENT=live_mode`, `DODO_API_KEY`, `DODO_WEBHOOK_SECRET`, and
+   the 6 `DODO_PRODUCT_*` ids in the **backend-api** slot's `.env.production`.
+3. `./deploy/deploy.sh api` to restart with billing enabled.
 
-The script builds the images, applies database migrations, starts the stack,
-and waits for the health check. When it finishes:
+## Backups
 
-- Site + portals: `https://stamposa.com`
-- API + Swagger: `https://api.stamposa.com/docs`
-- Admin: `https://stamposa.com/admin/login` — sign in with
-  `owner@stamposa.com` + the `SEED_ADMIN_PASSWORD` you set, then **enrol your
-  authenticator when prompted and change the password**. 2FA is mandatory in
-  production; the API refuses to boot without it.
-
-## 6. Nightly backups
-
-```bash
-crontab -e
-# add:
-15 2 * * * /opt/loyalty-platform/deploy/backup.sh >> /var/log/loyalty-backup.log 2>&1
-```
-
-Dumps land in `~/loyalty-backups/`, kept 14 days. Test a restore once:
-
-```bash
-gunzip -c ~/loyalty-backups/loyalty-<date>.sql.gz | \
-  docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production \
-  exec -T postgres psql -U loyalty loyalty_platform
-```
-
-## Updating to a new version
-
-```bash
-cd /opt/loyalty-platform
-git pull            # or rsync again
-./deploy/deploy.sh  # rebuilds, migrates, restarts — a few seconds of downtime
-```
-
-## Useful commands
-
-```bash
-alias lc='docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production'
-lc ps                 # status
-lc logs -f api        # API logs (OTP codes appear here while SMS_PROVIDER=console)
-lc logs -f caddy      # certificate issues show up here
-lc restart api        # restart one service
-```
-
-## Known limits (deliberate, for now)
-
-- **SMS ships in console-mode until you add MSG91 credentials** — the
-  integration is built; follow `docs/SMS-SETUP.md` (MSG91 account + DLT
-  registration, ~1 hour of steps + 2–4 days of operator approval), fill in
-  the three `MSG91_*` vars, redeploy. Until then staff can enrol customers
-  at the counter without OTPs, which carries a pilot café fine.
-- **CI** (`.github/workflows/ci.yml`) activates when the repo is pushed to
-  GitHub — it runs lint, unit tests, builds, and all 205 E2E assertions on
-  every change.
-- **Error monitoring is wired but off until you add DSNs** — create a free
-  Sentry account (or self-host GlitchTip later), set `SENTRY_DSN` and
-  `WEB_SENTRY_DSN`, redeploy. See `docs/MONITORING-SETUP.md`.
+`deploy/backup.sh` dumps the Postgres volume — schedule it via cron on the server.

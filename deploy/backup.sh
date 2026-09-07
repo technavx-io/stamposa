@@ -1,10 +1,11 @@
 #!/bin/bash
-# Nightly Postgres backup with 14-day rotation.
+# Nightly Postgres backup with 14-day rotation. Run in the backend-api slot
+# (that's where Postgres + the API live).
 # Install:  crontab -e   →   15 2 * * * /path/to/loyalty-platform/deploy/backup.sh
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-COMPOSE=(docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production)
+COMPOSE=(docker compose -f deploy/docker-compose.api.yml --env-file deploy/.env.production)
 BACKUP_DIR="${BACKUP_DIR:-$HOME/loyalty-backups}"
 KEEP_DAYS=14
 
