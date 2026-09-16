@@ -13,10 +13,13 @@ export class ApiError extends Error {
   readonly requestId?: string;
 
   constructor(status: number, body: Partial<ApiErrorBody> | null) {
-    super(body?.message ?? `Request failed (${status})`);
+    // Prefer legacy fields (still populated today); fall back to RFC 7807
+    // canonical fields so we're already correct once the legacy shape is
+    // dropped in a later phase.
+    super(body?.message ?? body?.detail ?? `Request failed (${status})`);
     this.name = 'ApiError';
     this.status = status;
-    this.code = body?.code ?? 'ERROR';
+    this.code = body?.code ?? body?.title ?? 'ERROR';
     this.retryAfterSec = body?.retryAfterSec;
     this.details = body?.details;
     this.requestId = body?.requestId;

@@ -78,3 +78,26 @@ export class VerifyEmailDto extends ResendEmailVerificationDto {
   @Matches(/^\d{6}$/, { message: 'Code must be the 6-digit number from the email.' })
   code: string;
 }
+
+/** Bug #3 — merchant asks us to email them a password-reset LINK. */
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'owner@brewbean.com' })
+  @IsEmail({}, { message: 'Enter a valid email address.' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  email: string;
+}
+
+/** Bug #3 — merchant submits the token from the emailed link + a new password. */
+export class ResetPasswordDto {
+  @ApiProperty({ description: 'Opaque token from the emailed reset link.' })
+  @IsString()
+  @MinLength(32, { message: 'This reset link is invalid or has expired.' })
+  @MaxLength(200)
+  token: string;
+
+  @ApiProperty({ example: 'newpassword123', minLength: 8 })
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters.' })
+  @MaxLength(200)
+  newPassword: string;
+}

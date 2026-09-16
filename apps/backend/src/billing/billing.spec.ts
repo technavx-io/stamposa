@@ -86,13 +86,13 @@ describe('toStateDto', () => {
 describe('plan catalog', () => {
   it('matches the locked pricing (USD cents) and broadcast caps', () => {
     expect(PLANS.FREE.price.monthly).toBe(0);
-    expect(PLANS.STARTER.price.monthly).toBe(900);
-    expect(PLANS.GROWTH.price.monthly).toBe(1900);
-    expect(PLANS.PRO.price.monthly).toBe(3896);
+    expect(PLANS.STARTER.price.monthly).toBe(1900);
+    expect(PLANS.GROWTH.price.monthly).toBe(3900);
+    expect(PLANS.PRO.price.monthly).toBe(6900);
     // Yearly is two months free (10× the monthly price).
-    expect(PLANS.STARTER.price.yearly).toBe(9000);
-    expect(PLANS.GROWTH.price.yearly).toBe(19000);
-    expect(PLANS.PRO.price.yearly).toBe(39000);
+    expect(PLANS.STARTER.price.yearly).toBe(19000);
+    expect(PLANS.GROWTH.price.yearly).toBe(39000);
+    expect(PLANS.PRO.price.yearly).toBe(69000);
     expect(PLANS.FREE.limits.broadcastsPerMonth).toBe(0);
     expect(PLANS.STARTER.limits.broadcastsPerMonth).toBe(2);
     expect(PLANS.GROWTH.limits.broadcastsPerMonth).toBe(30);

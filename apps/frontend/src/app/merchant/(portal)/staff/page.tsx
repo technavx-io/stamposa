@@ -20,7 +20,10 @@ import { LoadError } from '@/components/ui/load-error';
 const schema = z.object({
   name: z.string().trim().min(2, 'Enter their name').max(60),
   email: z.string().trim().email('Enter a valid email'),
-  password: z.string().min(8, 'At least 8 characters'),
+  password: z
+    .string()
+    .min(8, 'At least 8 characters')
+    .refine((v) => !/\s/.test(v), 'Password cannot contain spaces'),
   role: z.enum(['STAFF', 'MANAGER']),
 });
 type FormValues = z.infer<typeof schema>;
@@ -223,7 +226,10 @@ function AddStaffModal({ open, onClose }: { open: boolean; onClose: () => void }
 }
 
 const resetSchema = z.object({
-  password: z.string().min(8, 'At least 8 characters'),
+  password: z
+    .string()
+    .min(8, 'At least 8 characters')
+    .refine((v) => !/\s/.test(v), 'Password cannot contain spaces'),
 });
 
 function ResetPasswordModal({

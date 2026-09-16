@@ -91,6 +91,15 @@ export class TokenService {
     }
   }
 
+  /**
+   * Revoke every refresh-token session belonging to one actor. Called after a
+   * password reset so anyone holding a stolen token loses access immediately.
+   * Access tokens (900s TTL, stateless) can't be revoked and expire on their own.
+   */
+  async revokeAllForActor(role: ActorRole, actorId: string): Promise<number> {
+    return this.redis.deleteByPattern(`sess:${role}:${actorId}:*`);
+  }
+
   /** Short-lived proof that a phone was OTP-verified but has no account yet. */
   async issueRegistrationToken(role: ActorRole, phoneE164: string): Promise<string> {
     const payload: JwtPayload = { sub: phoneE164, role, type: 'registration' };

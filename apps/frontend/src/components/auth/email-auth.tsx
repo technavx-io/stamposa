@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api/client';
@@ -16,10 +17,12 @@ export interface EmailAuthProps {
   role: Role;
   /** Merchants can self-register; staff accounts are created by the owner. */
   allowSignup: boolean;
+  /** Bug #3 — when set, show a "Forgot password?" link in login mode. */
+  forgotPasswordHref?: string;
   onAuthenticated: (session: AuthSession) => void;
 }
 
-export function EmailAuth({ role, allowSignup, onAuthenticated }: EmailAuthProps) {
+export function EmailAuth({ role, allowSignup, forgotPasswordHref, onAuthenticated }: EmailAuthProps) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,6 +63,17 @@ export function EmailAuth({ role, allowSignup, onAuthenticated }: EmailAuthProps
     setError(null);
     if (isSignup && name.trim().length < 2) {
       setError('Enter your name (at least 2 characters).');
+      return;
+    }
+    // JS-side email validation replaces the browser-native popup (bug #1).
+    // Same format check the API applies server-side.
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Enter your email address.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Enter a valid email address.');
       return;
     }
     if (password.length < 8) {
@@ -229,18 +243,26 @@ export function EmailAuth({ role, allowSignup, onAuthenticated }: EmailAuthProps
         </div>
       )}
 
-      <form className="space-y-4" onSubmit={submit}>
+      {/*
+       * noValidate + no `required` attributes: we do our own JS validation in
+       * submit() so users see the app's error styling instead of the browser's
+       * native "Please fill in this field" popup (bug #1). Errors clear as
+       * the user starts typing so a stale message doesn't linger (bug #2).
+       */}
+      <form className="space-y-4" onSubmit={submit} noValidate>
         {isSignup && (
           <Field label="Your full name">
             {(p) => (
               <Input
                 {...p}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="Asha Patel"
                 autoComplete="name"
                 autoFocus
-                required
               />
             )}
           </Field>
@@ -252,11 +274,13 @@ export function EmailAuth({ role, allowSignup, onAuthenticated }: EmailAuthProps
               {...p}
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="you@example.com"
               autoComplete="email"
               autoFocus={!isSignup}
-              required
             />
           )}
         </Field>
@@ -266,13 +290,26 @@ export function EmailAuth({ role, allowSignup, onAuthenticated }: EmailAuthProps
             <PasswordInput
               {...p}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder={isSignup ? 'At least 8 characters' : 'Your password'}
               autoComplete={isSignup ? 'new-password' : 'current-password'}
-              required
             />
           )}
         </Field>
+
+        {forgotPasswordHref && !isSignup && (
+          <div className="-mt-1 text-right text-[13px]">
+            <Link
+              href={forgotPasswordHref}
+              className="font-medium text-brand-600 transition-colors hover:text-brand-700"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        )}
 
         <Button type="submit" size="lg" className="w-full" loading={busy} variant="brand">
           {isSignup ? 'Create account' : 'Sign in'}

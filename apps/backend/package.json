@@ -1,6 +1,6 @@
 {
   "name": "@stamposa/backend",
-  "version": "0.10.0",
+  "version": "0.13.0",
   "private": true,
   "description": "Loyalty Platform API — NestJS + Prisma + Redis",
   "scripts": {
@@ -16,7 +16,8 @@
     "prisma:seed": "prisma db seed",
     "prisma:seed:admins": "ts-node prisma/seed-admins.ts",
     "prisma:studio": "prisma studio",
-    "prisma:seed:demo": "ts-node prisma/seed-demo.ts"
+    "prisma:seed:demo": "ts-node prisma/seed-demo.ts",
+    "openapi:emit": "ts-node scripts/generate-openapi.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

@@ -170,3 +170,59 @@ export function verificationCodeEmail(params: {
     ].join('\n'),
   };
 }
+
+/**
+ * Password-reset magic-link email. The user clicks the button (or copies the
+ * URL) and lands on the reset-password page with the token in the query
+ * string. Single-use, 30-minute TTL — enforced server-side.
+ */
+export function passwordResetLinkEmail(params: {
+  resetUrl: string;
+  expiresMin: number;
+}): VerificationEmail {
+  const { resetUrl, expiresMin } = params;
+  const safeUrl = escapeHtml(resetUrl);
+
+  const heading = 'Reset your password';
+  const intro =
+    'We received a request to reset your Stamposa password. Click the button below to choose a new one.';
+
+  const bodyHtml = `
+    <h1 style="margin:0 0 10px;font-family:${FONT};font-size:22px;line-height:28px;font-weight:700;letter-spacing:-0.02em;color:${INK};" class="sp-ink">${heading}</h1>
+    <p style="margin:0 0 26px;font-family:${FONT};font-size:15px;line-height:23px;color:${BODY};" class="sp-body">${intro}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:6px 0 22px;">
+          <a href="${safeUrl}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-family:${FONT};font-size:15px;font-weight:600;line-height:1;padding:14px 26px;border-radius:10px;">Reset your password</a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0 0 8px;font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};" class="sp-body">
+      Or copy this link into your browser:
+    </p>
+    <p style="margin:0 0 26px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:12px;line-height:18px;color:${BODY};word-break:break-all;" class="sp-body"><a href="${safeUrl}" style="color:${BRAND};text-decoration:underline;">${safeUrl}</a></p>
+    <p style="margin:22px 0 0;font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};" class="sp-body">
+      This link expires in ${expiresMin} minutes and can be used once. If you didn&rsquo;t request a password reset, someone may be trying to access your account — change your password now and contact support.
+    </p>`;
+
+  return {
+    subject: 'Reset your Stamposa password',
+    html: layout({
+      preheader: `Click the link to reset your Stamposa password. It expires in ${expiresMin} minutes.`,
+      bodyHtml,
+    }),
+    text: [
+      heading,
+      '',
+      intro,
+      '',
+      `Reset link: ${resetUrl}`,
+      `This link expires in ${expiresMin} minutes and can be used once.`,
+      '',
+      "If you didn't request a password reset, someone may be trying to access your account — change your password now and contact support.",
+      '',
+      'Stamposa — digital loyalty cards for cafés, salons and shops.',
+    ].join('\n'),
+  };
+}
+

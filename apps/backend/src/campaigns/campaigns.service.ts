@@ -44,6 +44,8 @@ export class CampaignsService {
         stampsRequired: dto.stampsRequired,
         reward: dto.reward,
         dailyStampCap: dto.dailyStampCap ?? null,
+        stampCooldownMinutes: dto.stampCooldownMinutes,
+        rewardExpiryDays: dto.rewardExpiryDays ?? null,
         terms: dto.terms ?? null,
         cardColor: dto.cardColor ?? null,
         stampIcon: dto.stampIcon ?? null,
@@ -78,6 +80,12 @@ export class CampaignsService {
         ...(dto.stampsRequired !== undefined ? { stampsRequired: dto.stampsRequired } : {}),
         ...(dto.reward !== undefined ? { reward: dto.reward } : {}),
         ...(dto.dailyStampCap !== undefined ? { dailyStampCap: dto.dailyStampCap || null } : {}),
+        ...(dto.stampCooldownMinutes !== undefined
+          ? { stampCooldownMinutes: dto.stampCooldownMinutes }
+          : {}),
+        ...(dto.rewardExpiryDays !== undefined
+          ? { rewardExpiryDays: dto.rewardExpiryDays || null }
+          : {}),
         ...(dto.terms !== undefined ? { terms: dto.terms || null } : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),
         ...(dto.cardColor !== undefined ? { cardColor: dto.cardColor } : {}),

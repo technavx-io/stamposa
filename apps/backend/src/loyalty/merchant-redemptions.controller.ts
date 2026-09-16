@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
+import { Idempotent } from '../common/idempotency/idempotent.decorator';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -55,6 +56,7 @@ export class MerchantRedemptionsController {
   }
 
   @Post('redeem')
+  @Idempotent()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark a voucher as handed over, as the owner' })
   @ApiOkResponse({ type: RedeemResultDto })

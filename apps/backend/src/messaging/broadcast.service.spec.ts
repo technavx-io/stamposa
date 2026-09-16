@@ -29,6 +29,7 @@ function makeService(opts: {
     reachableCount: jest
       .fn()
       .mockResolvedValue({ passHolders: opts.passHolders ?? 5, appleDevices: 4, googleCards: 1 }),
+    rewardHolderMembershipIds: jest.fn().mockResolvedValue([]),
     broadcast: jest
       .fn()
       .mockResolvedValue({ recipientCount: 5, appleDevices: 4, googleNotified: true }),
@@ -69,6 +70,10 @@ describe('BroadcastService.send', () => {
     );
     // Let the fire-and-forget dispatch settle.
     await new Promise((r) => setImmediate(r));
-    expect(wallet.broadcast).toHaveBeenCalledWith('biz_1', expect.objectContaining({ id: 'bc_1' }));
+    expect(wallet.broadcast).toHaveBeenCalledWith(
+      'biz_1',
+      expect.objectContaining({ id: 'bc_1' }),
+      expect.any(Object),
+    );
   });
 });

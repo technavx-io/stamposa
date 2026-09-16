@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req } from '@nestjs/common';
+import { Idempotent } from '../common/idempotency/idempotent.decorator';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -245,6 +246,7 @@ export class StaffConsoleController {
   }
 
   @Post('enroll')
+  @Idempotent()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Enrol a customer at the counter by phone or email (no OTP needed)' })
   @ApiOkResponse({ type: EnrollResultDto })
@@ -265,6 +267,7 @@ export class StaffConsoleController {
   }
 
   @Post('stamps')
+  @Idempotent()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Add one stamp to a customer card' })
   @ApiOkResponse({ type: AddStampResultDto })
@@ -281,6 +284,7 @@ export class StaffConsoleController {
   }
 
   @Post('stamps/undo')
+  @Idempotent()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Undo the latest stamp on a card (own within 60 s; managers any within 15 min)',
@@ -300,6 +304,7 @@ export class StaffConsoleController {
   }
 
   @Post('redemptions/redeem')
+  @Idempotent()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark a reward voucher as handed over (by id or code)' })
   @ApiOkResponse({ type: RedeemResultDto })

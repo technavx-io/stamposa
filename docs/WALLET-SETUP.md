@@ -72,7 +72,7 @@ change to saved passes itself.
 
 Put the credential files on the server (e.g. `/opt/loyalty-secrets/`), mount
 them into the API container, and add the env vars to
-`/opt/api-docker/.env`. In `stamposa-vps/api-docker/docker-compose.yml` (already done in production) add under
+`/opt/api-docker/.env`. In `deploy/api-docker/docker-compose.yml` (already done in production) add under
 `api:`:
 
 ```yaml

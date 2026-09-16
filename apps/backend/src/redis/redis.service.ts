@@ -37,6 +37,24 @@ export class RedisService implements OnModuleDestroy {
     if (keys.length > 0) await this.client.del(...keys);
   }
 
+  /**
+   * Delete every key matching `pattern` (SCAN-based; safe on large keyspaces).
+   * Used to purge all refresh-token sessions for one actor on password reset.
+   */
+  async deleteByPattern(pattern: string): Promise<number> {
+    let cursor = '0';
+    let deleted = 0;
+    do {
+      const [next, batch] = await this.client.scan(cursor, 'MATCH', pattern, 'COUNT', 200);
+      cursor = next;
+      if (batch.length > 0) {
+        await this.client.del(...batch);
+        deleted += batch.length;
+      }
+    } while (cursor !== '0');
+    return deleted;
+  }
+
   async exists(key: string): Promise<boolean> {
     return (await this.client.exists(key)) === 1;
   }

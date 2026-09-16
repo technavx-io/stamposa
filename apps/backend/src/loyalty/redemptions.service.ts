@@ -34,6 +34,8 @@ export class RedemptionsService {
       businessId: string;
       rewardText: string;
       earnedByStampId: string;
+      /** Days until expiry snapshotted from campaign.rewardExpiryDays. Null = never. */
+      expiryDays: number | null;
     },
   ) {
     let code = generateCode();
@@ -42,6 +44,12 @@ export class RedemptionsService {
       if (!taken) break;
       code = generateCode();
     }
+    // Snapshot the deadline onto the voucher itself so a later campaign edit
+    // can never retroactively shorten (or extend) a voucher already earned.
+    const expiresAt =
+      params.expiryDays !== null && params.expiryDays > 0
+        ? new Date(Date.now() + params.expiryDays * 86_400_000)
+        : null;
     return tx.redemption.create({
       data: {
         code,
@@ -49,6 +57,7 @@ export class RedemptionsService {
         businessId: params.businessId,
         rewardText: params.rewardText,
         earnedByStampId: params.earnedByStampId,
+        expiresAt,
       },
     });
   }
@@ -85,6 +94,23 @@ export class RedemptionsService {
         'ALREADY_REDEEMED',
         `This reward was already redeemed${redemption.redeemedAt ? ` on ${redemption.redeemedAt.toLocaleDateString('en-IN')}` : ''}.`,
       );
+    }
+    if (redemption.status === RedemptionStatus.VOID) {
+      throw conflict('REWARD_VOID', 'This reward is no longer valid.');
+    }
+    if (redemption.status === RedemptionStatus.EXPIRED) {
+      throw conflict('REWARD_EXPIRED', 'This reward has expired and can no longer be honoured.');
+    }
+    // Lazy expiry: if the voucher is still PENDING but past its expiresAt,
+    // flip it to EXPIRED now and refuse. Same terminal state a future
+    // background sweep would produce — so reporting stays accurate whether
+    // the sweep ran or not.
+    if (redemption.expiresAt && redemption.expiresAt.getTime() <= Date.now()) {
+      await this.prisma.redemption.updateMany({
+        where: { id: redemption.id, status: RedemptionStatus.PENDING },
+        data: { status: RedemptionStatus.EXPIRED },
+      });
+      throw conflict('REWARD_EXPIRED', 'This reward has expired and can no longer be honoured.');
     }
 
     const flipped = await this.prisma.redemption.updateMany({

@@ -22,6 +22,15 @@ import { RedemptionsService } from './redemptions.service';
 
 const DOUBLE_TAP_GUARD_SEC = 3;
 
+/** Human-friendly retry-after text for the STAMP_COOLDOWN message (bug #10). */
+function formatWait(seconds: number): string {
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'}`;
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  const hours = Math.ceil(minutes / 60);
+  return `${hours} hour${hours === 1 ? '' : 's'}`;
+}
+
 /** How long after issuing a stamp it can still be taken back. */
 export const STAFF_UNDO_WINDOW_SEC = 60;
 export const MANAGER_UNDO_WINDOW_SEC = 15 * 60;
@@ -84,24 +93,19 @@ export class StampsService {
           );
         }
 
-        // Fraud rail: cap how many stamps one customer can earn per day.
-        // Only standing stamps count — undone ones gave the stamp back.
-        const cap = membership.campaign.dailyStampCap;
-        if (cap !== null && cap > 0) {
-          const since = new Date(Date.now() - 24 * 3_600_000);
-          const todayCount = await tx.stamp.count({
-            where: {
-              membershipId: membership.id,
-              issuerType: { not: StampIssuerType.ADJUSTMENT },
-              delta: { gt: 0 },
-              undoneAt: null,
-              createdAt: { gte: since },
-            },
-          });
-          if (todayCount >= cap) {
-            throw conflict(
-              'DAILY_CAP_REACHED',
-              `This customer has already earned the daily maximum of ${cap} stamp${cap === 1 ? '' : 's'}.`,
+        // Platform rule: at most one stamp per customer per 24 hours,
+        // regardless of any merchant-set cooldown or daily-cap. The merchant
+        // fields (stampCooldownMinutes, dailyStampCap) are kept in the schema
+        // for future flexibility but this hard rule always wins.
+        if (membership.lastStampAt) {
+          const elapsedMs = Date.now() - membership.lastStampAt.getTime();
+          const oneDayMs = 24 * 3_600_000;
+          if (elapsedMs < oneDayMs) {
+            const retryAfterSec = Math.ceil((oneDayMs - elapsedMs) / 1000);
+            throw tooManyRequests(
+              'STAMP_ONCE_PER_DAY',
+              `This customer already earned a stamp today — the next one is available in ${formatWait(retryAfterSec)}.`,
+              retryAfterSec,
             );
           }
         }
@@ -148,6 +152,7 @@ export class StampsService {
               businessId: params.businessId,
               rewardText: membership.campaign.reward,
               earnedByStampId: stamp.id,
+              expiryDays: membership.campaign.rewardExpiryDays,
             })
           : null;
 

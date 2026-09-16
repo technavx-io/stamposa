@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from '@nestjs/common';
+import { Idempotent } from '../common/idempotency/idempotent.decorator';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -50,6 +51,7 @@ export class CustomerPortalController {
   ) {}
 
   @Post('memberships')
+  @Idempotent()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Join a business loyalty program (idempotent — returns the existing card if already a member)' })
   @ApiOkResponse({ type: JoinResultDto })

@@ -5,6 +5,28 @@ export interface StoredSession {
   actor: SessionActor;
 }
 
+/** Per-role sessionStorage key set by SessionStore when another tab logs out. */
+function signedOutElsewhereKey(role: ActorRole): string {
+  return `stamposa.signed-out-elsewhere.${role.toLowerCase()}`;
+}
+
+/**
+ * Was this tab's session cleared by ANOTHER tab (cross-tab logout)?
+ * Login pages call this on mount to decide whether to show a soft-logout
+ * toast. Reading the flag also consumes it, so it fires exactly once.
+ */
+export function consumeSignedOutElsewhere(role: ActorRole): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const key = signedOutElsewhereKey(role);
+    const was = window.sessionStorage.getItem(key) === '1';
+    if (was) window.sessionStorage.removeItem(key);
+    return was;
+  } catch {
+    return false;
+  }
+}
+
 type Listener = () => void;
 
 /**
@@ -25,10 +47,21 @@ export class SessionStore {
     this.key = `loyalty.session.${role.toLowerCase()}`;
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e) => {
-        if (e.key === this.key) {
-          this.cache = undefined;
-          this.emit();
+        if (e.key !== this.key) return;
+        // Bug #13 (soft-logout): another tab cleared this session. Leave a
+        // per-tab marker in sessionStorage so the login page can show a toast
+        // ("Signed out in another tab") rather than silently redirecting.
+        // Only fires on a real remote clear — a set-then-set (token refresh)
+        // has a non-null newValue and stays silent.
+        if (e.newValue === null && e.oldValue !== null) {
+          try {
+            window.sessionStorage.setItem(signedOutElsewhereKey(role), '1');
+          } catch {
+            // sessionStorage can throw in private mode; toast is a nice-to-have.
+          }
         }
+        this.cache = undefined;
+        this.emit();
       });
     }
   }

@@ -6,8 +6,10 @@ import { PlanTier } from '@prisma/client';
  * price or a limit here never needs a migration.
  *
  * Prices are in cents (USD minor units) to keep money integer-exact. Yearly is
- * two months free. A `null` limit means unlimited. Pricing decided 2026-09-05
- * (value band): Free $0 · Starter $9 · Growth $19 · Pro $39.
+ * two months free. A `null` limit means unlimited. Pricing decided 2026-09-10
+ * (competitor scan): Free $0 · Starter $19 · Growth $39 · Pro $69 — positioned
+ * 30–45% below the market median at every tier (Loopy $25/$69/$95, Stampioo
+ * $32/$54/$108, Stamp Me $49/$79/$199).
  */
 
 /** A quantity limit; null means unlimited. */
@@ -16,6 +18,8 @@ export type Limit = number | null;
 export interface PlanLimits {
   /** Concurrent staff scanner devices/accounts. */
   staffDevices: number;
+  /** Active staff members holding the MANAGER role. null = unlimited. */
+  maxManagers: Limit;
   /** Live (non-archived) campaigns at once. */
   liveCampaigns: Limit;
   /** Enrolled customers (members). */
@@ -57,6 +61,7 @@ export const PLANS: Record<PlanTier, Plan> = {
     price: { monthly: 0, yearly: 0 },
     limits: {
       staffDevices: 1,
+      maxManagers: 0,
       liveCampaigns: 1,
       customers: 100,
       broadcastsPerMonth: 0,
@@ -79,9 +84,10 @@ export const PLANS: Record<PlanTier, Plan> = {
     tier: 'STARTER',
     name: 'Starter',
     tagline: 'For a single outlet finding its regulars.',
-    price: { monthly: 9 * DOLLAR, yearly: 90 * DOLLAR },
+    price: { monthly: 19 * DOLLAR, yearly: 190 * DOLLAR },
     limits: {
       staffDevices: 2,
+      maxManagers: 1,
       liveCampaigns: 1,
       customers: null,
       broadcastsPerMonth: 2,
@@ -105,9 +111,10 @@ export const PLANS: Record<PlanTier, Plan> = {
     tier: 'GROWTH',
     name: 'Growth',
     tagline: 'For a growing brand that markets to its customers.',
-    price: { monthly: 19 * DOLLAR, yearly: 190 * DOLLAR },
+    price: { monthly: 39 * DOLLAR, yearly: 390 * DOLLAR },
     limits: {
       staffDevices: 5,
+      maxManagers: 3,
       liveCampaigns: 3,
       customers: null,
       broadcastsPerMonth: 30,
@@ -132,10 +139,10 @@ export const PLANS: Record<PlanTier, Plan> = {
     tier: 'PRO',
     name: 'Pro',
     tagline: 'For established outlets that want it all.',
-    // Monthly matches the Dodo product exactly ($38.96); yearly is $390.
-    price: { monthly: 3896, yearly: 390 * DOLLAR },
+    price: { monthly: 69 * DOLLAR, yearly: 690 * DOLLAR },
     limits: {
       staffDevices: 15,
+      maxManagers: null,
       liveCampaigns: null,
       customers: null,
       broadcastsPerMonth: null,

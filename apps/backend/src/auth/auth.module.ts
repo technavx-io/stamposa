@@ -9,6 +9,7 @@ import { EmailVerificationService } from './email-verification.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { OtpService } from './otp.service';
+import { PasswordResetService } from './password-reset.service';
 import { TokenService } from './token.service';
 
 @Module({
@@ -24,6 +25,7 @@ import { TokenService } from './token.service';
     AuthService,
     OtpService,
     EmailVerificationService,
+    PasswordResetService,
     TokenService,
     // Registered here (not per-controller) so every route in the app is
     // authenticated by default; opt out explicitly with @Public().

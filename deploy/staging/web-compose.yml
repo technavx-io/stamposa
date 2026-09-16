@@ -1,0 +1,34 @@
+# Stamposa staging — web stack (website + app).
+#
+# Reads the two Next.js standalone bundles from ./website/ and ./frontend/
+# (unpacked from stamposa-web-docker-staging.tar.gz on deploy). Ports
+# 3010/3011 avoid the prod web pair on 3000/3001.
+
+name: stamposa-web-staging
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.website
+    image: stamposa-web:staging
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      NODE_ENV: production
+      PORT: '3010'
+      HOSTNAME: '127.0.0.1'
+      NODE_OPTIONS: --max-old-space-size=192
+
+  web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: stamposa-frontend:staging
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      NODE_ENV: production
+      PORT: '3011'
+      HOSTNAME: '127.0.0.1'
+      NODE_OPTIONS: --max-old-space-size=192

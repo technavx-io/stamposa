@@ -141,6 +141,7 @@ export class CustomerCrmService {
           businessId,
           rewardText: membership.campaign.reward,
           earnedByStampId: entry.id,
+          expiryDays: membership.campaign.rewardExpiryDays,
         });
       }
 

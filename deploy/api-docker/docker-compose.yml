@@ -1,0 +1,103 @@
+# Stamposa API stack: Postgres + Redis + the NestJS API.
+#
+# Everything uses host networking and binds 127.0.0.1 ONLY. Two reasons:
+# CSF (INPUT policy DROP) is blind to Docker's bridge networks and silently
+# drops traffic to them, and with host networking there is no port publishing
+# to constrain what a service exposes — so the bind address is the boundary.
+# Postgres and Redis must never be reachable from the internet.
+#
+# State lives on explicit host paths under /opt/stamposa-data, not anonymous
+# volumes, so backups and any future migration are a plain directory copy.
+#
+#   docker compose up -d --build
+
+name: stamposa-api
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    network_mode: host
+    command: ['postgres', '-c', 'listen_addresses=127.0.0.1']
+    environment:
+      POSTGRES_USER: loyalty
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: loyalty_platform
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - /opt/stamposa-data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U loyalty -d loyalty_platform -h 127.0.0.1']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: host
+    command: ['redis-server', '--bind', '127.0.0.1', '--appendonly', 'yes', '--dir', '/data']
+    volumes:
+      - /opt/stamposa-data/redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-h', '127.0.0.1', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    image: stamposa-api:latest
+    restart: unless-stopped
+    network_mode: host
+    # build-info.env is written by build-bundles.sh and MUST come after .env so
+    # the stamp of the bundle actually deployed wins over anything stale in .env.
+    env_file:
+      - .env
+      - build-info.env
+    environment:
+      NODE_ENV: production
+      PORT: '4000'
+    volumes:
+      # Merchant logos and card background images. Local disk today — the
+      # storage port is S3-swappable, and should be swapped before this
+      # directory becomes the only copy of anything a merchant cares about.
+      - /opt/stamposa-data/uploads:/app/uploads
+      # Wallet credentials (Google service-account JSON, Apple certs). Mounted
+      # read-only. The directory is safe to mount empty — the wallet code only
+      # activates when GOOGLE_WALLET_* / APPLE_WALLET_* env vars point at real
+      # files inside it, so this is inert until credentials are dropped in.
+      - /opt/stamposa-secrets:/app/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Nightly encrypted backup of Postgres + Redis → Cloudflare R2.
+  # See backup/README.md for env vars, restore drill, and rotation policy.
+  # Uses the host network so it can reach postgres/redis on 127.0.0.1 like
+  # everything else in this stack. Requires the seven R2/BACKUP_ vars in .env.
+  backup:
+    build: ./backup
+    image: stamposa-backup:latest
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      # Persist the backup log + last-success marker across container restarts.
+      - /opt/stamposa-data/backup-logs:/var/log/stamposa-backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # Report healthy only when a successful run's marker file is newer than
+      # 26 hours (1560 minutes). Uses busybox find — no GNU date needed.
+      test: ['CMD-SHELL', 'find /var/log/stamposa-backup/last-success -mmin -1560 | grep -q .']
+      interval: 1h
+      timeout: 10s
+      retries: 1
+      start_period: 24h

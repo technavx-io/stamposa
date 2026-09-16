@@ -1,0 +1,22 @@
+{
+  "name": "@stamposa/api-client",
+  "version": "0.10.0",
+  "private": true,
+  "description": "Typed client for the Stamposa API. Types are generated from the backend's OpenAPI (Nest Swagger) spec — never hand-maintained.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "generate": "openapi-typescript ./openapi.json -o ./src/schema.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.14.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.0",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,15 @@
+# stamposa.com — prebuilt Next.js standalone bundle of apps/website.
+#
+# No build happens here: `website/` is the standalone output produced on the
+# dev machine by build-bundles.sh (it bundles its own node_modules, pure JS).
+# That keeps this image buildable on a small VPS with no npm install and no
+# build RAM spike.
+FROM node:22-alpine
+# Default to 127.0.0.1 so a `docker run` without env overrides binds only to
+# loopback. The compose file sets HOSTNAME=127.0.0.1 explicitly as well; this
+# keeps the container safe even if it is ever launched outside compose.
+ENV NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1
+WORKDIR /app
+COPY website/ ./
+EXPOSE 3000
+CMD ["node", "apps/website/server.js"]

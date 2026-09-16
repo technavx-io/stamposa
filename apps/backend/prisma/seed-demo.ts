@@ -29,7 +29,12 @@ async function main() {
   // A self-contained demo account. The password is unimportant — the demo is
   // the customer join experience, not merchant login — but it's a real,
   // verified account so nothing about it looks half-built in the admin panel.
-  const passwordHash = await hash(process.env.SEED_DEMO_PASSWORD ?? 'StamposaDemo!2026');
+  const demoPassword = process.env.SEED_DEMO_PASSWORD;
+  if (!demoPassword) {
+    console.error('Refusing to run: SEED_DEMO_PASSWORD is required (no fallback).');
+    process.exit(1);
+  }
+  const passwordHash = await hash(demoPassword);
 
   const merchant = await prisma.merchant.create({
     data: {

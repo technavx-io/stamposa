@@ -116,7 +116,7 @@ export class JwtAuthGuard implements CanActivate {
         });
         if (!staff) throw unauthorized('ACCOUNT_NOT_FOUND', 'Account no longer exists.');
         if (!staff.isActive) {
-          throw unauthorized('STAFF_INACTIVE', 'This staff account has been deactivated.');
+          throw unauthorized('STAFF_INACTIVE', 'Your account is deactivated.');
         }
         if (staff.business.suspendedAt) {
           throw forbidden(

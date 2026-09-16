@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   Length,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -31,6 +32,7 @@ export class CreateStaffDto {
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters.' })
   @MaxLength(200)
+  @Matches(/^\S+$/, { message: 'Password cannot contain spaces.' })
   password: string;
 
   @ApiPropertyOptional({ enum: StaffRole, default: StaffRole.STAFF, description: 'Managers see team stats and can undo any recent stamp' })
@@ -52,6 +54,7 @@ export class UpdateStaffDto {
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters.' })
   @MaxLength(200)
+  @Matches(/^\S+$/, { message: 'Password cannot contain spaces.' })
   password?: string;
 
   @ApiPropertyOptional({ description: 'Set false to deactivate (blocks login immediately)' })

@@ -17,6 +17,7 @@ import {
 } from './dto/auth-response.dto';
 import { EmailVerificationService } from './email-verification.service';
 import { OtpService } from './otp.service';
+import { PasswordResetService, PasswordResetRequestResult } from './password-reset.service';
 import { TokenService } from './token.service';
 import { Identifier, IdentifierService } from '../common/identifier.service';
 
@@ -38,6 +39,7 @@ export class AuthService {
     private readonly passwords: PasswordService,
     private readonly config: AppConfigService,
     private readonly emailVerification: EmailVerificationService,
+    private readonly passwordReset: PasswordResetService,
   ) {}
 
   // ── Merchant + staff: email + password ────────────────────────────────
@@ -79,10 +81,19 @@ export class AuthService {
     if (!merchant) {
       throw notFound('MERCHANT_NOT_FOUND', 'No signup found for this email. Create an account first.');
     }
-    if (!merchant.emailVerifiedAt) {
-      await this.emailVerification.verifyCode(email, code);
-      await this.prisma.merchant.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
+    // Bug #17 — this endpoint used to fall through to buildSession without
+    // calling verifyCode when emailVerifiedAt was already set, so anyone who
+    // knew a merchant's email could get a full session by POSTing an arbitrary
+    // code. Once the email is verified, this endpoint MUST refuse — the
+    // merchant is expected to sign in with their password.
+    if (merchant.emailVerifiedAt) {
+      throw forbidden(
+        'EMAIL_ALREADY_VERIFIED',
+        'This email is already verified. Please sign in with your password.',
+      );
     }
+    await this.emailVerification.verifyCode(email, code);
+    await this.prisma.merchant.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
     return this.buildSession(
       'MERCHANT',
       merchant,
@@ -98,6 +109,59 @@ export class AuthService {
       return { expiresInSec: 900, resendInSec: 60 };
     }
     return this.emailVerification.requestCode(email);
+  }
+
+  /**
+   * Bug #3 — start a password reset. Silent for accounts we don't know: we
+   * return a canned "link sent" result so the endpoint can't be used to probe
+   * whether an email is registered. Only real, verified accounts actually get
+   * an email. Unverified accounts are silent too — those users should finish
+   * signup, not reset a password they never set.
+   */
+  async requestPasswordReset(email: string): Promise<PasswordResetRequestResult> {
+    const merchant = await this.prisma.merchant.findUnique({ where: { email } });
+    if (!merchant || !merchant.emailVerifiedAt) {
+      return { expiresInSec: 1800, resendInSec: 60 };
+    }
+    return this.passwordReset.requestReset(email);
+  }
+
+  /**
+   * Bug #3 — consume the token from the emailed link, save the new password,
+   * and revoke every existing session for this merchant so any stolen refresh
+   * token dies too. Returns a fresh session so the merchant lands straight in
+   * the app.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<AuthSessionDto> {
+    // Consume the token first — this deletes it from Redis atomically, so a
+    // race between two attempts can't reuse the same link.
+    const email = await this.passwordReset.verifyAndConsume(token);
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { email },
+      include: { business: true },
+    });
+    if (!merchant || !merchant.emailVerifiedAt) {
+      // The unlikely race where the merchant was deleted between the request
+      // and the reset. Return the same generic error the token check throws
+      // so an attacker can't distinguish "no account" from "bad token".
+      throw badRequest('PASSWORD_RESET_INVALID', 'This reset link is invalid or has expired.');
+    }
+    if (merchant.business?.suspendedAt) {
+      throw forbidden(
+        'BUSINESS_SUSPENDED',
+        'This account is suspended. Contact support before resetting the password.',
+      );
+    }
+    const passwordHash = await this.passwords.hash(newPassword);
+    await this.prisma.merchant.update({ where: { email }, data: { passwordHash } });
+    // Evict every existing merchant session — a stolen refresh token is
+    // useless the moment its owner resets their password.
+    await this.tokens.revokeAllForActor('MERCHANT', merchant.id);
+    return this.buildSession(
+      'MERCHANT',
+      merchant,
+      merchant.business && toBusinessDto(merchant.business, this.urls()),
+    );
   }
 
   async loginMerchant(email: string, password: string): Promise<AuthSessionDto> {
@@ -142,7 +206,7 @@ export class AuthService {
       throw unauthorized('INVALID_CREDENTIALS', 'Email or password is incorrect.');
     }
     if (!staff.isActive) {
-      throw forbidden('STAFF_INACTIVE', 'This staff account has been deactivated.');
+      throw forbidden('STAFF_INACTIVE', 'Your account is deactivated.');
     }
     if (staff.business.suspendedAt) {
       throw forbidden(
@@ -172,7 +236,7 @@ export class AuthService {
         );
       }
       if (!staff.isActive) {
-        throw forbidden('STAFF_INACTIVE', 'This staff account has been deactivated.');
+        throw forbidden('STAFF_INACTIVE', 'Your account is deactivated.');
       }
       if (staff.business.suspendedAt) {
         throw forbidden(
@@ -231,7 +295,7 @@ export class AuthService {
           throw notFound('STAFF_NOT_FOUND', 'No staff account for this number.');
         }
         if (!staff.isActive) {
-          throw forbidden('STAFF_INACTIVE', 'This staff account has been deactivated.');
+          throw forbidden('STAFF_INACTIVE', 'Your account is deactivated.');
         }
         return this.authenticated(role, staff, staff.business);
       }

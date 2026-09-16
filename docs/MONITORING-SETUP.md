@@ -30,7 +30,7 @@ be matched to the exact Sentry event.
    WEB_SENTRY_DSN=<the Browser project DSN>
    ```
 
-4. Redeploy the API with the `stamposa-vps` kit (`docker compose up -d` recreates the container) — the API DSN is picked up at boot; the web DSN is
+4. Redeploy the API with the `deploy/` kit (`docker compose up -d` recreates the container) — the API DSN is picked up at boot; the web DSN is
    baked into the browser bundle during the image build.
 5. In Sentry: Settings → Alerts → route new-issue alerts to your email (or a
    WhatsApp/Slack webhook later).

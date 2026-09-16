@@ -51,6 +51,33 @@ export class CreateCampaignDto {
   @Max(20)
   dailyStampCap?: number;
 
+  @ApiProperty({
+    example: 15,
+    minimum: 1,
+    maximum: 1440,
+    description:
+      'Minimum minutes between two stamps for the same customer (bug #10). Required at campaign creation — no default. Range: 1 min … 24 h.',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(1440)
+  stampCooldownMinutes: number;
+
+  @ApiPropertyOptional({
+    example: 30,
+    minimum: 1,
+    maximum: 365,
+    description:
+      'Days a reward voucher stays valid before it EXPIREs. Omit or send null for never-expires.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  rewardExpiryDays?: number | null;
+
   @ApiPropertyOptional({ description: 'Small print shown on the card and join page' })
   @IsOptional()
   @IsString()
@@ -114,6 +141,23 @@ export class CampaignDto {
   @ApiProperty({ nullable: true, type: Number, example: 1 })
   dailyStampCap: number | null;
 
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    example: 15,
+    description:
+      'Minimum minutes between stamps for the same customer. Null on legacy campaigns created before this field existed.',
+  })
+  stampCooldownMinutes: number | null;
+
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    example: 30,
+    description: 'Days a reward voucher stays valid. Null = never expires.',
+  })
+  rewardExpiryDays: number | null;
+
   @ApiProperty({ nullable: true, type: String })
   terms: string | null;
 
@@ -152,6 +196,8 @@ export function toCampaignDto(
     reward: campaign.reward,
     status: campaign.status,
     dailyStampCap: campaign.dailyStampCap,
+    stampCooldownMinutes: campaign.stampCooldownMinutes,
+    rewardExpiryDays: campaign.rewardExpiryDays,
     terms: campaign.terms,
     cardColor: campaign.cardColor,
     stampIcon: campaign.stampIcon,

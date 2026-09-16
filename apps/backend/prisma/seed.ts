@@ -42,6 +42,23 @@ function daysAgo(days: number, hour: number, minute: number): Date {
 }
 
 async function main() {
+  // Safety gate: this script WIPES the database. It must never run in
+  // production, and it must never run by accident. Require an explicit opt-in.
+  if (process.env.NODE_ENV === 'production') {
+    console.error('Refusing to run: NODE_ENV=production. This seed WIPES the database.');
+    process.exit(1);
+  }
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== 'yes') {
+    console.error(
+      'Refusing to run: set ALLOW_DESTRUCTIVE_SEED=yes to acknowledge this seed will WIPE the database.',
+    );
+    process.exit(1);
+  }
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.error('Refusing to run: SEED_ADMIN_PASSWORD is required (no fallback).');
+    process.exit(1);
+  }
+
   console.log('Clearing existing data…');
   await prisma.auditLog.deleteMany();
   await prisma.impersonationSession.deleteMany();
@@ -265,7 +282,7 @@ async function main() {
   }
 
   console.log('Seeding platform admins…');
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe!2026';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD!;
   const passwordHash = await hash(adminPassword);
   await prisma.platformAdmin.createMany({
     data: [
@@ -289,7 +306,7 @@ async function main() {
       },
     ],
   });
-  console.log(`  admin sign-in:    owner@stamposa.com / ${adminPassword}`);
+  console.log('  admin sign-in:    owner@stamposa.com / <SEED_ADMIN_PASSWORD>');
   console.log('  merchant sign-in: owner@brewbean.com / password123');
   console.log('  staff sign-in:    ravi@brewbean.com / password123 (Meera = manager)');
 

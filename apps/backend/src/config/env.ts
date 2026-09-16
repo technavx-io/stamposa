@@ -77,6 +77,13 @@ export const envSchema = z.object({
   /** Service-account key JSON (the account must be added to the issuer). */
   GOOGLE_WALLET_SA_KEY_PATH: z.string().optional(),
 
+  /**
+   * Address that receives operational alerts (cert-expiry warnings, backup
+   * failures, uptime). Absent = alerts are only logged. In production this
+   * should always be set — a silent expiry is an outage.
+   */
+  ALERT_EMAIL: z.string().email().optional(),
+
   // ── Billing: Dodo Payments (Merchant of Record) ──────────────────────
   //    Paid subscriptions activate only when DODO_API_KEY is present; until
   //    then the billing screen falls back to a "contact us" CTA. Dodo is the

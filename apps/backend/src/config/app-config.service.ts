@@ -144,6 +144,11 @@ export class AppConfigService {
     return this.config.get('ADMIN_REQUIRE_2FA', { infer: true });
   }
 
+  /** Address that receives operational alerts; empty when none configured. */
+  get alertEmail(): string | undefined {
+    return this.config.get('ALERT_EMAIL', { infer: true });
+  }
+
   /**
    * Dodo Payments config, or null when billing isn't wired yet (no API key).
    * `products` maps a "TIER_INTERVAL" key to a Dodo product id; a missing id

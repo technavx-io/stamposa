@@ -21,6 +21,7 @@ export class CheckoutResponseDto {
 
 export class PlanLimitsDto implements PlanLimits {
   @ApiProperty() staffDevices: number;
+  @ApiProperty({ nullable: true, type: Number }) maxManagers: number | null;
   @ApiProperty({ nullable: true, type: Number }) liveCampaigns: number | null;
   @ApiProperty({ nullable: true, type: Number }) customers: number | null;
   @ApiProperty({ nullable: true, type: Number }) broadcastsPerMonth: number | null;

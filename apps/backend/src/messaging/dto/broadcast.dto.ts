@@ -1,7 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, Length } from 'class-validator';
-import { Broadcast } from '@prisma/client';
+import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
+import { Broadcast, BroadcastAudience } from '@prisma/client';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
@@ -22,6 +22,16 @@ export class CreateBroadcastDto {
   @Transform(trim)
   @Length(1, 160)
   body: string;
+
+  @ApiPropertyOptional({
+    enum: ['ALL_PASS_HOLDERS', 'REWARD_HOLDERS'],
+    default: 'ALL_PASS_HOLDERS',
+    description:
+      'Who receives the message. REWARD_HOLDERS = only members with an unclaimed reward voucher.',
+  })
+  @IsOptional()
+  @IsEnum(['ALL_PASS_HOLDERS', 'REWARD_HOLDERS'] as const)
+  audience?: BroadcastAudience;
 }
 
 export class BroadcastDto {
@@ -36,6 +46,9 @@ export class BroadcastDto {
 
   @ApiProperty({ enum: ['QUEUED', 'SENDING', 'SENT', 'FAILED'] })
   status: Broadcast['status'];
+
+  @ApiProperty({ enum: ['ALL_PASS_HOLDERS', 'REWARD_HOLDERS'] })
+  audience: BroadcastAudience;
 
   @ApiProperty({ description: 'Wallet passes reachable when the send started' })
   recipientCount: number;
@@ -64,6 +77,12 @@ export class BroadcastAudienceDto {
   @ApiProperty({ description: 'Google cards among them' })
   googleCards: number;
 
+  @ApiProperty({
+    description:
+      'Reachable members with a currently-valid PENDING reward voucher (the REWARD_HOLDERS audience size).',
+  })
+  rewardHolders: number;
+
   @ApiProperty({ description: 'Broadcasts already sent this calendar month' })
   sentThisMonth: number;
 
@@ -77,6 +96,7 @@ export function toBroadcastDto(b: Broadcast): BroadcastDto {
     title: b.title,
     body: b.body,
     status: b.status,
+    audience: b.audience,
     recipientCount: b.recipientCount,
     appleDevices: b.appleDevices,
     googleNotified: b.googleNotified,

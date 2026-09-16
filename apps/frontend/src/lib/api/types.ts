@@ -1,15 +1,45 @@
 /**
- * API contract types — mirrors the NestJS response DTOs
- * (apps/backend/src/[module]/dto). Keep the two in sync when the API changes.
+ * API contract types.
+ *
+ * Historically hand-maintained to mirror the NestJS response DTOs
+ * (apps/backend/src/[module]/dto). The interfaces below are still the
+ * source of truth for the frontend today — but new code should prefer the
+ * generated schema, which cannot drift:
+ *
+ *   import type { ApiSchemas } from '@stamposa/api-client';
+ *   type BusinessFromApi = ApiSchemas['BusinessDto'];
+ *
+ * Regenerate the schema after any backend DTO change:
+ *   npm run api-client:generate   (from repo root)
+ *
+ * Migration plan: replace each hand-maintained interface below with an
+ * alias to its generated counterpart, one screen at a time. Once every
+ * consumer has moved over, delete the hand-maintained version and rename
+ * the alias to the canonical short name.
  */
+export type { ApiSchemas } from '@stamposa/api-client';
 
 export type ActorRole = 'MERCHANT' | 'STAFF' | 'CUSTOMER';
 export type CampaignStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
 export type StampIssuerType = 'STAFF' | 'MERCHANT' | 'ADJUSTMENT';
-export type RedemptionStatus = 'PENDING' | 'REDEEMED' | 'VOID';
+export type RedemptionStatus = 'PENDING' | 'REDEEMED' | 'VOID' | 'EXPIRED';
 export type StaffRole = 'STAFF' | 'MANAGER';
 
+/**
+ * Every error response carries both the legacy Stamposa envelope AND the
+ * RFC 7807 "Problem Details" fields. New code should read `title`, `detail`,
+ * `status`, `instance`, `type`. The legacy `code`, `message`, `statusCode`,
+ * `path` remain populated during the transition and will be dropped once
+ * every consumer has migrated (task 2.6 follow-up).
+ */
 export interface ApiErrorBody {
+  // RFC 7807 canonical fields.
+  type?: string;
+  title?: string;
+  status?: number;
+  detail?: string;
+  instance?: string;
+  // Legacy Stamposa envelope (still populated by the backend today).
   statusCode: number;
   code: string;
   message: string;
@@ -118,6 +148,10 @@ export interface Campaign {
   reward: string;
   status: CampaignStatus;
   dailyStampCap: number | null;
+  /** Merchant-set cooldown between stamps for the same customer (bug #10). Null on legacy campaigns. */
+  stampCooldownMinutes: number | null;
+  /** Days a reward voucher stays valid. Null = never expires. */
+  rewardExpiryDays: number | null;
   terms: string | null;
   cardColor: string | null;
   stampIcon: string | null;
@@ -181,6 +215,8 @@ export interface RedemptionSummary {
   formattedCode: string;
   rewardText: string;
   earnedAt: string;
+  /** When the voucher expires. Null = never expires. */
+  expiresAt: string | null;
 }
 
 export interface RedemptionRow extends RedemptionSummary {
@@ -448,11 +484,15 @@ export interface TransactionTotals {
 
 export type BroadcastStatus = 'QUEUED' | 'SENDING' | 'SENT' | 'FAILED';
 
+/** Who a broadcast targets. REWARD_HOLDERS = only members with an unclaimed reward. */
+export type BroadcastAudienceScope = 'ALL_PASS_HOLDERS' | 'REWARD_HOLDERS';
+
 export interface Broadcast {
   id: string;
   title: string;
   body: string;
   status: BroadcastStatus;
+  audience: BroadcastAudienceScope;
   recipientCount: number;
   appleDevices: number;
   googleNotified: boolean;
@@ -464,6 +504,8 @@ export interface BroadcastAudience {
   passHolders: number;
   appleDevices: number;
   googleCards: number;
+  /** Reachable members with a currently-valid PENDING reward voucher. */
+  rewardHolders: number;
   sentThisMonth: number;
   monthlyLimit: number | null;
 }

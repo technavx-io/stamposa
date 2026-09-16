@@ -1,34 +1,11 @@
 {
+  "extends": "../../tsconfig.next.json",
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@stamposa/ui/*": [
-        "../../packages/ui/src/*"
-      ]
+      "@/*": ["./src/*"],
+      "@stamposa/ui/*": ["../../packages/ui/src/*"],
+      "@stamposa/api-client": ["../../packages/api-client/src/index.ts"],
+      "@stamposa/api-client/schema": ["../../packages/api-client/src/schema.ts"]
     }
   },
   "include": [
@@ -39,7 +16,5 @@
     "../../packages/ui/src/**/*.ts",
     "../../packages/ui/src/**/*.tsx"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

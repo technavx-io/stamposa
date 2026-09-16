@@ -196,6 +196,7 @@ function drawStamps(png: PNG, opts: StampCardOptions): void {
   const buf = png.data;
   const white: RGB = { r: 255, g: 255, b: 255 };
   const amber: RGB = { r: 251, g: 191, b: 36 };
+  const brand = parseHex(opts.brandColorHex || '#4F46E5');
 
   const total = Math.max(1, opts.stampsRequired);
   const collected = Math.max(0, Math.min(total, opts.stampCount));
@@ -226,6 +227,42 @@ function drawStamps(png: PNG, opts: StampCardOptions): void {
       for (let x = Math.floor(cx - r - 2); x <= Math.ceil(cx + r + 2); x++) {
         const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
         const cov = Math.max(0, Math.min(1, r - d + 0.5));
+        if (cov > 0) blend(x, y, c, cov * alpha);
+      }
+    }
+  };
+
+  /**
+   * Antialiased thick line from (x1,y1) to (x2,y2). Computes each pixel's
+   * perpendicular distance to the segment; falls off smoothly at the edge for
+   * a clean stroke. Used for the check mark on filled stamps.
+   */
+  const line = (
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    thickness: number,
+    c: RGB,
+    alpha = 1,
+  ) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len2 = dx * dx + dy * dy || 1;
+    const half = thickness / 2;
+    const minX = Math.floor(Math.min(x1, x2) - half - 1);
+    const maxX = Math.ceil(Math.max(x1, x2) + half + 1);
+    const minY = Math.floor(Math.min(y1, y2) - half - 1);
+    const maxY = Math.ceil(Math.max(y1, y2) + half + 1);
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const px = x + 0.5;
+        const py = y + 0.5;
+        const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len2));
+        const projX = x1 + t * dx;
+        const projY = y1 + t * dy;
+        const d = Math.hypot(px - projX, py - projY);
+        const cov = Math.max(0, Math.min(1, half - d + 0.5));
         if (cov > 0) blend(x, y, c, cov * alpha);
       }
     }
@@ -291,7 +328,18 @@ function drawStamps(png: PNG, opts: StampCardOptions): void {
       else if (!filled) disc(cx, cy, radius * 0.5, amber, 0.9);
     } else if (filled) {
       disc(cx, cy, radius, white, 1);
-      if (stampEmoji) drawEmoji(stampEmoji, cx, cy, radius * 1.5, 1);
+      if (stampEmoji) {
+        drawEmoji(stampEmoji, cx, cy, radius * 1.5, 1);
+      } else {
+        // Bug: filled stamps in Apple Wallet showed as plain white discs — the
+        // web card renders a check mark inside. Match that here: two brand-
+        // coloured strokes forming a ✓ inside the disc.
+        const thick = Math.max(2, radius * 0.22);
+        // Short down-stroke from upper-left to the bottom of the V
+        line(cx - radius * 0.42, cy + radius * 0.02, cx - radius * 0.08, cy + radius * 0.32, thick, brand, 1);
+        // Long up-stroke from the bottom of the V to upper-right
+        line(cx - radius * 0.08, cy + radius * 0.32, cx + radius * 0.5, cy - radius * 0.3, thick, brand, 1);
+      }
     } else {
       ring(cx, cy, radius, white, 0.45);
     }

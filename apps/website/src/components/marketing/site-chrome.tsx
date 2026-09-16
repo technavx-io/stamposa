@@ -103,9 +103,26 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="border-t border-line/70">
-        <p className="mx-auto w-full max-w-6xl px-5 py-5 text-[12.5px] text-muted">
-          © {new Date().getFullYear()} Stamposa · stamposa.com
-        </p>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-5 py-5 text-[12.5px] text-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Stamposa · stamposa.com</p>
+          <nav className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link href={siteHref('/legal/privacy')} className="transition-colors hover:text-strong">
+              Privacy
+            </Link>
+            <Link href={siteHref('/legal/terms')} className="transition-colors hover:text-strong">
+              Terms
+            </Link>
+            <Link href={siteHref('/legal/refunds')} className="transition-colors hover:text-strong">
+              Refunds
+            </Link>
+            <Link href={siteHref('/legal/cookies')} className="transition-colors hover:text-strong">
+              Cookies
+            </Link>
+            <Link href={siteHref('/legal/dpa')} className="transition-colors hover:text-strong">
+              DPA
+            </Link>
+          </nav>
+        </div>
       </div>
     </footer>
   );

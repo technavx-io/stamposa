@@ -1,0 +1,17 @@
+# Caddy terminates HTTPS and fetches Let's Encrypt certificates automatically.
+# APP_DOMAIN and ACME_EMAIL come from the .env file next to the compose file.
+{
+	email {$ACME_EMAIL}
+}
+
+# The bare domain serves the marketing site at "/" and every portal
+# (/merchant, /staff, /admin, /card, /join) from the same Next.js app.
+{$APP_DOMAIN} {
+	encode gzip
+	reverse_proxy web:3000
+}
+
+# www → bare domain, so links shared either way land in the same place.
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}

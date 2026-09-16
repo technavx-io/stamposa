@@ -46,8 +46,8 @@ loyalty-platform/
 
 The website and the app are separate processes in production. Each one's
 middleware redirects paths that belong to the other host, and `packages/ui`
-keeps their look identical. Production deployment is driven from the sibling
-`stamposa-vps/` folder (see its `DEPLOY-NOTES.md`), not from this repo.
+keeps their look identical. Production deployment is driven from the
+`deploy/` folder in this repo (see its `DEPLOY-NOTES.md`).
 
 ## Prerequisites
 
@@ -142,9 +142,9 @@ browser sessions, so you can play merchant, staff and customer side by side in o
 
 Production is a single VPS behind CloudStick's nginx: three Docker containers
 (website, app, API) plus Postgres and Redis. Everything is compiled on the
-dev machine and shipped as tarballs by `../stamposa-vps/build-bundles.sh`;
+dev machine and shipped as tarballs by `deploy/build-bundles.sh`;
 nothing is built on the server. The procedure, verification and rollback are
-in `../stamposa-vps/DEPLOY-NOTES.md` and the deploy runbook.
+in `deploy/DEPLOY-NOTES.md` and the deploy runbook.
 
 ## Phase 1 feature map
 

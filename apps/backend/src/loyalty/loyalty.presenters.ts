@@ -28,10 +28,22 @@ export interface PresenterUrls {
  * PENDING_REDEMPTIONS_INCLUDE) so every card/membership shape can surface
  * outstanding vouchers without extra queries.
  */
+/**
+ * Include clause for Prisma `.findX({ include: { redemptions: <this> }})`.
+ * Wrapped in a getter so `new Date()` is fresh on every read — otherwise the
+ * expiry cut-off would freeze at module load and never advance.
+ */
 export const PENDING_REDEMPTIONS_INCLUDE = {
-  where: { status: 'PENDING' as const },
+  get where() {
+    return {
+      status: 'PENDING' as const,
+      // Hide vouchers past their expiresAt — treated as EXPIRED for display
+      // even before the lazy-flip runs on the next redeem attempt.
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    };
+  },
   orderBy: { createdAt: 'asc' as const },
-} as const;
+};
 
 type MembershipWithBusinessCampaign = CustomerMembership & {
   business: Business;
@@ -52,6 +64,7 @@ export function toRedemptionSummaryDto(r: Redemption): RedemptionSummaryDto {
     formattedCode: formatCode(r.code),
     rewardText: r.rewardText,
     earnedAt: r.createdAt,
+    expiresAt: r.expiresAt,
   };
 }
 

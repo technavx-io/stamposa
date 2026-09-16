@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Bricolage_Grotesque, IBM_Plex_Mono, Inter } from 'next/font/google';
 import { Monitoring } from '@stamposa/ui/components/monitoring';
 import { ThemeProvider, themeScript } from '@stamposa/ui/lib/theme';
@@ -71,6 +72,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Monitoring />
           {children}
         </ThemeProvider>
+        <Script
+          src="https://dash.araraa.com/widget.js"
+          data-key="wgt_A9LaWwIIQpNKmnU9"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

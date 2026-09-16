@@ -361,10 +361,16 @@ export default function StaffConsolePage() {
               />
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            {/*
+             * Two-column on mobile (phone camera faces the customer, so the
+             * QR-scan flow is useful); on md+ we drop the scan button — laptop
+             * webcams face the user, not the counter, so scanning is
+             * impractical there and staff should use the search box instead.
+             */}
+            <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-1">
               <Button
                 variant="secondary"
-                className="h-11 rounded-xl"
+                className="h-11 rounded-xl md:hidden"
                 onClick={() => setScanOpen(true)}
               >
                 <ScanLine className="size-4" /> Scan card QR
@@ -783,6 +789,15 @@ function CustomerResult({
                   <p className="truncate text-sm font-medium text-amber-900">{reward.rewardText}</p>
                   <p className="font-mono text-[11px] tracking-widest text-amber-700">
                     {reward.formattedCode}
+                    {reward.expiresAt && (
+                      <span className="ml-2 font-sans font-medium tracking-normal">
+                        · expires{' '}
+                        {new Date(reward.expiresAt).toLocaleDateString(undefined, {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <Button size="sm" variant="brand" onClick={() => onRedeem(reward)}>

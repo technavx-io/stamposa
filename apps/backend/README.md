@@ -13,5 +13,5 @@ npm run db:seed                    # from the repo root: wipes app tables, loads
 ```
 
 `dist/` is compiled here and shipped to the server by
-`../../../stamposa-vps/build-bundles.sh`; the production image only installs
+`../../deploy/build-bundles.sh`; the production image only installs
 dependencies and runs `prisma generate` around it.

@@ -18,6 +18,7 @@ import { Button } from '@stamposa/ui/components/button';
 import { Field, Input, Textarea } from '@/components/ui/field';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { Modal } from '@/components/ui/modal';
+import { Switch } from '@/components/ui/switch';
 import { Panel, PanelHeader } from '@/components/ui/surface';
 import { CardImageField, EmojiChoice, REWARD_EMOJIS, STAMP_EMOJIS } from '@/components/merchant/card-style-fields';
 import { cardBackground } from '@/lib/card-bg';
@@ -325,23 +326,11 @@ export default function SettingsPage() {
                     <p className="text-sm font-medium text-strong">{label}</p>
                     <p className="text-[13px] text-muted">{description}</p>
                   </div>
-                  <button
-                    role="switch"
-                    aria-checked={business[key]}
+                  <Switch
+                    checked={business[key]}
+                    onCheckedChange={(next) => saveField.mutate({ [key]: next })}
                     aria-label={label}
-                    onClick={() => saveField.mutate({ [key]: !business[key] })}
-                    className={cn(
-                      'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-                      business[key] ? 'bg-brand-600' : 'bg-zinc-200',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'absolute top-0.5 size-5 rounded-full bg-surface shadow transition-transform',
-                        business[key] ? 'translate-x-5.5' : 'translate-x-0.5',
-                      )}
-                    />
-                  </button>
+                  />
                 </li>
               ))}
             </ul>
@@ -454,7 +443,7 @@ export default function SettingsPage() {
                     onClick={() => setBrandColor(hex)}
                     aria-label={`Choose ${hex}`}
                     className={cn(
-                      'size-8 rounded-lg ring-offset-2 transition-all',
+                      'size-8 cursor-pointer rounded-lg ring-offset-2 transition-all',
                       brandColor.toLowerCase() === hex.toLowerCase()
                         ? 'ring-2 ring-zinc-900'
                         : 'hover:scale-105',

@@ -12,7 +12,27 @@ import { Request, Response } from 'express';
 import { MulterError } from 'multer';
 import { AuthActor } from '../../auth/auth.types';
 
+/**
+ * Every 4xx/5xx response carries both the legacy Stamposa envelope AND the
+ * canonical RFC 7807 "Problem Details" fields. Clients can consume whichever
+ * they prefer; the legacy fields will be retired after every consumer has
+ * moved to the RFC 7807 names (task 2.6 follow-up).
+ *
+ * RFC 7807 mapping:
+ *   type      → 'about:blank' (no docs page yet; upgrade to a real URI later)
+ *   title     → the machine-readable code (BAD_REQUEST, ALREADY_REDEEMED, …)
+ *   status    → HTTP status (same as legacy statusCode)
+ *   detail    → human-readable message (same as legacy message)
+ *   instance  → the request path (same as legacy path)
+ */
 interface ErrorBody {
+  // RFC 7807 canonical fields.
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance: string;
+  // Legacy Stamposa envelope — retained for backwards compat.
   statusCode: number;
   code: string;
   message: string;
@@ -126,9 +146,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
       });
     }
 
+    const resolvedCode = code ?? DEFAULT_CODES[status] ?? 'ERROR';
     const body: ErrorBody = {
+      // RFC 7807 canonical.
+      type: 'about:blank',
+      title: resolvedCode,
+      status,
+      detail: message,
+      instance: req.url,
+      // Legacy Stamposa envelope.
       statusCode: status,
-      code: code ?? DEFAULT_CODES[status] ?? 'ERROR',
+      code: resolvedCode,
       message,
       ...(details !== undefined ? { details } : {}),
       ...(retryAfterSec !== undefined ? { retryAfterSec } : {}),
@@ -140,6 +168,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (retryAfterSec !== undefined) {
       res.setHeader('Retry-After', String(retryAfterSec));
     }
+    // Signal RFC 7807 to any client that opts into content negotiation.
+    // Existing clients that read raw JSON keep working — the payload is a
+    // superset of the legacy envelope, and application/problem+json is
+    // registered as an application/json subtype.
+    res.setHeader('Content-Type', 'application/problem+json; charset=utf-8');
     res.status(status).json(body);
   }
 }

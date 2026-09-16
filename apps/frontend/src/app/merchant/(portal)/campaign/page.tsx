@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +31,14 @@ const schema = z.object({
   stampsRequired: z.coerce.number().int().min(2, 'Minimum 2').max(50, 'Maximum 50'),
   reward: z.string().trim().min(2, 'Describe the reward').max(120),
   description: z.string().trim().max(300).optional().or(z.literal('')),
+  // dailyStampCap + stampCooldownMinutes are no longer in the UI — the
+  // platform hard-enforces one stamp per customer per 24 h in the stamps
+  // service. Kept in the schema as optional so we can send safe defaults to
+  // the backend (still required at the API boundary).
   dailyStampCap: z.coerce.number().int().min(0).max(20).optional(),
+  stampCooldownMinutes: z.coerce.number().int().min(1).max(1440).optional(),
+  // 0 in the form = "never expires" — mapped to null when sent to the API.
+  rewardExpiryDays: z.coerce.number().int().min(0).max(365).optional(),
   terms: z.string().trim().max(400).optional().or(z.literal('')),
   cardColor: z.string().optional().or(z.literal('')),
   stampIcon: z.string().optional().or(z.literal('')),
@@ -96,7 +104,11 @@ function CreateCampaign({ business }: { business: BizDefaults }) {
       stampsRequired: 10,
       reward: '',
       description: '',
-      dailyStampCap: 1,
+      dailyStampCap: 0,
+      // No longer in the UI — the backend hard-enforces one stamp per 24 h.
+      stampCooldownMinutes: 1440,
+      // 0 = never expires (safest default: existing behaviour before this field).
+      rewardExpiryDays: 0,
       terms: '',
       cardColor: '',
       stampIcon: '',
@@ -113,6 +125,8 @@ function CreateCampaign({ business }: { business: BizDefaults }) {
         reward: values.reward,
         description: values.description || undefined,
         dailyStampCap: values.dailyStampCap || undefined,
+        stampCooldownMinutes: 1440,
+        rewardExpiryDays: values.rewardExpiryDays ? values.rewardExpiryDays : null,
         terms: values.terms || undefined,
         cardColor: values.cardColor || undefined,
         stampIcon: values.stampIcon || undefined,
@@ -140,6 +154,7 @@ function CreateCampaign({ business }: { business: BizDefaults }) {
 
 function EditCampaign({ campaign, business }: { campaign: Campaign; business: BizDefaults }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [confirmStamps, setConfirmStamps] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -149,6 +164,10 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
       reward: campaign.reward,
       description: campaign.description ?? '',
       dailyStampCap: campaign.dailyStampCap ?? 0,
+      // Not editable in the UI any more — platform hard-enforces one stamp
+      // per 24 h regardless of this value.
+      stampCooldownMinutes: campaign.stampCooldownMinutes ?? 1440,
+      rewardExpiryDays: campaign.rewardExpiryDays ?? 0,
       terms: campaign.terms ?? '',
       cardColor: campaign.cardColor ?? '',
       stampIcon: campaign.stampIcon ?? '',
@@ -198,6 +217,8 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
         reward: values.reward,
         description: values.description || undefined,
         dailyStampCap: values.dailyStampCap ? values.dailyStampCap : null,
+        stampCooldownMinutes: 1440,
+        rewardExpiryDays: values.rewardExpiryDays ? values.rewardExpiryDays : null,
         terms: values.terms || undefined,
         cardColor: values.cardColor ? values.cardColor : null,
         stampIcon: values.stampIcon ? values.stampIcon : null,
@@ -207,6 +228,10 @@ function EditCampaign({ campaign, business }: { campaign: Campaign; business: Bi
       toast.success('Campaign updated');
       setConfirmStamps(false);
       await queryClient.invalidateQueries({ queryKey: ['merchant'] });
+      // Auto-back after a successful update (bug #15) — take the merchant
+      // back to the dashboard rather than leaving them on the form. Fresh
+      // cache guarantees the dashboard shows the updated values.
+      router.push('/merchant/dashboard');
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : 'Could not update the campaign.');
     }
@@ -353,12 +378,27 @@ function CampaignFields({
       <Field label="Description" optional error={form.formState.errors.description?.message}>
         {(p) => <Textarea {...p} rows={2} {...form.register('description')} />}
       </Field>
+      <div className="rounded-lg border border-line-soft bg-canvas/60 px-3 py-2.5 text-[13px] text-muted">
+        Stamposa enforces{' '}
+        <span className="font-medium text-body">one stamp per customer per 24 hours</span> on every
+        card. No settings needed.
+      </div>
       <Field
-        label="Daily stamp limit"
-        hint="Stops one customer collecting many stamps in a single visit. 0 = no limit."
-        error={form.formState.errors.dailyStampCap?.message}
+        label="Reward expiry (days)"
+        optional
+        hint="How long a customer has to redeem an earned reward before it expires. 0 = never expires."
+        error={form.formState.errors.rewardExpiryDays?.message}
       >
-        {(p) => <Input {...p} type="number" min={0} max={20} {...form.register('dailyStampCap')} />}
+        {(p) => (
+          <Input
+            {...p}
+            type="number"
+            min={0}
+            max={365}
+            placeholder="e.g. 30 (leave 0 for no expiry)"
+            {...form.register('rewardExpiryDays')}
+          />
+        )}
       </Field>
       <Field label="Terms" optional hint="Small print shown on the card and join page.">
         {(p) => (
@@ -417,22 +457,21 @@ function CampaignFields({
                   uploading={image.uploading}
                   removing={image.removing}
                 />
-                {image.url && (
-                  <label className="flex items-center gap-2 text-[13px] text-body">
-                    <input
-                      type="checkbox"
-                      className="size-4 accent-brand-600"
-                      checked={form.watch('cardImageTint') ?? true}
-                      onChange={(e) =>
-                        form.setValue('cardImageTint', e.target.checked, { shouldDirty: true })
-                      }
-                    />
-                    Tint the image with the card colour
-                  </label>
-                )}
+                <label className="flex items-center gap-2 text-[13px] text-body">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-brand-600"
+                    checked={form.watch('cardImageTint') ?? true}
+                    onChange={(e) =>
+                      form.setValue('cardImageTint', e.target.checked, { shouldDirty: true })
+                    }
+                  />
+                  Tint the image with the card colour
+                </label>
                 <p className="text-[12px] text-muted">
                   PNG, JPEG or WebP, up to 4 MB. Overrides the business default. Untick the tint to
                   show the image on its own (a soft dark scrim keeps text readable).
+                  {!image.url && ' Applies once you upload a campaign image.'}
                 </p>
               </div>
             ) : (

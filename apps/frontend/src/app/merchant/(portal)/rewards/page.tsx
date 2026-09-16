@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronLeft, ChevronRight, Gift, Search } from 'lucide-react';
+import { Bell, Check, ChevronLeft, ChevronRight, Gift, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api/client';
 import { merchantApi } from '@/lib/api/endpoints';
@@ -12,16 +12,17 @@ import { useDebounced } from '@/lib/use-debounced';
 import { cn, formatDateTime, formatPhone, timeAgo } from '@stamposa/ui/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@stamposa/ui/components/button';
-import { Input } from '@/components/ui/field';
+import { Field, Input, Textarea } from '@/components/ui/field';
 import { Modal } from '@/components/ui/modal';
 import { Badge, EmptyState, Panel, Spinner } from '@/components/ui/surface';
 import { LoadError } from '@/components/ui/load-error';
 
-type Filter = 'PENDING' | 'REDEEMED' | 'ALL';
+type Filter = 'PENDING' | 'REDEEMED' | 'EXPIRED' | 'ALL';
 
 const filters: { key: Filter; label: string }[] = [
   { key: 'PENDING', label: 'Waiting' },
   { key: 'REDEEMED', label: 'Handed over' },
+  { key: 'EXPIRED', label: 'Expired' },
   { key: 'ALL', label: 'All' },
 ];
 
@@ -31,7 +32,14 @@ export default function RewardsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [confirming, setConfirming] = useState<RedemptionRow | null>(null);
+  const [remindOpen, setRemindOpen] = useState(false);
   const debouncedSearch = useDebounced(search);
+
+  // Audience count — how many reward-holders can we actually reach right now.
+  const audience = useQuery({
+    queryKey: ['merchant', 'broadcast-audience'],
+    queryFn: merchantApi.broadcastAudience,
+  });
 
   const rewards = useQuery({
     queryKey: ['merchant', 'redemptions', filter, debouncedSearch, page],
@@ -97,6 +105,17 @@ export default function RewardsPage() {
             }}
           />
         </div>
+        <Button
+          variant="secondary"
+          className="ml-auto"
+          onClick={() => setRemindOpen(true)}
+          disabled={audience.isPending || !audience.data || audience.data.rewardHolders === 0}
+        >
+          <Bell className="size-4" /> Remind reward-holders
+          {audience.data && audience.data.rewardHolders > 0 && (
+            <span className="ml-1 text-muted">({audience.data.rewardHolders})</span>
+          )}
+        </Button>
       </div>
 
       <Panel>
@@ -132,7 +151,7 @@ export default function RewardsPage() {
                       'flex size-9 shrink-0 items-center justify-center rounded-full',
                       r.status === 'PENDING'
                         ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-                        : r.status === 'VOID'
+                        : r.status === 'VOID' || r.status === 'EXPIRED'
                           ? 'bg-surface-2 text-muted'
                           : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
                     )}
@@ -154,9 +173,29 @@ export default function RewardsPage() {
                   </div>
                   <div className="text-right text-xs text-muted">
                     {r.status === 'PENDING' ? (
-                      <>earned {timeAgo(r.earnedAt)}</>
+                      <>
+                        earned {timeAgo(r.earnedAt)}
+                        {r.expiresAt && (
+                          <>
+                            <br />
+                            <span className="text-amber-600 dark:text-amber-400">
+                              expires {formatDateTime(r.expiresAt)}
+                            </span>
+                          </>
+                        )}
+                      </>
                     ) : r.status === 'VOID' ? (
                       <>voided {r.voidedAt ? timeAgo(r.voidedAt) : ''}</>
+                    ) : r.status === 'EXPIRED' ? (
+                      <>
+                        earned {timeAgo(r.earnedAt)}
+                        {r.expiresAt && (
+                          <>
+                            <br />
+                            expired {formatDateTime(r.expiresAt)}
+                          </>
+                        )}
+                      </>
                     ) : (
                       <>
                         by {r.redeemedBy}
@@ -171,6 +210,8 @@ export default function RewardsPage() {
                     </Button>
                   ) : r.status === 'VOID' ? (
                     <Badge tone="zinc">Voided</Badge>
+                  ) : r.status === 'EXPIRED' ? (
+                    <Badge tone="zinc">Expired</Badge>
                   ) : (
                     <Badge tone="green">Handed over</Badge>
                   )}
@@ -230,6 +271,131 @@ export default function RewardsPage() {
           </div>
         )}
       </Modal>
+
+      <RemindRewardHoldersModal
+        open={remindOpen}
+        onClose={() => setRemindOpen(false)}
+        recipientCount={audience.data?.rewardHolders ?? 0}
+        monthlyLimit={audience.data?.monthlyLimit ?? null}
+        sentThisMonth={audience.data?.sentThisMonth ?? 0}
+        onSent={() => {
+          void queryClient.invalidateQueries({ queryKey: ['merchant', 'broadcast-audience'] });
+        }}
+      />
     </>
+  );
+}
+
+/**
+ * Push a wallet notification to just the customers with an unclaimed reward.
+ * Uses the same /messaging/broadcasts endpoint as generic broadcasts but with
+ * audience=REWARD_HOLDERS so only those members are pushed.
+ */
+function RemindRewardHoldersModal({
+  open,
+  onClose,
+  recipientCount,
+  monthlyLimit,
+  sentThisMonth,
+  onSent,
+}: {
+  open: boolean;
+  onClose: () => void;
+  recipientCount: number;
+  monthlyLimit: number | null;
+  sentThisMonth: number;
+  onSent: () => void;
+}) {
+  const [title, setTitle] = useState('🎁 Your reward is waiting');
+  const [body, setBody] = useState(
+    'You have an unclaimed reward on your card — bring your Stamposa pass in on your next visit to redeem it.',
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const send = useMutation({
+    mutationFn: () =>
+      merchantApi.sendBroadcast({
+        title: title.trim(),
+        body: body.trim(),
+        audience: 'REWARD_HOLDERS',
+      }),
+    onSuccess: (res) => {
+      toast.success(`Sent to ${res.recipientCount} reward-holder${res.recipientCount === 1 ? '' : 's'}.`);
+      onSent();
+      onClose();
+    },
+    onError: (e) => {
+      setError(e instanceof ApiError ? e.message : 'Could not send the reminder.');
+    },
+  });
+
+  const outOfQuota = monthlyLimit !== null && sentThisMonth >= monthlyLimit;
+
+  return (
+    <Modal
+      open={open}
+      onClose={() => {
+        if (!send.isPending) onClose();
+      }}
+      title="Remind reward-holders"
+      description={`Sends a wallet notification to the ${recipientCount} customer${recipientCount === 1 ? '' : 's'} with an unclaimed reward. Only counts against your monthly broadcast quota.`}
+    >
+      <div className="space-y-4">
+        <Field label="Title" hint="Shown as the notification headline.">
+          {(p) => (
+            <Input
+              {...p}
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value.slice(0, 60));
+                if (error) setError(null);
+              }}
+              maxLength={60}
+              placeholder="🎁 Your reward is waiting"
+            />
+          )}
+        </Field>
+        <Field
+          label="Message"
+          hint="Kept short — up to 160 characters (SMS length)."
+          error={error ?? undefined}
+        >
+          {(p) => (
+            <Textarea
+              {...p}
+              rows={3}
+              value={body}
+              onChange={(e) => {
+                setBody(e.target.value.slice(0, 160));
+                if (error) setError(null);
+              }}
+              maxLength={160}
+            />
+          )}
+        </Field>
+        <div className="flex items-center justify-between gap-3 text-[12px] text-muted">
+          <span>
+            {monthlyLimit === null
+              ? 'Unlimited on your plan.'
+              : `${Math.max(0, monthlyLimit - sentThisMonth)} broadcasts left this month.`}
+          </span>
+          <span>{body.length}/160</span>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={send.isPending}>
+            Cancel
+          </Button>
+          <Button
+            variant="brand"
+            loading={send.isPending}
+            disabled={outOfQuota || recipientCount === 0 || title.trim().length < 1 || body.trim().length < 1}
+            onClick={() => send.mutate()}
+          >
+            <Bell className="size-4" />
+            Send to {recipientCount}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }

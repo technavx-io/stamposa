@@ -122,6 +122,19 @@ export const merchantApi = {
         { email, password },
         { anonymous: true },
       ),
+    // Bug #3 — password reset via emailed magic link (silent for unknown emails)
+    forgotPassword: (email: string) =>
+      merchantClient.post<OtpRequested>(
+        '/auth/merchant/forgot-password',
+        { email },
+        { anonymous: true },
+      ),
+    resetPassword: (token: string, newPassword: string) =>
+      merchantClient.post<AuthSession>(
+        '/auth/merchant/reset-password',
+        { token, newPassword },
+        { anonymous: true },
+      ),
   },
 
   createBusiness: (data: { name: string; address?: string; phone?: string }) =>
@@ -180,8 +193,12 @@ export const merchantApi = {
   broadcastAudience: () =>
     merchantClient.get<BroadcastAudience>('/merchant/messaging/audience'),
   listBroadcasts: () => merchantClient.get<Broadcast[]>('/merchant/messaging/broadcasts'),
-  sendBroadcast: (data: { title: string; body: string }) =>
-    merchantClient.post<Broadcast>('/merchant/messaging/broadcasts', data),
+  sendBroadcast: (data: {
+    title: string;
+    body: string;
+    /** Omit to reach every wallet-pass holder (default). */
+    audience?: 'ALL_PASS_HOLDERS' | 'REWARD_HOLDERS';
+  }) => merchantClient.post<Broadcast>('/merchant/messaging/broadcasts', data),
 
   createCampaign: (data: {
     name: string;
@@ -189,6 +206,10 @@ export const merchantApi = {
     stampsRequired: number;
     reward: string;
     dailyStampCap?: number;
+    // Bug #10 — required at creation.
+    stampCooldownMinutes: number;
+    /** Days a reward voucher stays valid. Omit for never-expires. */
+    rewardExpiryDays?: number | null;
     terms?: string;
     cardColor?: string | null;
     stampIcon?: string | null;
@@ -204,6 +225,8 @@ export const merchantApi = {
       stampsRequired: number;
       reward: string;
       dailyStampCap: number | null;
+      stampCooldownMinutes: number;
+      rewardExpiryDays: number | null;
       terms: string;
       status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
       cardColor: string | null;

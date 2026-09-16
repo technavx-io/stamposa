@@ -1,0 +1,7048 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/auth/merchant/signup": {
+      "post": {
+        "operationId": "AuthController_signupMerchant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MerchantSignupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailVerificationRequestedDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a merchant account; emails a verification code",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/merchant/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyMerchantEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Confirm the emailed code and sign the new merchant in",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/merchant/verify-email/resend": {
+      "post": {
+        "operationId": "AuthController_resendMerchantVerification",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendEmailVerificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpRequestedDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Resend the merchant email verification code",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/merchant/login": {
+      "post": {
+        "operationId": "AuthController_loginMerchant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Log a merchant in with email + password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/staff/login": {
+      "post": {
+        "operationId": "AuthController_loginStaff",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Log a staff member in with email + password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/customer/otp/request": {
+      "post": {
+        "operationId": "AuthController_requestCustomerOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpRequestedDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send a login/registration OTP to a customer phone or email",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/customer/otp/verify": {
+      "post": {
+        "operationId": "AuthController_verifyCustomerOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResultDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify customer OTP — logs in, or returns a registration token for new phones",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/customer/register": {
+      "post": {
+        "operationId": "AuthController_registerCustomer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Complete customer registration after OTP verification",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Rotate a refresh token into a new token pair",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke a refresh token (idempotent)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Current actor profile (any role)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/login": {
+      "post": {
+        "operationId": "AdminAuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResultDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Step 1 — email and password. Always requires a second factor.",
+        "tags": [
+          "Admin · Auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/2fa/enroll": {
+      "post": {
+        "operationId": "AdminAuthController_enroll",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminTwoFactorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "First sign-in — confirm the authenticator and receive recovery codes",
+        "tags": [
+          "Admin · Auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/2fa/verify": {
+      "post": {
+        "operationId": "AdminAuthController_verify",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminTwoFactorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSessionDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Step 2 — authenticator code (or a recovery code)",
+        "tags": [
+          "Admin · Auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/refresh": {
+      "post": {
+        "operationId": "AdminAuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Rotate an admin refresh token",
+        "tags": [
+          "Admin · Auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/logout": {
+      "post": {
+        "operationId": "AdminAuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Revoke the current admin session",
+        "tags": [
+          "Admin · Auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/me": {
+      "get": {
+        "operationId": "AdminAuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The signed-in admin and what their role permits",
+        "tags": [
+          "Admin · Auth"
+        ]
+      }
+    },
+    "/v1/admin/dashboard": {
+      "get": {
+        "operationId": "AdminController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attention queue, platform stats and recent activity",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants": {
+      "get": {
+        "operationId": "AdminController_listMerchants",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "filter",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "active",
+                "silent",
+                "suspended",
+                "no-campaign"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Business name, slug, owner name or phone",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List and filter every tenant",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants/{id}": {
+      "get": {
+        "operationId": "AdminController_merchantDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Full tenant detail: health, programme, staff, activity",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants/{id}/customers": {
+      "get": {
+        "operationId": "AdminController_merchantCustomers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Tenant customer list — codes and counts, no contact details",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants/{id}/audit": {
+      "get": {
+        "operationId": "AdminController_merchantAudit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Everything ever done to this tenant",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants/{id}/suspend": {
+      "post": {
+        "operationId": "AdminController_suspend",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendMerchantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Suspend a tenant — blocks logins and stamping immediately",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants/{id}/reactivate": {
+      "post": {
+        "operationId": "AdminController_reactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lift a suspension",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants/{id}/notes": {
+      "patch": {
+        "operationId": "AdminController_notes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MerchantNotesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Operator-only notes on a tenant",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/merchants/{id}/impersonate": {
+      "post": {
+        "operationId": "AdminController_impersonate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpersonateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Open a 30-minute merchant session for support. Always logged.",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/impersonation/{sessionId}/end": {
+      "post": {
+        "operationId": "AdminController_endImpersonation",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Close an impersonation session early",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/customers/lookup": {
+      "post": {
+        "operationId": "AdminController_lookupCustomer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerLookupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find one customer by exact phone or email. Reason mandatory; always audit-logged.",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/customers/{id}/erase": {
+      "post": {
+        "operationId": "AdminController_eraseCustomer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerEraseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "DPDP/GDPR erasure: anonymise the customer everywhere, revoke their sessions, keep only opaque ledger rows. Irreversible.",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/audit": {
+      "get": {
+        "operationId": "AdminController_auditLog",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "adminId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "businessId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "merchant.",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The platform activity trail. Read-only, always.",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/audit/actions": {
+      "get": {
+        "operationId": "AdminController_auditActions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Distinct action types, for the filter dropdown",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/team": {
+      "get": {
+        "operationId": "AdminController_listTeam",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The platform operator’s own staff",
+        "tags": [
+          "Admin · Panel"
+        ]
+      },
+      "post": {
+        "operationId": "AdminController_createTeamMember",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a colleague; returns a one-time temporary password",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/team/{id}": {
+      "patch": {
+        "operationId": "AdminController_updateTeamMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename, change role, or activate/deactivate",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/team/{id}/revoke-sessions": {
+      "post": {
+        "operationId": "AdminController_revokeSessions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sign this admin out of every device",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/admin/health": {
+      "get": {
+        "operationId": "AdminController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dependency status and platform counters",
+        "tags": [
+          "Admin · Panel"
+        ]
+      }
+    },
+    "/v1/merchant/business": {
+      "post": {
+        "operationId": "BusinessesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBusinessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create the business profile (one per merchant in Phase 1)",
+        "tags": [
+          "Merchant · Business"
+        ]
+      },
+      "get": {
+        "operationId": "BusinessesController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the business profile",
+        "tags": [
+          "Merchant · Business"
+        ]
+      },
+      "patch": {
+        "operationId": "BusinessesController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBusinessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the business profile",
+        "tags": [
+          "Merchant · Business"
+        ]
+      }
+    },
+    "/v1/merchant/business/logo": {
+      "post": {
+        "operationId": "BusinessesController_uploadLogo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload/replace the business logo (PNG/JPEG/WebP, max 2 MB)",
+        "tags": [
+          "Merchant · Business"
+        ]
+      },
+      "delete": {
+        "operationId": "BusinessesController_removeLogo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove the business logo",
+        "tags": [
+          "Merchant · Business"
+        ]
+      }
+    },
+    "/v1/merchant/business/card-image": {
+      "post": {
+        "operationId": "BusinessesController_uploadCardImage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload/replace the default card background image (max 4 MB)",
+        "tags": [
+          "Merchant · Business"
+        ]
+      },
+      "delete": {
+        "operationId": "BusinessesController_removeCardImage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove the default card background image",
+        "tags": [
+          "Merchant · Business"
+        ]
+      }
+    },
+    "/v1/merchant/business/qr": {
+      "get": {
+        "operationId": "BusinessesController_qr",
+        "parameters": [
+          {
+            "name": "size",
+            "required": false,
+            "in": "query",
+            "description": "Pixel width of the QR image (128–2048)",
+            "schema": {
+              "default": 512,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "QR code (data URL) linking to the customer join page",
+        "tags": [
+          "Merchant · Business"
+        ]
+      }
+    },
+    "/v1/merchant/business/qr.png": {
+      "get": {
+        "operationId": "BusinessesController_qrPng",
+        "parameters": [
+          {
+            "name": "size",
+            "required": false,
+            "in": "query",
+            "description": "Pixel width of the QR image (128–2048)",
+            "schema": {
+              "default": 512,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Downloadable QR code PNG",
+        "tags": [
+          "Merchant · Business"
+        ]
+      }
+    },
+    "/v1/public/plans": {
+      "get": {
+        "operationId": "PublicPlansController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "All subscription plans with prices, limits and features",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/v1/merchant/subscription": {
+      "get": {
+        "operationId": "MerchantSubscriptionController_state",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionStateDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Current plan, trial state and what the tenant is entitled to",
+        "tags": [
+          "Merchant · Billing"
+        ]
+      }
+    },
+    "/v1/merchant/subscription/checkout": {
+      "post": {
+        "operationId": "MerchantSubscriptionController_checkout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a hosted checkout for a paid plan; returns the redirect URL",
+        "tags": [
+          "Merchant · Billing"
+        ]
+      }
+    },
+    "/v1/merchant/subscription/cancel": {
+      "post": {
+        "operationId": "MerchantSubscriptionController_cancel",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel the paid plan at the end of the current period",
+        "tags": [
+          "Merchant · Billing"
+        ]
+      }
+    },
+    "/v1/merchant/subscription/redeem": {
+      "post": {
+        "operationId": "MerchantSubscriptionController_redeem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionStateDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Redeem a promo code for a free plan period",
+        "tags": [
+          "Merchant · Billing"
+        ]
+      }
+    },
+    "/v1/billing/webhook": {
+      "post": {
+        "operationId": "DodoWebhookController_receive",
+        "parameters": [
+          {
+            "name": "webhook-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "webhook-timestamp",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "webhook-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Dodo Payments event receiver (signature-verified)",
+        "tags": [
+          "Billing · Webhooks"
+        ]
+      }
+    },
+    "/v1/admin/promo-codes": {
+      "get": {
+        "operationId": "PromoAdminController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PromoCodeDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List promo codes with redemption counts",
+        "tags": [
+          "Admin · Billing"
+        ]
+      },
+      "post": {
+        "operationId": "PromoAdminController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePromoCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCodeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a promo code",
+        "tags": [
+          "Admin · Billing"
+        ]
+      }
+    },
+    "/v1/admin/promo-codes/{id}": {
+      "patch": {
+        "operationId": "PromoAdminController_setActive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPromoActiveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCodeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enable or disable a promo code",
+        "tags": [
+          "Admin · Billing"
+        ]
+      }
+    },
+    "/v1/merchant/campaigns": {
+      "post": {
+        "operationId": "CampaignsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCampaignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create the loyalty campaign (one live campaign in Phase 1)",
+        "tags": [
+          "Merchant · Campaigns"
+        ]
+      },
+      "get": {
+        "operationId": "CampaignsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List campaigns (newest first)",
+        "tags": [
+          "Merchant · Campaigns"
+        ]
+      }
+    },
+    "/v1/merchant/campaigns/{id}": {
+      "get": {
+        "operationId": "CampaignsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one campaign",
+        "tags": [
+          "Merchant · Campaigns"
+        ]
+      },
+      "patch": {
+        "operationId": "CampaignsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCampaignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update campaign details, pause/resume or archive",
+        "tags": [
+          "Merchant · Campaigns"
+        ]
+      }
+    },
+    "/v1/merchant/campaigns/{id}/card-image": {
+      "post": {
+        "operationId": "CampaignsController_uploadCardImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload/replace this campaign's card background image (max 4 MB)",
+        "tags": [
+          "Merchant · Campaigns"
+        ]
+      },
+      "delete": {
+        "operationId": "CampaignsController_removeCardImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove this campaign's card background image",
+        "tags": [
+          "Merchant · Campaigns"
+        ]
+      }
+    },
+    "/v1/merchant/customers": {
+      "get": {
+        "operationId": "MerchantCustomersController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Matches name, phone digits or customer code",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedDto"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/MembershipListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List/search customers of this business (paginated)",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      }
+    },
+    "/v1/merchant/customers/{membershipId}": {
+      "get": {
+        "operationId": "MerchantCustomersController_detail",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Customer detail (card state + campaign)",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      },
+      "patch": {
+        "operationId": "MerchantCustomersController_updateCustomer",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update private notes and tags",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      }
+    },
+    "/v1/merchant/customers/{membershipId}/stamps": {
+      "get": {
+        "operationId": "MerchantCustomersController_stampHistory",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedDto"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/StampDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stamp history for a customer (paginated, newest first)",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      },
+      "post": {
+        "operationId": "MerchantCustomersController_addStamp",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddStampResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add one stamp as the owner (solo merchants without staff)",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      }
+    },
+    "/v1/merchant/customers/{membershipId}/adjust": {
+      "post": {
+        "operationId": "MerchantCustomersController_adjust",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustBalanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Correct a balance by ±N with a mandatory reason (recorded in the ledger)",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      }
+    },
+    "/v1/merchant/customers/{membershipId}/block": {
+      "post": {
+        "operationId": "MerchantCustomersController_block",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Block or unblock a customer. Blocked members keep their history.",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      }
+    },
+    "/v1/merchant/customers/{membershipId}/consents": {
+      "get": {
+        "operationId": "MerchantCustomersController_consents",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Consent history — what they agreed to and when",
+        "tags": [
+          "Merchant · Customers"
+        ]
+      }
+    },
+    "/v1/merchant/redemptions": {
+      "get": {
+        "operationId": "MerchantRedemptionsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by voucher status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "REDEEMED",
+                "VOID"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Customer name, phone digits, customer code or voucher code",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedDto"
+                    },
+                    {
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/RedemptionRowDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List reward vouchers (pending first, newest first)",
+        "tags": [
+          "Merchant · Rewards"
+        ]
+      }
+    },
+    "/v1/merchant/redemptions/redeem": {
+      "post": {
+        "operationId": "MerchantRedemptionsController_redeem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedeemResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a voucher as handed over, as the owner",
+        "tags": [
+          "Merchant · Rewards"
+        ]
+      }
+    },
+    "/v1/customer/cards/{membershipId}/wallet": {
+      "get": {
+        "operationId": "CustomerWalletController_availability",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletAvailabilityDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Which wallets this deployment can issue passes for",
+        "tags": [
+          "Customer"
+        ]
+      }
+    },
+    "/v1/customer/cards/{membershipId}/wallet/apple.pkpass": {
+      "get": {
+        "operationId": "CustomerWalletController_applePass",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the signed Apple Wallet pass for this card",
+        "tags": [
+          "Customer"
+        ]
+      }
+    },
+    "/v1/customer/cards/{membershipId}/wallet/google": {
+      "post": {
+        "operationId": "CustomerWalletController_googleLink",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleSaveLinkDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create/refresh the Google Wallet object and return the save link",
+        "tags": [
+          "Customer"
+        ]
+      }
+    },
+    "/v1/merchant/analytics/summary": {
+      "get": {
+        "operationId": "AnalyticsController_summary",
+        "parameters": [
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "30d",
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Headline metrics with change vs the previous period",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/analytics/series": {
+      "get": {
+        "operationId": "AnalyticsController_series",
+        "parameters": [
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "30d",
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Daily stamps and joins, zero-filled, in the business timezone",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/analytics/top-customers": {
+      "get": {
+        "operationId": "AnalyticsController_topCustomers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Most loyal customers by lifetime stamps",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/analytics/staff": {
+      "get": {
+        "operationId": "AnalyticsController_staff",
+        "parameters": [
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "30d",
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Stamps issued per staff member in the period",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/transactions": {
+      "get": {
+        "operationId": "AnalyticsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Customer name, phone digits or card code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issuerType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "STAFF",
+                "MERCHANT",
+                "ADJUSTMENT"
+              ]
+            }
+          },
+          {
+            "name": "staffId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-08-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-08-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Every stamp and adjustment, newest first",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/transactions/totals": {
+      "get": {
+        "operationId": "AnalyticsController_totals",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Customer name, phone digits or card code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issuerType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "STAFF",
+                "MERCHANT",
+                "ADJUSTMENT"
+              ]
+            }
+          },
+          {
+            "name": "staffId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-08-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-08-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Entry count, net stamps and adjustment count",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/export/customers.csv": {
+      "get": {
+        "operationId": "AnalyticsController_exportCustomers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the customer list. Free on every plan.",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/export/transactions.csv": {
+      "get": {
+        "operationId": "AnalyticsController_exportTransactions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download the full ledger",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/export/rewards.csv": {
+      "get": {
+        "operationId": "AnalyticsController_exportRewards",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Download every reward earned and handed over",
+        "tags": [
+          "Merchant · Analytics"
+        ]
+      }
+    },
+    "/v1/merchant/staff": {
+      "post": {
+        "operationId": "StaffManagementController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a staff member (they log in with this phone + OTP)",
+        "tags": [
+          "Merchant · Staff"
+        ]
+      },
+      "get": {
+        "operationId": "StaffManagementController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List staff members",
+        "tags": [
+          "Merchant · Staff"
+        ]
+      }
+    },
+    "/v1/merchant/staff/{id}": {
+      "patch": {
+        "operationId": "StaffManagementController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename or activate/deactivate a staff member",
+        "tags": [
+          "Merchant · Staff"
+        ]
+      }
+    },
+    "/v1/staff/context": {
+      "get": {
+        "operationId": "StaffConsoleController_context",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffContextDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Who am I, which business, which campaign is live",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/staff/today": {
+      "get": {
+        "operationId": "StaffConsoleController_today",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Today's counter numbers (managers also get team breakdown)",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/staff/password": {
+      "post": {
+        "operationId": "StaffConsoleController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change own password (requires current password)",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/staff/customers/search": {
+      "get": {
+        "operationId": "StaffConsoleController_search",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Phone digits, customer code or name. Empty = recently stamped.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembershipListItemDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find a customer by phone, code or name (own business only)",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/staff/enroll": {
+      "post": {
+        "operationId": "StaffConsoleController_enroll",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enrol a customer at the counter by phone or email (no OTP needed)",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/staff/stamps": {
+      "post": {
+        "operationId": "StaffConsoleController_addStamp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStampDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddStampResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add one stamp to a customer card",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/staff/stamps/undo": {
+      "post": {
+        "operationId": "StaffConsoleController_undoStamp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoStampDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoStampResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Undo the latest stamp on a card (own within 60 s; managers any within 15 min)",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/staff/redemptions/redeem": {
+      "post": {
+        "operationId": "StaffConsoleController_redeem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedeemResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a reward voucher as handed over (by id or code)",
+        "tags": [
+          "Staff console"
+        ]
+      }
+    },
+    "/v1/merchant/messaging/audience": {
+      "get": {
+        "operationId": "MessagingController_audience",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastAudienceDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reachable wallet audience and remaining monthly quota",
+        "tags": [
+          "Merchant · Messaging"
+        ]
+      }
+    },
+    "/v1/merchant/messaging/broadcasts": {
+      "get": {
+        "operationId": "MessagingController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BroadcastDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Recent broadcasts with delivery stats",
+        "tags": [
+          "Merchant · Messaging"
+        ]
+      },
+      "post": {
+        "operationId": "MessagingController_send",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBroadcastDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BroadcastDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a wallet push broadcast to all card holders",
+        "tags": [
+          "Merchant · Messaging"
+        ]
+      }
+    },
+    "/v1/feedback": {
+      "post": {
+        "operationId": "FeedbackController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitFeedbackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send product feedback (merchant, staff or customer)",
+        "tags": [
+          "Feedback"
+        ]
+      }
+    },
+    "/v1/admin/feedback": {
+      "get": {
+        "operationId": "AdminFeedbackController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEW",
+                "REVIEWED",
+                "RESOLVED"
+              ]
+            }
+          },
+          {
+            "name": "authorType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MERCHANT",
+                "STAFF",
+                "CUSTOMER"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Match author label, business name or message text.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List and filter tenant feedback",
+        "tags": [
+          "Admin · Feedback"
+        ]
+      }
+    },
+    "/v1/admin/feedback/counts": {
+      "get": {
+        "operationId": "AdminFeedbackController_counts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Feedback counts per triage status",
+        "tags": [
+          "Admin · Feedback"
+        ]
+      }
+    },
+    "/v1/admin/feedback/{id}": {
+      "patch": {
+        "operationId": "AdminFeedbackController_setStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFeedbackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Move a feedback entry through triage (new/reviewed/resolved)",
+        "tags": [
+          "Admin · Feedback"
+        ]
+      }
+    },
+    "/v1/customer/memberships": {
+      "post": {
+        "operationId": "CustomerPortalController_join",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinBusinessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join a business loyalty program (idempotent — returns the existing card if already a member)",
+        "tags": [
+          "Customer"
+        ]
+      }
+    },
+    "/v1/customer/cards": {
+      "get": {
+        "operationId": "CustomerPortalController_cards",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "All loyalty cards belonging to the customer",
+        "tags": [
+          "Customer"
+        ]
+      }
+    },
+    "/v1/customer/cards/{membershipId}": {
+      "get": {
+        "operationId": "CustomerPortalController_card",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One card with recent stamp activity (poll for live updates)",
+        "tags": [
+          "Customer"
+        ]
+      }
+    },
+    "/v1/customer/cards/{membershipId}/qr": {
+      "get": {
+        "operationId": "CustomerPortalController_cardQr",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardQrDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The card's code as a QR image — shown at the counter for camera scanning",
+        "tags": [
+          "Customer"
+        ]
+      }
+    },
+    "/v1/merchant/dashboard": {
+      "get": {
+        "operationId": "DashboardController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Overview stats, live activity and setup checklist",
+        "tags": [
+          "Merchant · Dashboard"
+        ]
+      }
+    },
+    "/v1/public/businesses/{slug}": {
+      "get": {
+        "operationId": "PublicController_business",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicBusinessDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Business info shown on the customer join page",
+        "tags": [
+          "Public"
+        ]
+      }
+    },
+    "/v1/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Liveness + dependency check",
+        "tags": [
+          "Health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Loyalty Platform API",
+    "description": "Multi-tenant loyalty platform — Phase 1. Bearer JWT auth; see /docs for the interactive UI.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "MerchantSignupDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@brewbean.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          },
+          "name": {
+            "type": "string",
+            "example": "Asha Patel"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "name"
+        ]
+      },
+      "EmailVerificationRequestedDto": {
+        "type": "object",
+        "properties": {
+          "verificationRequired": {
+            "type": "boolean",
+            "example": true,
+            "description": "Signup succeeded but the email must be confirmed before sign-in"
+          },
+          "email": {
+            "type": "string",
+            "example": "owner@brewbean.com",
+            "description": "The email the code was sent to"
+          },
+          "expiresInSec": {
+            "type": "number",
+            "example": 900
+          },
+          "resendInSec": {
+            "type": "number",
+            "example": 60
+          },
+          "devCode": {
+            "type": "string",
+            "description": "Dev-mode only — never present in production"
+          }
+        },
+        "required": [
+          "verificationRequired",
+          "email",
+          "expiresInSec",
+          "resendInSec"
+        ]
+      },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@brewbean.com"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ]
+      },
+      "TokensDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "accessTokenExpiresInSec": {
+            "type": "number",
+            "example": 900
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "accessTokenExpiresInSec"
+        ]
+      },
+      "SessionActorDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "MERCHANT",
+              "STAFF",
+              "CUSTOMER"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "example": "owner@brewbean.com"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+919876500001"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "name",
+          "email",
+          "phone"
+        ]
+      },
+      "BusinessDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cm5xyzabc0000abcd1234efgh"
+          },
+          "name": {
+            "type": "string",
+            "example": "Brew & Bean Coffee"
+          },
+          "slug": {
+            "type": "string",
+            "example": "brew-and-bean"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "http://localhost:4000/uploads/logos/x.png"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "googleReviewUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://g.page/r/CaBcDeFgHiJkL/review"
+          },
+          "joinUrl": {
+            "type": "string",
+            "example": "http://localhost:3000/join/brew-and-bean",
+            "description": "Customer registration link encoded in the QR code"
+          },
+          "brandColor": {
+            "type": "string",
+            "nullable": true,
+            "example": "#4F46E5"
+          },
+          "stampIcon": {
+            "type": "string",
+            "nullable": true,
+            "example": "☕",
+            "description": "Default stamp emoji for cards"
+          },
+          "rewardIcon": {
+            "type": "string",
+            "nullable": true,
+            "example": "🎁",
+            "description": "Default reward emoji for cards"
+          },
+          "cardImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Default card background image URL"
+          },
+          "cardImageTint": {
+            "type": "boolean",
+            "example": true,
+            "description": "Tint the card image with the colour, or show image + scrim only"
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Kolkata"
+          },
+          "consentText": {
+            "type": "string",
+            "nullable": true
+          },
+          "notifyDailySummary": {
+            "type": "boolean"
+          },
+          "notifyWeeklyDigest": {
+            "type": "boolean"
+          },
+          "notifyStaffInactive": {
+            "type": "boolean"
+          },
+          "suspended": {
+            "type": "boolean",
+            "description": "True while a platform admin has suspended the account"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "logoUrl",
+          "address",
+          "phone",
+          "googleReviewUrl",
+          "joinUrl",
+          "brandColor",
+          "stampIcon",
+          "rewardIcon",
+          "cardImageUrl",
+          "cardImageTint",
+          "category",
+          "timezone",
+          "consentText",
+          "notifyDailySummary",
+          "notifyWeeklyDigest",
+          "notifyStaffInactive",
+          "suspended",
+          "createdAt"
+        ]
+      },
+      "AuthSessionDto": {
+        "type": "object",
+        "properties": {
+          "tokens": {
+            "$ref": "#/components/schemas/TokensDto"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/SessionActorDto"
+          },
+          "business": {
+            "nullable": true,
+            "description": "The actor’s business (merchant: own business or null; staff: employer; customer: null)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BusinessDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "tokens",
+          "actor",
+          "business"
+        ]
+      },
+      "ResendEmailVerificationDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@brewbean.com"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "OtpRequestedDto": {
+        "type": "object",
+        "properties": {
+          "expiresInSec": {
+            "type": "number",
+            "example": 300
+          },
+          "resendInSec": {
+            "type": "number",
+            "example": 60
+          },
+          "devCode": {
+            "type": "string",
+            "description": "Dev-mode only — never present in production"
+          }
+        },
+        "required": [
+          "expiresInSec",
+          "resendInSec"
+        ]
+      },
+      "EmailLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@brewbean.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "RequestOtpDto": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "example": "+91 98765 00001",
+            "description": "Phone number or email address. Phones accept any format and are normalised to E.164 server-side; emails are lowercased. Customers may use either — staff and merchants must use a phone here, since they already have email+password sign-in."
+          }
+        },
+        "required": [
+          "identifier"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "example": "+91 98765 00001",
+            "description": "Phone number or email address. Phones accept any format and are normalised to E.164 server-side; emails are lowercased. Customers may use either — staff and merchants must use a phone here, since they already have email+password sign-in."
+          },
+          "code": {
+            "type": "string",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "identifier",
+          "code"
+        ]
+      },
+      "AuthResultDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "AUTHENTICATED",
+              "REGISTRATION_REQUIRED"
+            ]
+          },
+          "session": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthSessionDto"
+              }
+            ]
+          },
+          "registrationToken": {
+            "type": "string",
+            "nullable": true,
+            "description": "Present when status is REGISTRATION_REQUIRED; pass to /register within 10 minutes"
+          }
+        },
+        "required": [
+          "status",
+          "session",
+          "registrationToken"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "registrationToken": {
+            "type": "string",
+            "description": "registrationToken returned by the verify step"
+          },
+          "name": {
+            "type": "string",
+            "example": "Asha Patel"
+          }
+        },
+        "required": [
+          "registrationToken",
+          "name"
+        ]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "ImpersonationInfoDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Admin support session id"
+          },
+          "adminLabel": {
+            "type": "string",
+            "example": "support@stamposa.com",
+            "description": "Who is impersonating"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the support session force-ends"
+          }
+        },
+        "required": [
+          "sessionId",
+          "adminLabel",
+          "expiresAt"
+        ]
+      },
+      "MeDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "MERCHANT",
+              "STAFF",
+              "CUSTOMER"
+            ]
+          },
+          "actor": {
+            "$ref": "#/components/schemas/SessionActorDto"
+          },
+          "business": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BusinessDto"
+              }
+            ]
+          },
+          "impersonation": {
+            "nullable": true,
+            "description": "Set when this session is an admin impersonating the merchant",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ImpersonationInfoDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "role",
+          "actor",
+          "business",
+          "impersonation"
+        ]
+      },
+      "AdminLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@stamposa.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "correct horse battery staple"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "TwoFactorSetupDto": {
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "description": "Base32 secret, for manual entry"
+          },
+          "otpauthUrl": {
+            "type": "string",
+            "description": "otpauth:// URI"
+          },
+          "qrDataUrl": {
+            "type": "string",
+            "description": "PNG data URL of the enrolment QR"
+          }
+        },
+        "required": [
+          "secret",
+          "otpauthUrl",
+          "qrDataUrl"
+        ]
+      },
+      "AdminLoginResultDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "TWO_FACTOR_REQUIRED",
+              "TWO_FACTOR_SETUP_REQUIRED"
+            ]
+          },
+          "twoFactorToken": {
+            "type": "string",
+            "description": "Pass to the verify/enroll step within 5 minutes"
+          },
+          "twoFactorSetup": {
+            "description": "Present on first sign-in only",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TwoFactorSetupDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "twoFactorToken"
+        ]
+      },
+      "AdminTwoFactorDto": {
+        "type": "object",
+        "properties": {
+          "twoFactorToken": {
+            "type": "string",
+            "description": "twoFactorToken from the login step"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "Authenticator code, or a recovery code"
+          }
+        },
+        "required": [
+          "twoFactorToken",
+          "code"
+        ]
+      },
+      "AdminTokensDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "accessTokenExpiresInSec": {
+            "type": "number",
+            "example": 900
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "accessTokenExpiresInSec"
+        ]
+      },
+      "AdminProfileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "OPS",
+              "SUPPORT",
+              "FINANCE",
+              "ANALYST"
+            ]
+          },
+          "capabilities": {
+            "description": "What this role may do",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "twoFactorEnabled": {
+            "type": "boolean"
+          },
+          "recoveryCodesRemaining": {
+            "type": "number"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "role",
+          "capabilities",
+          "twoFactorEnabled",
+          "recoveryCodesRemaining",
+          "lastLoginAt",
+          "createdAt"
+        ]
+      },
+      "AdminSessionDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "AUTHENTICATED"
+            ]
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/AdminTokensDto"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/AdminProfileDto"
+          },
+          "recoveryCodes": {
+            "description": "Shown once, at enrolment only. Store them somewhere safe.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "tokens",
+          "admin"
+        ]
+      },
+      "AdminRefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "SuspendMerchantDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Chargeback dispute pending resolution"
+          },
+          "confirmName": {
+            "type": "string",
+            "description": "Must match the business name exactly — typed confirmation"
+          }
+        },
+        "required": [
+          "reason",
+          "confirmName"
+        ]
+      },
+      "MerchantNotesDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "example": "Owner prefers WhatsApp. Second outlet opening in March."
+          }
+        },
+        "required": [
+          "notes"
+        ]
+      },
+      "ImpersonateDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Investigating reported stamping issue, ticket #412"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "CustomerLookupDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+91 98765 01101",
+            "description": "Exact phone number — no browsing"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Customer emailed asking which businesses hold their data"
+          }
+        },
+        "required": [
+          "phone",
+          "reason"
+        ]
+      },
+      "CustomerEraseDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "DPDP erasure request received by email on 18 Aug"
+          },
+          "confirm": {
+            "type": "string",
+            "example": "ERASE",
+            "description": "Type ERASE to confirm — this cannot be undone"
+          }
+        },
+        "required": [
+          "reason",
+          "confirm"
+        ]
+      },
+      "CreateAdminDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ops@stamposa.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "Priya Sharma"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "OPS",
+              "SUPPORT",
+              "FINANCE",
+              "ANALYST"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "role"
+        ]
+      },
+      "UpdateAdminDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPER_ADMIN",
+              "OPS",
+              "SUPPORT",
+              "FINANCE",
+              "ANALYST"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateBusinessDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Brew & Bean Coffee"
+          },
+          "address": {
+            "type": "string",
+            "example": "12 MG Road, Indiranagar, Bengaluru 560038"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91 80 4123 4567",
+            "description": "Display phone for the business"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateBusinessDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Brew & Bean Coffee"
+          },
+          "address": {
+            "type": "string",
+            "example": "12 MG Road, Indiranagar, Bengaluru 560038"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+91 80 4123 4567",
+            "description": "Display phone for the business"
+          },
+          "brandColor": {
+            "type": "string",
+            "example": "#4F46E5",
+            "description": "Applied to the card and join page"
+          },
+          "stampIcon": {
+            "type": "object",
+            "example": "☕",
+            "description": "Default stamp emoji; '' clears it"
+          },
+          "rewardIcon": {
+            "type": "object",
+            "example": "🎁",
+            "description": "Default reward emoji; '' clears it"
+          },
+          "cardImageTint": {
+            "type": "boolean",
+            "description": "Tint the card image with the colour, or show image + scrim only"
+          },
+          "category": {
+            "type": "string",
+            "example": "cafe"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Asia/Kolkata",
+            "description": "Drives what \"today\" means in reports"
+          },
+          "googleReviewUrl": {
+            "type": "object",
+            "example": "https://g.page/r/CaBcDeFgHiJkL/review",
+            "description": "Google review link shown on customer cards. Accepts a g.page / Maps share link, a search.google.com/local/writereview URL, or a bare Place ID; '' clears it"
+          },
+          "consentText": {
+            "type": "string",
+            "description": "Wording customers agree to when enrolling"
+          },
+          "notifyDailySummary": {
+            "type": "boolean"
+          },
+          "notifyWeeklyDigest": {
+            "type": "boolean"
+          },
+          "notifyStaffInactive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "QrResponseDto": {
+        "type": "object",
+        "properties": {
+          "joinUrl": {
+            "type": "string",
+            "example": "http://localhost:3000/join/brew-and-bean"
+          },
+          "qrDataUrl": {
+            "type": "string",
+            "description": "PNG data URL"
+          }
+        },
+        "required": [
+          "joinUrl",
+          "qrDataUrl"
+        ]
+      },
+      "PlanLimitsDto": {
+        "type": "object",
+        "properties": {
+          "staffDevices": {
+            "type": "number"
+          },
+          "liveCampaigns": {
+            "type": "number",
+            "nullable": true
+          },
+          "customers": {
+            "type": "number",
+            "nullable": true
+          },
+          "broadcastsPerMonth": {
+            "type": "number",
+            "nullable": true
+          },
+          "analyticsHistoryDays": {
+            "type": "number",
+            "nullable": true
+          },
+          "cardCustomization": {
+            "type": "boolean"
+          },
+          "csvExport": {
+            "type": "boolean"
+          },
+          "badgeRemoved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "staffDevices",
+          "liveCampaigns",
+          "customers",
+          "broadcastsPerMonth",
+          "analyticsHistoryDays",
+          "cardCustomization",
+          "csvExport",
+          "badgeRemoved"
+        ]
+      },
+      "PlanDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "STARTER",
+              "GROWTH",
+              "PRO"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Growth"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "priceMonthly": {
+            "type": "number",
+            "description": "Monthly price in cents (USD minor units)",
+            "example": 1900
+          },
+          "priceYearly": {
+            "type": "number",
+            "description": "Yearly price in cents",
+            "example": 19000
+          },
+          "limits": {
+            "$ref": "#/components/schemas/PlanLimitsDto"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "comingSoon": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recommended": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tier",
+          "name",
+          "tagline",
+          "priceMonthly",
+          "priceYearly",
+          "limits",
+          "features",
+          "comingSoon",
+          "recommended"
+        ]
+      },
+      "SubscriptionStateDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "STARTER",
+              "GROWTH",
+              "PRO"
+            ],
+            "description": "Plan on file"
+          },
+          "effectiveTier": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "STARTER",
+              "GROWTH",
+              "PRO"
+            ],
+            "description": "What the tenant is entitled to right now"
+          },
+          "effectivePlanName": {
+            "type": "string",
+            "example": "Growth"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "TRIALING",
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED",
+              "EXPIRED"
+            ]
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "trialDaysLeft": {
+            "type": "number",
+            "nullable": true,
+            "description": "Whole days left in the trial"
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "cancelAtPeriodEnd": {
+            "type": "boolean"
+          },
+          "billingEnabled": {
+            "type": "boolean",
+            "description": "Whether online checkout is available (payment provider configured)"
+          }
+        },
+        "required": [
+          "plan",
+          "effectiveTier",
+          "effectivePlanName",
+          "status",
+          "interval",
+          "trialEndsAt",
+          "trialDaysLeft",
+          "currentPeriodEnd",
+          "cancelAtPeriodEnd",
+          "billingEnabled"
+        ]
+      },
+      "CheckoutRequestDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "STARTER",
+              "GROWTH",
+              "PRO"
+            ]
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "MONTHLY",
+              "YEARLY"
+            ]
+          }
+        },
+        "required": [
+          "tier",
+          "interval"
+        ]
+      },
+      "CheckoutResponseDto": {
+        "type": "object",
+        "properties": {
+          "checkoutUrl": {
+            "type": "string",
+            "description": "Hosted Dodo checkout URL to redirect the merchant to"
+          }
+        },
+        "required": [
+          "checkoutUrl"
+        ]
+      },
+      "RedeemRequestDto": {
+        "type": "object",
+        "properties": {
+          "redemptionId": {
+            "type": "string",
+            "description": "Redemption id from a card/search payload"
+          },
+          "code": {
+            "type": "string",
+            "example": "RX7K-9QZ2",
+            "description": "Voucher code as shown on the customer card"
+          }
+        }
+      },
+      "PromoCodeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "STARTER",
+              "GROWTH",
+              "PRO"
+            ]
+          },
+          "freeMonths": {
+            "type": "number"
+          },
+          "maxRedemptions": {
+            "type": "number"
+          },
+          "redeemedCount": {
+            "type": "number"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "tier",
+          "freeMonths",
+          "maxRedemptions",
+          "redeemedCount",
+          "active",
+          "expiresAt",
+          "createdAt"
+        ]
+      },
+      "CreatePromoCodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "FOUNDERS",
+            "description": "Case-insensitive; stored uppercase"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "STARTER",
+              "GROWTH",
+              "PRO"
+            ],
+            "default": "GROWTH"
+          },
+          "freeMonths": {
+            "type": "number",
+            "example": 6,
+            "description": "Length of the free grant in months"
+          },
+          "maxRedemptions": {
+            "type": "number",
+            "example": 30,
+            "description": "Total redemptions allowed"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "Optional ISO date after which the code stops working"
+          }
+        },
+        "required": [
+          "code",
+          "tier",
+          "freeMonths",
+          "maxRedemptions"
+        ]
+      },
+      "SetPromoActiveDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active"
+        ]
+      },
+      "CreateCampaignDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Coffee Lovers Card"
+          },
+          "description": {
+            "type": "string",
+            "example": "Collect a stamp with every coffee."
+          },
+          "stampsRequired": {
+            "type": "number",
+            "example": 10,
+            "minimum": 2,
+            "maximum": 50,
+            "description": "Stamps needed to earn the reward"
+          },
+          "reward": {
+            "type": "string",
+            "example": "1 free coffee of your choice"
+          },
+          "dailyStampCap": {
+            "type": "number",
+            "example": 1,
+            "description": "Max stamps one customer can earn per day. Omit for unlimited."
+          },
+          "terms": {
+            "type": "string",
+            "description": "Small print shown on the card and join page"
+          },
+          "cardColor": {
+            "type": "object",
+            "example": "#4F46E5",
+            "description": "Card colour (hex). Omit to use the business brand colour."
+          },
+          "stampIcon": {
+            "type": "object",
+            "example": "☕",
+            "description": "Emoji shown in each stamp. Omit for the default check."
+          },
+          "rewardIcon": {
+            "type": "object",
+            "example": "🎁",
+            "description": "Emoji on the reward slot. Omit for the default gift."
+          },
+          "cardImageTint": {
+            "type": "boolean",
+            "description": "Tint the card image with the colour (true) or show image + scrim only (false)"
+          }
+        },
+        "required": [
+          "name",
+          "stampsRequired",
+          "reward"
+        ]
+      },
+      "CampaignDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Coffee Lovers Card"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "stampsRequired": {
+            "type": "number",
+            "example": 10
+          },
+          "reward": {
+            "type": "string",
+            "example": "1 free coffee of your choice"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ]
+          },
+          "dailyStampCap": {
+            "type": "number",
+            "nullable": true,
+            "example": 1
+          },
+          "terms": {
+            "type": "string",
+            "nullable": true
+          },
+          "cardColor": {
+            "type": "string",
+            "nullable": true,
+            "example": "#4F46E5"
+          },
+          "stampIcon": {
+            "type": "string",
+            "nullable": true,
+            "example": "☕"
+          },
+          "rewardIcon": {
+            "type": "string",
+            "nullable": true,
+            "example": "🎁"
+          },
+          "cardImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Card background image URL"
+          },
+          "cardImageTint": {
+            "type": "boolean",
+            "example": true,
+            "description": "Tint the card image with the colour, or show image + scrim only"
+          },
+          "memberCount": {
+            "type": "number",
+            "example": 42,
+            "description": "Customers enrolled in this campaign"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "stampsRequired",
+          "reward",
+          "status",
+          "dailyStampCap",
+          "terms",
+          "cardColor",
+          "stampIcon",
+          "rewardIcon",
+          "cardImageUrl",
+          "cardImageTint",
+          "memberCount",
+          "createdAt"
+        ]
+      },
+      "UpdateCampaignDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Coffee Lovers Card"
+          },
+          "description": {
+            "type": "string",
+            "example": "Collect a stamp with every coffee."
+          },
+          "stampsRequired": {
+            "type": "number",
+            "example": 10,
+            "minimum": 2,
+            "maximum": 50,
+            "description": "Stamps needed to earn the reward"
+          },
+          "reward": {
+            "type": "string",
+            "example": "1 free coffee of your choice"
+          },
+          "dailyStampCap": {
+            "type": "number",
+            "example": 1,
+            "description": "Max stamps one customer can earn per day. Omit for unlimited."
+          },
+          "terms": {
+            "type": "string",
+            "description": "Small print shown on the card and join page"
+          },
+          "cardColor": {
+            "type": "object",
+            "example": "#4F46E5",
+            "description": "Card colour (hex). Omit to use the business brand colour."
+          },
+          "stampIcon": {
+            "type": "object",
+            "example": "☕",
+            "description": "Emoji shown in each stamp. Omit for the default check."
+          },
+          "rewardIcon": {
+            "type": "object",
+            "example": "🎁",
+            "description": "Emoji on the reward slot. Omit for the default gift."
+          },
+          "cardImageTint": {
+            "type": "boolean",
+            "description": "Tint the card image with the colour (true) or show image + scrim only (false)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ],
+            "description": "ACTIVE, PAUSED or ARCHIVED"
+          }
+        }
+      },
+      "PaginatedDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "pageSize",
+          "totalPages"
+        ]
+      },
+      "CustomerSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+919876501101"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "example": "ami@example.com"
+          },
+          "contact": {
+            "type": "string",
+            "example": "+91 98765 01101"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "email",
+          "contact"
+        ]
+      },
+      "RedemptionSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Redemption (voucher) id"
+          },
+          "code": {
+            "type": "string",
+            "example": "RX7K9QZ2"
+          },
+          "formattedCode": {
+            "type": "string",
+            "example": "RX7K-9QZ2"
+          },
+          "rewardText": {
+            "type": "string",
+            "example": "1 free coffee of your choice",
+            "description": "Snapshotted at earn time"
+          },
+          "earnedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "formattedCode",
+          "rewardText",
+          "earnedAt"
+        ]
+      },
+      "MembershipListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Membership id"
+          },
+          "code": {
+            "type": "string",
+            "example": "7F3K9QZP"
+          },
+          "formattedCode": {
+            "type": "string",
+            "example": "7F3K-9QZP"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Private merchant notes"
+          },
+          "tags": {
+            "example": [
+              "regular"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blockedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "blockedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerSummaryDto"
+          },
+          "stampCount": {
+            "type": "number",
+            "example": 4
+          },
+          "stampsRequired": {
+            "type": "number",
+            "example": 10
+          },
+          "completedCount": {
+            "type": "number",
+            "example": 1
+          },
+          "totalStamps": {
+            "type": "number",
+            "example": 14
+          },
+          "lastStampAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pendingRewards": {
+            "description": "Rewards waiting to be handed over",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RedemptionSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "formattedCode",
+          "notes",
+          "tags",
+          "blockedAt",
+          "blockedReason",
+          "customer",
+          "stampCount",
+          "stampsRequired",
+          "completedCount",
+          "totalStamps",
+          "lastStampAt",
+          "joinedAt",
+          "pendingRewards"
+        ]
+      },
+      "CardCampaignDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Coffee Lovers Card"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "stampsRequired": {
+            "type": "number",
+            "example": 10
+          },
+          "reward": {
+            "type": "string",
+            "example": "1 free coffee of your choice"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ARCHIVED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "stampsRequired",
+          "reward",
+          "status"
+        ]
+      },
+      "MembershipDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Membership id"
+          },
+          "code": {
+            "type": "string",
+            "example": "7F3K9QZP"
+          },
+          "formattedCode": {
+            "type": "string",
+            "example": "7F3K-9QZP"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Private merchant notes"
+          },
+          "tags": {
+            "example": [
+              "regular"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blockedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "blockedReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerSummaryDto"
+          },
+          "stampCount": {
+            "type": "number",
+            "example": 4
+          },
+          "stampsRequired": {
+            "type": "number",
+            "example": 10
+          },
+          "completedCount": {
+            "type": "number",
+            "example": 1
+          },
+          "totalStamps": {
+            "type": "number",
+            "example": 14
+          },
+          "lastStampAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pendingRewards": {
+            "description": "Rewards waiting to be handed over",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RedemptionSummaryDto"
+            }
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/CardCampaignDto"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "formattedCode",
+          "notes",
+          "tags",
+          "blockedAt",
+          "blockedReason",
+          "customer",
+          "stampCount",
+          "stampsRequired",
+          "completedCount",
+          "totalStamps",
+          "lastStampAt",
+          "joinedAt",
+          "pendingRewards",
+          "campaign"
+        ]
+      },
+      "StampDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "delta": {
+            "type": "number",
+            "example": 1,
+            "description": "Signed movement: −1 rows are undo reversals or removals"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Present on adjustments and undos"
+          },
+          "completedCard": {
+            "type": "boolean",
+            "description": "True when this stamp completed a card and earned the reward"
+          },
+          "issuerType": {
+            "type": "string",
+            "enum": [
+              "STAFF",
+              "MERCHANT",
+              "ADJUSTMENT"
+            ]
+          },
+          "issuerName": {
+            "type": "string",
+            "example": "Ravi Kumar",
+            "description": "Staff name, or \"Owner\" for merchant-issued stamps"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "delta",
+          "reason",
+          "completedCard",
+          "issuerType",
+          "issuerName"
+        ]
+      },
+      "AddStampResultDto": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "description": "Card state after the stamp",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MembershipListItemDto"
+              }
+            ]
+          },
+          "rewardEarned": {
+            "type": "boolean",
+            "description": "True when this stamp completed the card"
+          },
+          "reward": {
+            "type": "string",
+            "example": "1 free coffee of your choice"
+          },
+          "stamp": {
+            "$ref": "#/components/schemas/StampDto"
+          },
+          "redemption": {
+            "nullable": true,
+            "description": "Voucher minted when this stamp completed the card",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RedemptionSummaryDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "card",
+          "rewardEarned",
+          "reward",
+          "stamp",
+          "redemption"
+        ]
+      },
+      "UpdateCustomerDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Private notes, visible only to the business"
+          },
+          "tags": {
+            "example": [
+              "regular",
+              "birthday-march"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AdjustBalanceDto": {
+        "type": "object",
+        "properties": {
+          "delta": {
+            "type": "number",
+            "example": -2,
+            "description": "Whole number, positive or negative"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Stamped twice by mistake at the counter"
+          }
+        },
+        "required": [
+          "delta",
+          "reason"
+        ]
+      },
+      "BlockCustomerDto": {
+        "type": "object",
+        "properties": {
+          "blocked": {
+            "type": "boolean",
+            "description": "True to block, false to unblock"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Repeated abuse of the referral bonus"
+          }
+        },
+        "required": [
+          "blocked"
+        ]
+      },
+      "RedemptionRowDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Redemption (voucher) id"
+          },
+          "code": {
+            "type": "string",
+            "example": "RX7K9QZ2"
+          },
+          "formattedCode": {
+            "type": "string",
+            "example": "RX7K-9QZ2"
+          },
+          "rewardText": {
+            "type": "string",
+            "example": "1 free coffee of your choice",
+            "description": "Snapshotted at earn time"
+          },
+          "earnedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "REDEEMED",
+              "VOID"
+            ]
+          },
+          "redeemedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "redeemedBy": {
+            "type": "string",
+            "nullable": true,
+            "example": "Ravi Kumar",
+            "description": "Who honoured it (\"Owner\" for merchant)"
+          },
+          "voidedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Set when the voucher was voided (e.g. its stamp was undone)"
+          },
+          "membershipId": {
+            "type": "string",
+            "description": "Membership id (links to the customer)"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/CustomerSummaryDto"
+          },
+          "customerCode": {
+            "type": "string",
+            "example": "7F3K-9QZP",
+            "description": "Customer code"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "formattedCode",
+          "rewardText",
+          "earnedAt",
+          "status",
+          "redeemedAt",
+          "redeemedBy",
+          "voidedAt",
+          "membershipId",
+          "customer",
+          "customerCode"
+        ]
+      },
+      "RedeemResultDto": {
+        "type": "object",
+        "properties": {
+          "redemption": {
+            "$ref": "#/components/schemas/RedemptionRowDto"
+          },
+          "card": {
+            "description": "Card state after redeeming",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MembershipListItemDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "redemption",
+          "card"
+        ]
+      },
+      "WalletPlatformDto": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ]
+      },
+      "WalletAvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "apple": {
+            "$ref": "#/components/schemas/WalletPlatformDto"
+          },
+          "google": {
+            "$ref": "#/components/schemas/WalletPlatformDto"
+          }
+        },
+        "required": [
+          "apple",
+          "google"
+        ]
+      },
+      "GoogleSaveLinkDto": {
+        "type": "object",
+        "properties": {
+          "saveUrl": {
+            "type": "string",
+            "description": "Open this to save the card to Google Wallet"
+          }
+        },
+        "required": [
+          "saveUrl"
+        ]
+      },
+      "CreateStaffDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Ravi Kumar"
+          },
+          "email": {
+            "type": "string",
+            "example": "ravi@brewbean.com",
+            "description": "The email the staff member logs in with"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123",
+            "description": "Initial password — share it with the staff member"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STAFF",
+              "MANAGER"
+            ],
+            "default": "STAFF",
+            "description": "Managers see team stats and can undo any recent stamp"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ]
+      },
+      "StaffDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ravi Kumar"
+          },
+          "email": {
+            "type": "string",
+            "example": "ravi@brewbean.com",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STAFF",
+              "MANAGER"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "stampsIssued": {
+            "type": "number",
+            "example": 128,
+            "description": "Stamps this staff member has issued"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "isActive",
+          "stampsIssued",
+          "createdAt"
+        ]
+      },
+      "UpdateStaffDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Ravi Kumar"
+          },
+          "password": {
+            "type": "string",
+            "description": "Set a new password (replaces the existing one)"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Set false to deactivate (blocks login immediately)"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STAFF",
+              "MANAGER"
+            ]
+          }
+        }
+      },
+      "StaffSelfDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "STAFF",
+              "MANAGER"
+            ],
+            "description": "MANAGER unlocks team stats and longer undo"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role"
+        ]
+      },
+      "StaffContextDto": {
+        "type": "object",
+        "properties": {
+          "staff": {
+            "$ref": "#/components/schemas/StaffSelfDto"
+          },
+          "business": {
+            "$ref": "#/components/schemas/BusinessDto"
+          },
+          "campaign": {
+            "nullable": true,
+            "description": "Campaign stamps are added to (null when none active)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CardCampaignDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "staff",
+          "business",
+          "campaign"
+        ]
+      },
+      "TodayMineDto": {
+        "type": "object",
+        "properties": {
+          "stamps": {
+            "type": "number",
+            "example": 34,
+            "description": "Net stamps issued today (undos subtract)"
+          },
+          "redemptions": {
+            "type": "number",
+            "example": 3
+          }
+        },
+        "required": [
+          "stamps",
+          "redemptions"
+        ]
+      },
+      "TodayTotalsDto": {
+        "type": "object",
+        "properties": {
+          "stamps": {
+            "type": "number",
+            "example": 61
+          },
+          "newCustomers": {
+            "type": "number",
+            "example": 5
+          },
+          "rewardsRedeemed": {
+            "type": "number",
+            "example": 4
+          }
+        },
+        "required": [
+          "stamps",
+          "newCustomers",
+          "rewardsRedeemed"
+        ]
+      },
+      "TodayTeamMemberDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Meera Iyer"
+          },
+          "stamps": {
+            "type": "number",
+            "example": 27
+          },
+          "redemptions": {
+            "type": "number",
+            "example": 2
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "stamps",
+          "redemptions"
+        ]
+      },
+      "TodayDto": {
+        "type": "object",
+        "properties": {
+          "mine": {
+            "$ref": "#/components/schemas/TodayMineDto"
+          },
+          "totals": {
+            "nullable": true,
+            "description": "Managers only",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TodayTotalsDto"
+              }
+            ]
+          },
+          "team": {
+            "nullable": true,
+            "description": "Managers only",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TodayTeamMemberDto"
+            }
+          }
+        },
+        "required": [
+          "mine",
+          "totals",
+          "team"
+        ]
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "description": "Current password for verification"
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "New password (min 8 chars)"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "EnrollDto": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "example": "+91 98765 43210",
+            "description": "The customer's phone number or email address — either identifies them"
+          },
+          "name": {
+            "type": "string",
+            "example": "Asha Patel"
+          },
+          "marketingConsent": {
+            "type": "boolean",
+            "description": "Only send true when the customer explicitly agreed at the counter."
+          }
+        },
+        "required": [
+          "identifier"
+        ]
+      },
+      "EnrollResultDto": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "description": "The (new or existing) card",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MembershipListItemDto"
+              }
+            ]
+          },
+          "alreadyMember": {
+            "type": "boolean",
+            "description": "True when this phone already held a card here"
+          },
+          "isNewCustomer": {
+            "type": "boolean",
+            "description": "True when no customer account existed for this phone yet"
+          }
+        },
+        "required": [
+          "card",
+          "alreadyMember",
+          "isNewCustomer"
+        ]
+      },
+      "AddStampDto": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string",
+            "description": "Membership id from a search result"
+          }
+        },
+        "required": [
+          "membershipId"
+        ]
+      },
+      "UndoStampDto": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "string",
+            "description": "Membership id whose latest stamp should be taken back"
+          }
+        },
+        "required": [
+          "membershipId"
+        ]
+      },
+      "UndoStampResultDto": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "description": "Card state after the undo",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MembershipListItemDto"
+              }
+            ]
+          },
+          "voucherVoided": {
+            "type": "boolean",
+            "description": "True when the undone stamp had completed the card and its voucher was voided"
+          }
+        },
+        "required": [
+          "card",
+          "voucherVoided"
+        ]
+      },
+      "BroadcastAudienceDto": {
+        "type": "object",
+        "properties": {
+          "passHolders": {
+            "type": "number",
+            "description": "Members reachable by a wallet push (added the card to a wallet)"
+          },
+          "appleDevices": {
+            "type": "number",
+            "description": "Apple devices among them"
+          },
+          "googleCards": {
+            "type": "number",
+            "description": "Google cards among them"
+          },
+          "sentThisMonth": {
+            "type": "number",
+            "description": "Broadcasts already sent this calendar month"
+          },
+          "monthlyLimit": {
+            "type": "number",
+            "description": "Monthly allowance for the current plan (null = unlimited)",
+            "nullable": true
+          }
+        },
+        "required": [
+          "passHolders",
+          "appleDevices",
+          "googleCards",
+          "sentThisMonth",
+          "monthlyLimit"
+        ]
+      },
+      "BroadcastDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "SENDING",
+              "SENT",
+              "FAILED"
+            ]
+          },
+          "recipientCount": {
+            "type": "number",
+            "description": "Wallet passes reachable when the send started"
+          },
+          "appleDevices": {
+            "type": "number",
+            "description": "Apple devices nudged"
+          },
+          "googleNotified": {
+            "type": "boolean",
+            "description": "Whether Google card holders were notified"
+          },
+          "sentAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "status",
+          "recipientCount",
+          "appleDevices",
+          "googleNotified",
+          "sentAt",
+          "createdAt"
+        ]
+      },
+      "CreateBroadcastDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Weekend offer",
+            "description": "Short headline (Google notification header)"
+          },
+          "body": {
+            "type": "string",
+            "example": "20% off all drinks this Saturday — show your card at the counter.",
+            "description": "The message shown on the lock screen"
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ]
+      },
+      "SubmitFeedbackDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "BUG",
+              "SUGGESTION",
+              "PRAISE",
+              "OTHER"
+            ],
+            "example": "SUGGESTION"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Optional 1–5 star rating."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "category",
+          "message"
+        ]
+      },
+      "UpdateFeedbackDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "REVIEWED",
+              "RESOLVED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "JoinBusinessDto": {
+        "type": "object",
+        "properties": {
+          "businessSlug": {
+            "type": "string",
+            "example": "brew-and-bean",
+            "description": "Business slug from the QR join link"
+          },
+          "marketingConsent": {
+            "type": "boolean",
+            "description": "Marketing opt-in. Recorded with the exact wording shown at enrolment."
+          }
+        },
+        "required": [
+          "businessSlug"
+        ]
+      },
+      "CardBusinessDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Brew & Bean Coffee"
+          },
+          "slug": {
+            "type": "string",
+            "example": "brew-and-bean"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "brandColor": {
+            "type": "string",
+            "nullable": true,
+            "example": "#4F46E5"
+          },
+          "googleReviewUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Where \"Leave a Google review\" sends the customer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "logoUrl",
+          "address",
+          "brandColor",
+          "googleReviewUrl"
+        ]
+      },
+      "CardStyleDto": {
+        "type": "object",
+        "properties": {
+          "color": {
+            "type": "string",
+            "example": "#4F46E5"
+          },
+          "stampIcon": {
+            "type": "string",
+            "nullable": true,
+            "example": "☕",
+            "description": "Emoji for filled stamps; null = default check"
+          },
+          "rewardIcon": {
+            "type": "string",
+            "nullable": true,
+            "example": "🎁",
+            "description": "Emoji for the reward slot; null = default gift"
+          },
+          "cardImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Card background image URL"
+          },
+          "imageTinted": {
+            "type": "boolean",
+            "description": "When an image is set: true tints it with the colour, false = scrim only"
+          }
+        },
+        "required": [
+          "color",
+          "stampIcon",
+          "rewardIcon",
+          "cardImageUrl",
+          "imageTinted"
+        ]
+      },
+      "CardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Membership id — the canonical card identifier"
+          },
+          "code": {
+            "type": "string",
+            "example": "7F3K9QZP",
+            "description": "Unique customer code (stored form)"
+          },
+          "formattedCode": {
+            "type": "string",
+            "example": "7F3K-9QZP",
+            "description": "Display form of the code"
+          },
+          "stampCount": {
+            "type": "number",
+            "example": 4,
+            "description": "Stamps on the current card"
+          },
+          "completedCount": {
+            "type": "number",
+            "example": 1,
+            "description": "Rewards earned (completed cards)"
+          },
+          "totalStamps": {
+            "type": "number",
+            "example": 14,
+            "description": "Lifetime stamps"
+          },
+          "lastStampAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pendingRewards": {
+            "description": "Rewards earned but not yet handed over",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RedemptionSummaryDto"
+            }
+          },
+          "redeemedCount": {
+            "type": "number",
+            "example": 1,
+            "description": "Rewards already honoured (completedCount − pending)"
+          },
+          "business": {
+            "$ref": "#/components/schemas/CardBusinessDto"
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/CardCampaignDto"
+          },
+          "style": {
+            "$ref": "#/components/schemas/CardStyleDto"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "formattedCode",
+          "stampCount",
+          "completedCount",
+          "totalStamps",
+          "lastStampAt",
+          "joinedAt",
+          "pendingRewards",
+          "redeemedCount",
+          "business",
+          "campaign",
+          "style"
+        ]
+      },
+      "JoinResultDto": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "$ref": "#/components/schemas/CardDto"
+          },
+          "alreadyMember": {
+            "type": "boolean",
+            "description": "True when the customer already had this card"
+          }
+        },
+        "required": [
+          "card",
+          "alreadyMember"
+        ]
+      },
+      "CardDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Membership id — the canonical card identifier"
+          },
+          "code": {
+            "type": "string",
+            "example": "7F3K9QZP",
+            "description": "Unique customer code (stored form)"
+          },
+          "formattedCode": {
+            "type": "string",
+            "example": "7F3K-9QZP",
+            "description": "Display form of the code"
+          },
+          "stampCount": {
+            "type": "number",
+            "example": 4,
+            "description": "Stamps on the current card"
+          },
+          "completedCount": {
+            "type": "number",
+            "example": 1,
+            "description": "Rewards earned (completed cards)"
+          },
+          "totalStamps": {
+            "type": "number",
+            "example": 14,
+            "description": "Lifetime stamps"
+          },
+          "lastStampAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pendingRewards": {
+            "description": "Rewards earned but not yet handed over",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RedemptionSummaryDto"
+            }
+          },
+          "redeemedCount": {
+            "type": "number",
+            "example": 1,
+            "description": "Rewards already honoured (completedCount − pending)"
+          },
+          "business": {
+            "$ref": "#/components/schemas/CardBusinessDto"
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/CardCampaignDto"
+          },
+          "style": {
+            "$ref": "#/components/schemas/CardStyleDto"
+          },
+          "recentStamps": {
+            "description": "Most recent stamps, newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StampDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "formattedCode",
+          "stampCount",
+          "completedCount",
+          "totalStamps",
+          "lastStampAt",
+          "joinedAt",
+          "pendingRewards",
+          "redeemedCount",
+          "business",
+          "campaign",
+          "style",
+          "recentStamps"
+        ]
+      },
+      "CardQrDto": {
+        "type": "object",
+        "properties": {
+          "dataUrl": {
+            "type": "string",
+            "description": "PNG data URL encoding the customer code"
+          },
+          "code": {
+            "type": "string",
+            "example": "7F3K-9QZP"
+          }
+        },
+        "required": [
+          "dataUrl",
+          "code"
+        ]
+      },
+      "DashboardStatsDto": {
+        "type": "object",
+        "properties": {
+          "customers": {
+            "type": "number",
+            "example": 42,
+            "description": "Enrolled customers"
+          },
+          "stampsToday": {
+            "type": "number",
+            "example": 12,
+            "description": "Stamps issued today"
+          },
+          "stampsTotal": {
+            "type": "number",
+            "example": 431,
+            "description": "Stamps issued all-time"
+          },
+          "rewardsEarned": {
+            "type": "number",
+            "example": 18,
+            "description": "Rewards earned (completed cards)"
+          },
+          "rewardsPending": {
+            "type": "number",
+            "example": 3,
+            "description": "Reward vouchers waiting to be handed over"
+          },
+          "rewardsRedeemed": {
+            "type": "number",
+            "example": 15,
+            "description": "Reward vouchers honoured"
+          }
+        },
+        "required": [
+          "customers",
+          "stampsToday",
+          "stampsTotal",
+          "rewardsEarned",
+          "rewardsPending",
+          "rewardsRedeemed"
+        ]
+      },
+      "DashboardActivityItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stamp or redemption id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "STAMP",
+              "REDEMPTION"
+            ],
+            "description": "What happened"
+          },
+          "rewardText": {
+            "type": "string",
+            "nullable": true,
+            "description": "Reward text for redemption events"
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerCode": {
+            "type": "string",
+            "example": "7F3K-9QZP"
+          },
+          "membershipId": {
+            "type": "string",
+            "description": "Membership id (links to customer detail)"
+          },
+          "issuerName": {
+            "type": "string",
+            "example": "Ravi Kumar"
+          },
+          "issuerType": {
+            "type": "string",
+            "enum": [
+              "STAFF",
+              "MERCHANT",
+              "ADJUSTMENT"
+            ]
+          },
+          "completedCard": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "rewardText",
+          "customerName",
+          "customerCode",
+          "membershipId",
+          "issuerName",
+          "issuerType",
+          "completedCard",
+          "createdAt"
+        ]
+      },
+      "DashboardChecklistDto": {
+        "type": "object",
+        "properties": {
+          "hasLogo": {
+            "type": "boolean"
+          },
+          "hasCampaign": {
+            "type": "boolean"
+          },
+          "hasStaff": {
+            "type": "boolean"
+          },
+          "hasCustomers": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hasLogo",
+          "hasCampaign",
+          "hasStaff",
+          "hasCustomers"
+        ]
+      },
+      "DashboardDto": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/DashboardStatsDto"
+          },
+          "campaign": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignDto"
+              }
+            ]
+          },
+          "activity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardActivityItemDto"
+            }
+          },
+          "checklist": {
+            "$ref": "#/components/schemas/DashboardChecklistDto"
+          }
+        },
+        "required": [
+          "stats",
+          "campaign",
+          "activity",
+          "checklist"
+        ]
+      },
+      "PublicCampaignDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Coffee Lovers Card"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "stampsRequired": {
+            "type": "number",
+            "example": 10
+          },
+          "reward": {
+            "type": "string",
+            "example": "1 free coffee of your choice"
+          },
+          "terms": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "stampsRequired",
+          "reward",
+          "terms"
+        ]
+      },
+      "PublicBusinessDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Brew & Bean Coffee"
+          },
+          "slug": {
+            "type": "string",
+            "example": "brew-and-bean"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "campaign": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicCampaignDto"
+              }
+            ]
+          },
+          "brandColor": {
+            "type": "string",
+            "nullable": true,
+            "example": "#4F46E5"
+          },
+          "style": {
+            "description": "Resolved card look for the preview",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CardStyleDto"
+              }
+            ]
+          },
+          "consentText": {
+            "type": "string",
+            "description": "Wording the customer must agree to"
+          },
+          "acceptingJoins": {
+            "type": "boolean",
+            "description": "False when no campaign is live (join disabled)"
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "logoUrl",
+          "address",
+          "campaign",
+          "brandColor",
+          "style",
+          "consentText",
+          "acceptingJoins"
+        ]
+      },
+      "HealthDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "database": {
+            "type": "string",
+            "example": "up"
+          },
+          "redis": {
+            "type": "string",
+            "example": "up"
+          },
+          "uptimeSec": {
+            "type": "number",
+            "example": 123.45
+          },
+          "version": {
+            "type": "string",
+            "example": "0.1.0",
+            "description": "Product version — matches the web app."
+          },
+          "commit": {
+            "type": "string",
+            "example": "a1b2c3d",
+            "description": "Git commit this build came from."
+          },
+          "builtAt": {
+            "type": "string",
+            "example": "2026-09-01T09:00:00Z",
+            "description": "When this build was produced."
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "redis",
+          "uptimeSec",
+          "version",
+          "commit",
+          "builtAt"
+        ]
+      }
+    }
+  }
+}

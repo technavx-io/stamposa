@@ -20,10 +20,10 @@ export const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL ?? '';
 export const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
 /** Exact paths that belong on the informational site. */
-export const SITE_PATHS = ['/', '/guide', '/blog', '/pricing'] as const;
+export const SITE_PATHS = ['/', '/guide', '/blog', '/pricing', '/legal'] as const;
 
-/** Path prefixes whose whole subtree is informational (blog posts). */
-export const SITE_PREFIXES = ['/blog/'] as const;
+/** Path prefixes whose whole subtree is informational (blog posts, legal). */
+export const SITE_PREFIXES = ['/blog/', '/legal/'] as const;
 
 /** True when a path belongs on the informational site; everything else is the app. */
 export function isSitePath(pathname: string): boolean {

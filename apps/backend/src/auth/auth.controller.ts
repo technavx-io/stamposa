@@ -6,11 +6,13 @@ import { AuthActor } from './auth.types';
 import { AuthService } from './auth.service';
 import {
   EmailLoginDto,
+  ForgotPasswordDto,
   MerchantSignupDto,
   RefreshTokenDto,
   RegisterDto,
   RequestOtpDto,
   ResendEmailVerificationDto,
+  ResetPasswordDto,
   VerifyEmailDto,
   VerifyOtpDto,
 } from './dto/auth-request.dto';
@@ -70,6 +72,32 @@ export class AuthController {
   @ApiOkResponse({ type: AuthSessionDto })
   loginMerchant(@Body() dto: EmailLoginDto): Promise<AuthSessionDto> {
     return this.auth.loginMerchant(dto.email, dto.password);
+  }
+
+  // ── Merchant password reset (bug #3) ──────────────────────────────────
+
+  @Public()
+  @Throttle(OTP_THROTTLE)
+  @Post('merchant/forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Email a password-reset link (silent for unknown emails)',
+  })
+  @ApiOkResponse({ type: OtpRequestedDto })
+  requestPasswordReset(@Body() dto: ForgotPasswordDto): Promise<OtpRequestedDto> {
+    return this.auth.requestPasswordReset(dto.email);
+  }
+
+  @Public()
+  @Throttle(OTP_THROTTLE)
+  @Post('merchant/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Consume the reset link token, set a new password, and sign the merchant in',
+  })
+  @ApiOkResponse({ type: AuthSessionDto })
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<AuthSessionDto> {
+    return this.auth.resetPassword(dto.token, dto.newPassword);
   }
 
   // ── Staff (email + password, created by the merchant) ─────────────────

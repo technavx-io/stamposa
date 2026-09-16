@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import { Idempotent } from '../common/idempotency/idempotent.decorator';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -131,6 +132,7 @@ export class MerchantCustomersController {
   }
 
   @Post(':membershipId/stamps')
+  @Idempotent()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Add one stamp as the owner (solo merchants without staff)' })
   @ApiOkResponse({ type: AddStampResultDto })
@@ -160,6 +162,7 @@ export class MerchantCustomersController {
   }
 
   @Post(':membershipId/adjust')
+  @Idempotent()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Correct a balance by ±N with a mandatory reason (recorded in the ledger)',

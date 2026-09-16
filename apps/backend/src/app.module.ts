@@ -9,6 +9,8 @@ import { AuthModule } from './auth/auth.module';
 import { BusinessesModule } from './businesses/businesses.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { IdempotencyModule } from './common/idempotency/idempotency.module';
+import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { SharedModule } from './common/shared.module';
 import { CustomerPortalModule } from './customer-portal/customer-portal.module';
@@ -25,6 +27,7 @@ import { MessagingModule } from './messaging/messaging.module';
 import { BillingModule } from './billing/billing.module';
 import { StaffManagementModule } from './staff-management/staff-management.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -34,6 +37,7 @@ import { FeedbackModule } from './feedback/feedback.module';
     RedisModule,
     SharedModule,
     AuditModule,
+    IdempotencyModule,
     ThrottlerModule.forRootAsync({
       useFactory: (storage: ThrottlerRedisStorage) => ({
         throttlers: [{ name: 'default', ttl: 60_000, limit: 100 }],
@@ -58,10 +62,13 @@ import { FeedbackModule } from './feedback/feedback.module';
     DashboardModule,
     PublicModule,
     HealthModule,
+    MonitoringModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    // Idempotency runs before logging so replays don't double-log.
+    { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
   ],
 })

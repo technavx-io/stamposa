@@ -12,4 +12,4 @@ npm run build -w apps/frontend   # standalone output for the Docker image
 
 `.env.development` points at the local backend and the local website; nothing
 else is needed for development. Production values are baked in at build time
-by `../../../stamposa-vps/build-bundles.sh`.
+by `../../deploy/build-bundles.sh`.

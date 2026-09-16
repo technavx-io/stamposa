@@ -27,14 +27,16 @@ export class BroadcastService {
   ) {}
 
   async audience(business: Business): Promise<BroadcastAudienceDto> {
-    const [reach, sentThisMonth] = await Promise.all([
+    const [reach, rewardIds, sentThisMonth] = await Promise.all([
       this.wallet.reachableCount(business.id),
+      this.wallet.rewardHolderMembershipIds(business.id),
       this.countSince(business.id, startOfMonth()),
     ]);
     return {
       passHolders: reach.passHolders,
       appleDevices: reach.appleDevices,
       googleCards: reach.googleCards,
+      rewardHolders: rewardIds.length,
       sentThisMonth,
       monthlyLimit: broadcastMonthlyLimit(business),
     };
@@ -77,13 +79,29 @@ export class BroadcastService {
       );
     }
 
-    // Only pass holders can receive a wallet push — block a wasted send.
-    const reach = await this.wallet.reachableCount(business.id);
-    if (reach.passHolders === 0) {
-      throw badRequest(
-        'NO_WALLET_AUDIENCE',
-        'No customers have added your card to a wallet yet, so there is no one to notify.',
-      );
+    const audience = dto.audience ?? 'ALL_PASS_HOLDERS';
+
+    // Recipient set + audience-specific "no one to notify" guard.
+    let recipientCount: number;
+    let membershipIds: string[] | undefined;
+    if (audience === 'REWARD_HOLDERS') {
+      membershipIds = await this.wallet.rewardHolderMembershipIds(business.id);
+      recipientCount = membershipIds.length;
+      if (recipientCount === 0) {
+        throw badRequest(
+          'NO_REWARD_AUDIENCE',
+          'No customers currently have an unclaimed reward waiting.',
+        );
+      }
+    } else {
+      const reach = await this.wallet.reachableCount(business.id);
+      recipientCount = reach.passHolders;
+      if (recipientCount === 0) {
+        throw badRequest(
+          'NO_WALLET_AUDIENCE',
+          'No customers have added your card to a wallet yet, so there is no one to notify.',
+        );
+      }
     }
 
     const row = await this.prisma.broadcast.create({
@@ -91,26 +109,38 @@ export class BroadcastService {
         businessId: business.id,
         title: dto.title,
         body: dto.body,
-        recipientCount: reach.passHolders,
+        audience,
+        recipientCount,
       },
     });
 
     // Fire-and-forget: the response returns now; delivery flips the row later.
-    void this.dispatch(row.id, business.id, dto);
+    void this.dispatch(row.id, business.id, dto, membershipIds);
     return toBroadcastDto(row);
   }
 
-  private async dispatch(id: string, businessId: string, dto: CreateBroadcastDto): Promise<void> {
+  private async dispatch(
+    id: string,
+    businessId: string,
+    dto: CreateBroadcastDto,
+    membershipIds?: string[],
+  ): Promise<void> {
     try {
       await this.prisma.broadcast.update({
         where: { id },
         data: { status: 'SENDING' },
       });
-      const res = await this.wallet.broadcast(businessId, {
-        id,
-        title: dto.title,
-        body: dto.body,
-      });
+      const res = await this.wallet.broadcast(
+        businessId,
+        { id, title: dto.title, body: dto.body },
+        {
+          // Segmented sends target specific memberships and skip the Google
+          // class-wide message (which would spam every object in the class).
+          ...(membershipIds
+            ? { membershipIds, skipGoogleClassMessage: true }
+            : {}),
+        },
+      );
       await this.prisma.broadcast.update({
         where: { id },
         data: {

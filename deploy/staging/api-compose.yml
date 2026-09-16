@@ -1,0 +1,94 @@
+# Stamposa staging — API stack (postgres + redis + api).
+#
+# Mirrors api-docker/docker-compose.yml but on different ports, different
+# data paths, and with a different compose project name so prod and staging
+# never touch each other. Reuses the SAME stamposa-api:latest image that
+# prod runs — env vars are what make it staging.
+#
+# All bindings stay on 127.0.0.1 (fronted by CloudStick nginx). Host
+# networking for the same reasons the prod stack uses it (CSF firewall).
+
+name: stamposa-api-staging
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    network_mode: host
+    # 5433 avoids the prod postgres on 5432.
+    command:
+      - postgres
+      - -p
+      - '5433'
+      - -c
+      - listen_addresses=127.0.0.1
+      # Small VPS — cut default shared_buffers so staging plays nice with prod.
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - max_connections=40
+    environment:
+      POSTGRES_USER: loyalty
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: loyalty_platform
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - /opt/stamposa-data-staging/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U loyalty -d loyalty_platform -h 127.0.0.1 -p 5433']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: host
+    # 6380 avoids the prod redis on 6379.
+    command:
+      - redis-server
+      - --bind
+      - 127.0.0.1
+      - --port
+      - '6380'
+      - --appendonly
+      - 'yes'
+      - --dir
+      - /data
+      # Cap so staging doesn't compete with prod for RAM.
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - /opt/stamposa-data-staging/redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-h', '127.0.0.1', '-p', '6380', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    # Reuse the exact prod image. If it isn't on this host yet, run
+    # `docker compose -f /opt/api-docker/docker-compose.yml build api` first.
+    image: stamposa-api:latest
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: staging
+      PORT: '4001'
+      # Keep the Node heap small on a 2GB box shared with prod.
+      NODE_OPTIONS: --max-old-space-size=256
+    volumes:
+      - /opt/stamposa-data-staging/uploads:/app/uploads
+      # Wallet certs are read-only and can be safely shared with prod.
+      # Staging pass Type ID should differ from prod (set in .env) so
+      # test devices don't collide with real customers' passes.
+      - /opt/stamposa-secrets:/app/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

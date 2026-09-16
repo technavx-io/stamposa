@@ -1,0 +1,15 @@
+{
+  "$comment": "Shared config for Next.js 15 apps (apps/frontend, apps/website). App tsconfigs extend this and only add their own `paths` (which TS does not merge from an extended config).",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "plugins": [{ "name": "next" }]
+  }
+}

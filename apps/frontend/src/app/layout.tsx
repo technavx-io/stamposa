@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Bricolage_Grotesque, IBM_Plex_Mono, Inter } from 'next/font/google';
 import { Providers } from '@/lib/providers';
 import { Monitoring } from '@stamposa/ui/components/monitoring';
@@ -45,7 +46,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${bricolage.variable} ${plexMono.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${bricolage.variable} ${plexMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Set the theme before first paint so dark-mode users never see
             a white flash on load. */}
@@ -56,6 +61,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Monitoring />
           <Providers>{children}</Providers>
         </ThemeProvider>
+        <Script
+          src="https://dash.araraa.com/widget.js"
+          data-key="wgt_A9LaWwIIQpNKmnU9"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

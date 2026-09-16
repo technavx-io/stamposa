@@ -320,6 +320,16 @@ function LiveCard({ membershipId }: { membershipId: string }) {
                 <p className="mt-2 text-xs text-amber-700/80">
                   Show this code at the counter to redeem
                 </p>
+                {reward.expiresAt && (
+                  <p className="mt-1 text-xs font-medium text-amber-800">
+                    Expires{' '}
+                    {new Date(reward.expiresAt).toLocaleDateString(undefined, {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </p>
+                )}
               </div>
             ))}
           </div>

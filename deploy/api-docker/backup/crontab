@@ -1,0 +1,4 @@
+# Stamposa backup schedule — daily at 03:15 IST.
+# Cron's PATH is minimal, so backup.sh uses absolute paths; env comes from
+# /etc/backup.env (written by entrypoint.sh from the container's own env).
+15 3 * * * . /etc/backup.env; /usr/local/bin/backup.sh >> /var/log/stamposa-backup/backup.log 2>&1

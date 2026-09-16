@@ -24,7 +24,14 @@ const ADMINS = [
 ] as const;
 
 async function main() {
-  const password = process.env.SEED_ADMIN_PASSWORD ?? 'ChangeMe!2026';
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!password) {
+    console.error(
+      'Refusing to run: SEED_ADMIN_PASSWORD is required (no fallback). ' +
+        'Set it to the initial admin password, then rotate it after first login.',
+    );
+    process.exit(1);
+  }
   const passwordHash = await hash(password);
 
   let created = 0;

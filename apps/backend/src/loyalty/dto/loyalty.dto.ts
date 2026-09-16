@@ -100,6 +100,14 @@ export class RedemptionSummaryDto {
 
   @ApiProperty({ type: String, format: 'date-time' })
   earnedAt: Date;
+
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    nullable: true,
+    description: 'When this voucher expires. Null = never.',
+  })
+  expiresAt: Date | null;
 }
 
 export class CardDto {

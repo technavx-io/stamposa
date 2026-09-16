@@ -129,6 +129,44 @@ export class WalletService {
   }
 
   /**
+   * Membership ids that both (a) have a wallet pass reachable by a push and
+   * (b) currently hold at least one PENDING+non-expired redemption voucher.
+   * Used to target the "you have an unclaimed reward" broadcast.
+   */
+  async rewardHolderMembershipIds(businessId: string): Promise<string[]> {
+    const rows = await this.prisma.customerMembership.findMany({
+      where: {
+        businessId,
+        walletPass: { isNot: null },
+        redemptions: {
+          some: {
+            status: 'PENDING',
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+        },
+      },
+      select: {
+        id: true,
+        walletPass: {
+          select: {
+            id: true,
+            googleObjectId: true,
+            registrations: { select: { id: true } },
+          },
+        },
+      },
+    });
+    // Only those actually reachable (Apple registration OR Google object).
+    return rows
+      .filter(
+        (m) =>
+          m.walletPass &&
+          ((m.walletPass.registrations.length ?? 0) > 0 || m.walletPass.googleObjectId !== null),
+      )
+      .map((m) => m.id);
+  }
+
+  /**
    * Push a merchant broadcast to every wallet pass of a business. Apple has no
    * free-form push, so the message is stored on the business (rendered as the
    * pass's "Latest news" field), every pass is bumped, and each device gets an
@@ -139,6 +177,21 @@ export class WalletService {
   async broadcast(
     businessId: string,
     message: { id: string; title: string; body: string },
+    opts?: {
+      /**
+       * When present, restrict the fan-out to these membership ids. Used by
+       * segmented broadcasts (e.g. reward-holders). When omitted, every pass
+       * for the business is reached — the original ALL_PASS_HOLDERS behaviour.
+       */
+      membershipIds?: string[];
+      /**
+       * When true, skip the Google class addMessage — a class message fans
+       * out to every object in the class regardless of segment, so we skip
+       * it when the caller wants a targeted send. Per-object bumps still
+       * happen via cardChanged for each membership on the caller's side.
+       */
+      skipGoogleClassMessage?: boolean;
+    },
   ): Promise<{ recipientCount: number; appleDevices: number; googleNotified: boolean }> {
     // Store the text first: Apple rebuilds the pass on fetch and reads this.
     await this.prisma.business.update({
@@ -147,7 +200,10 @@ export class WalletService {
     });
 
     const passes = await this.prisma.walletPass.findMany({
-      where: { membership: { businessId } },
+      where: {
+        membership: { businessId },
+        ...(opts?.membershipIds ? { membershipId: { in: opts.membershipIds } } : {}),
+      },
       include: { registrations: true },
     });
 
@@ -170,7 +226,7 @@ export class WalletService {
     }
 
     let googleNotified = false;
-    if (this.google.enabled && hasGoogle) {
+    if (this.google.enabled && hasGoogle && !opts?.skipGoogleClassMessage) {
       googleNotified = await this.google.classMessage(businessId, {
         id: message.id,
         header: message.title,

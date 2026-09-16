@@ -59,4 +59,29 @@ describe('AllExceptionsFilter + monitoring', () => {
       expect.objectContaining({ code: 'ALREADY_REDEEMED', requestId: 'req-1' }),
     );
   });
+
+  it('emits RFC 7807 fields alongside the legacy envelope', () => {
+    const { host, res } = makeHost();
+    filter.catch(conflict('ALREADY_REDEEMED', 'nope'), host);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        // RFC 7807
+        type: 'about:blank',
+        title: 'ALREADY_REDEEMED',
+        status: HttpStatus.CONFLICT,
+        detail: 'nope',
+        instance: '/v1/x?q=1',
+        // Legacy (kept for backward compat)
+        statusCode: HttpStatus.CONFLICT,
+        code: 'ALREADY_REDEEMED',
+        message: 'nope',
+        path: '/v1/x?q=1',
+      }),
+    );
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'application/problem+json; charset=utf-8',
+    );
+  });
 });

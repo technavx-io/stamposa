@@ -65,7 +65,7 @@ export default async function PricingPage() {
         </div>
 
         <p className="mt-6 text-center text-[13px] text-muted">
-          A third of the price of the big loyalty platforms. No setup fees.
+          Half the price of the big loyalty platforms. No setup fees.
         </p>
 
         {/* FAQ */}

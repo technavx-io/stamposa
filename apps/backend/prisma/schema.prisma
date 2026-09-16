@@ -35,6 +35,9 @@ enum RedemptionStatus {
   REDEEMED
   /// Cancelled before hand-over — e.g. the completing stamp was undone.
   VOID
+  /// Reached expiresAt without being redeemed. Terminal state — a fresh
+  /// reward cycle needs the customer to fill another card.
+  EXPIRED
 }
 
 /// Counter roles. Managers additionally see the team's day and can undo
@@ -244,6 +247,16 @@ model Campaign {
 
   /// Max stamps one customer can earn per day. Null = unlimited.
   dailyStampCap Int?    @map("daily_stamp_cap")
+  /// Merchant-set minimum minutes between two stamps for the SAME customer
+  /// on this campaign (bug #10). Null = no cooldown beyond the 3-second
+  /// double-tap guard. Required at campaign creation; older campaigns keep
+  /// null and are ungated until the merchant edits them.
+  stampCooldownMinutes Int? @map("stamp_cooldown_minutes")
+  /// How many days a Redemption voucher stays PENDING before it EXPIREs and
+  /// can no longer be honoured. Null = never expires. Snapshotted onto the
+  /// voucher (expiresAt) at creation, so later campaign edits don't shift
+  /// vouchers already in customers' hands.
+  rewardExpiryDays Int? @map("reward_expiry_days")
   /// Small print shown on the card and join page.
   terms         String?
 
@@ -363,11 +376,17 @@ model Redemption {
   voidedAt   DateTime? @map("voided_at")
   voidReason String?   @map("void_reason")
 
+  /// When this voucher expires. Null = never. Snapshotted from
+  /// campaign.rewardExpiryDays at creation, so a later campaign change
+  /// doesn't retroactively shorten vouchers already in customers' hands.
+  expiresAt DateTime? @map("expires_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([businessId, status, createdAt])
   @@index([membershipId, status])
+  @@index([status, expiresAt])
   @@map("redemptions")
 }
 
@@ -443,10 +462,13 @@ enum BroadcastStatus {
 }
 
 /// Who a broadcast targets. Only pass holders can receive a wallet push, so
-/// ALL_PASS_HOLDERS is the whole reachable audience today; segments (e.g.
-/// lapsed customers) are additive enum values later.
+/// Audience segments for a Broadcast. Additive enum — merchants may target
+/// the whole reachable base or a smaller segment (e.g. reward-holders).
 enum BroadcastAudience {
   ALL_PASS_HOLDERS
+  /// Only members with a currently-valid PENDING reward voucher — used for
+  /// "you have an unclaimed reward" nudges.
+  REWARD_HOLDERS
 }
 
 /// A one-off message the merchant pushes to their customers' wallet passes.

@@ -130,6 +130,7 @@ describe('ApplePassService.buildPassJson', () => {
             redeemedStaffId: null,
             voidedAt: null,
             voidReason: null,
+            expiresAt: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           },

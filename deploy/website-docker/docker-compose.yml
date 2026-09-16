@@ -1,0 +1,47 @@
+# Web stack for the CloudStick server (nginx owns 80/443, CSF firewall).
+#
+# Two different images, one per hostname:
+#   web      :3000  stamposa.com      image stamposa-website  (apps/website)
+#   web-app  :3001  app.stamposa.com  image stamposa-frontend (apps/frontend)
+#
+# The informational site and the app are separate Next.js apps since the
+# monorepo split; each one's middleware redirects paths that belong to the
+# other host, so an old link still lands in the right place.
+#
+# The service names (web, web-app) and ports are unchanged from the
+# single-image days so the CloudStick sites and container names stay stable.
+#
+# network_mode: host is deliberate. CSF runs INPUT policy DROP and is blind to
+# compose's custom bridge networks, so a bridged container is unreachable even
+# from 127.0.0.1. Host networking sidesteps the bridge; HOSTNAME=127.0.0.1 is
+# then what keeps each app on loopback, since there is no port publishing to
+# constrain it. nginx is the only route in.
+#
+#   docker compose up -d --build
+
+name: stamposa-web
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.website
+    image: stamposa-website:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      HOSTNAME: 127.0.0.1
+      PORT: '3000'
+      NODE_ENV: production
+
+  web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: stamposa-frontend:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      HOSTNAME: 127.0.0.1
+      PORT: '3001'
+      NODE_ENV: production

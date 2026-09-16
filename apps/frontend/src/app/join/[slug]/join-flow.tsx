@@ -14,9 +14,9 @@ import { useStoredSession } from '@/lib/auth/use-stored-session';
 import { OtpLogin } from '@/components/auth/otp-login';
 import { Button } from '@stamposa/ui/components/button';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
-import { EmptyState, PageLoader, Panel } from '@/components/ui/surface';
+import { EmptyState, PageLoader } from '@/components/ui/surface';
 import { StampGrid } from '@/components/stamp-grid';
-import { joinBackground } from '@/lib/card-bg';
+import { AuroraBackdrop, GridPattern, auroraStyles } from '@/components/auth/aurora-visuals';
 
 import { siteHref } from '@stamposa/ui/lib/hosts';
 
@@ -51,42 +51,55 @@ export function JoinFlow({ slug }: { slug: string }) {
 
   if (business.isError || !business.data) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-canvas px-4">
-        <Panel className="w-full max-w-sm">
-          <EmptyState
-            title="Business not found"
-            description="This join link doesn't exist. Double-check the QR code or ask the business for a new one."
-            action={
-              <Link href={siteHref("/")} className="text-sm font-medium text-brand-600">
-                Go home
-              </Link>
-            }
-          />
-        </Panel>
-      </div>
+      <JoinShell>
+        <section className="w-full max-w-md">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 shadow-[0_30px_80px_-20px_rgba(15,12,30,0.9),0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl">
+            <EmptyState
+              title="Business not found"
+              description="This join link doesn't exist. Double-check the QR code or ask the business for a new one."
+              action={
+                <Link
+                  href={siteHref('/')}
+                  className="text-sm font-medium text-amber-300 hover:text-amber-200"
+                >
+                  Go home
+                </Link>
+              }
+            />
+          </div>
+        </section>
+      </JoinShell>
     );
   }
 
   const b = business.data;
 
   return (
-    <div
-      className="flex min-h-dvh flex-col items-center px-4 pb-10"
-      style={{ background: joinBackground(b.style) }}
-    >
-      {/* Business header */}
-      <div className="flex w-full max-w-md flex-col items-center pt-12 pb-8 text-center text-white">
-        <LogoAvatar name={b.name} logoUrl={b.logoUrl} size="xl" className="shadow-lg" />
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight">{b.name}</h1>
-        {b.address && (
-          <p className="mt-1 flex items-center gap-1 text-sm text-white/50">
-            <MapPin className="size-3.5" /> {b.address}
-          </p>
-        )}
+    <JoinShell>
+      <section className="w-full max-w-md space-y-5">
+        {/* Business identity — big logo + name + address, all centered. */}
+        <div className="flex flex-col items-center text-center text-white">
+          <LogoAvatar
+            name={b.name}
+            logoUrl={b.logoUrl}
+            size="xl"
+            className="shadow-[0_20px_60px_-10px_rgba(15,12,30,0.9)]"
+          />
+          <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-white">
+            {b.name}
+          </h1>
+          {b.address && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-white/60">
+              <MapPin className="size-3.5" /> {b.address}
+            </p>
+          )}
+        </div>
+
+        {/* Campaign preview — glass card with the stamp grid + reward line. */}
         {b.campaign && (
-          <div className="mt-6 w-full rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
-            <p className="flex items-center justify-center gap-2 text-sm font-medium text-white/80">
-              <Stamp className="size-4 text-brand-300" /> {b.campaign.name}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_60px_-20px_rgba(15,12,30,0.9),0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl">
+            <p className="flex items-center justify-center gap-2 text-sm font-semibold text-white/80">
+              <Stamp className="size-4 text-amber-300" /> {b.campaign.name}
             </p>
             <div className="my-4 flex justify-center">
               <StampGrid
@@ -98,89 +111,110 @@ export function JoinFlow({ slug }: { slug: string }) {
                 rewardIcon={b.style.rewardIcon}
               />
             </div>
-            <p className="flex items-center justify-center gap-1.5 text-sm text-amber-200">
+            <p className="flex items-center justify-center gap-1.5 text-sm text-amber-300">
               <Gift className="size-4" />
               Collect {b.campaign.stampsRequired} stamps → {b.campaign.reward}
             </p>
             {b.campaign.terms && (
-              <p className="mt-2 text-center text-[11.5px] leading-relaxed text-white/45">
+              <p className="mt-2 text-center text-[11.5px] leading-relaxed text-white/50">
                 {b.campaign.terms}
               </p>
             )}
           </div>
         )}
-      </div>
 
-      {/* Join panel */}
-      <Panel className="w-full max-w-md p-6 sm:p-8">
-        {!b.acceptingJoins ? (
-          <EmptyState
-            title="Not accepting new members right now"
-            description={`${b.name} has paused new sign-ups. Ask at the counter, or come back soon.`}
-          />
-        ) : session && !switching ? (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold text-strong">
-                {session.actor.name ? `Hi ${session.actor.name.split(' ')[0]}!` : 'Welcome back!'}
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                Get your {b.name} card on {session.actor.phone ?? session.actor.email}.
-              </p>
-            </div>
-            <ConsentCheckbox
-              text={b.consentText}
-              checked={marketingConsent}
-              onChange={setMarketingConsent}
+        {/* Join panel — same glass treatment. */}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_30px_80px_-20px_rgba(15,12,30,0.9),0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl sm:p-8">
+          {!b.acceptingJoins ? (
+            <EmptyState
+              title="Not accepting new members right now"
+              description={`${b.name} has paused new sign-ups. Ask at the counter, or come back soon.`}
             />
-            <Button
-              size="lg"
-              variant="brand"
-              className="w-full"
-              loading={join.isPending}
-              onClick={() => join.mutate()}
-            >
-              Get my card <ArrowRight className="size-4" />
-            </Button>
-            <button
-              className="w-full text-center text-sm text-muted transition-colors hover:text-body"
-              onClick={() => {
-                customerSession.clear();
-                setSwitching(false);
-              }}
-            >
-              {PHONE_AUTH_ENABLED ? 'Use a different phone or email' : 'Use a different email'}
-            </button>
-          </div>
-        ) : (
-          <>
-            <OtpLogin
-              role="CUSTOMER"
-              title={PHONE_AUTH_ENABLED ? "Join with your phone or email" : "Join with your email"}
-              subtitle="One quick code — no app, no password, no spam."
-              allowRegistration
-              nameLabel="Your name"
-              submitLabel="Join program"
-              onAuthenticated={() => join.mutate()}
-            />
-            <div className="mt-4 border-t border-line-soft pt-4">
+          ) : session && !switching ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-300">
+                  Almost there
+                </p>
+                <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-white">
+                  {session.actor.name
+                    ? `Hi ${session.actor.name.split(' ')[0]}!`
+                    : 'Welcome back!'}
+                </h2>
+                <p className="mt-1 text-sm text-white/60">
+                  Get your {b.name} card on {session.actor.phone ?? session.actor.email}.
+                </p>
+              </div>
               <ConsentCheckbox
                 text={b.consentText}
                 checked={marketingConsent}
                 onChange={setMarketingConsent}
               />
+              <Button
+                size="lg"
+                variant="brand"
+                className="w-full"
+                loading={join.isPending}
+                onClick={() => join.mutate()}
+              >
+                Get my card <ArrowRight className="size-4" />
+              </Button>
+              <button
+                type="button"
+                className="w-full text-center text-sm text-white/60 transition-colors hover:text-white/80"
+                onClick={() => {
+                  customerSession.clear();
+                  setSwitching(false);
+                }}
+              >
+                {PHONE_AUTH_ENABLED ? 'Use a different phone or email' : 'Use a different email'}
+              </button>
             </div>
-          </>
-        )}
-      </Panel>
+          ) : (
+            <>
+              <OtpLogin
+                role="CUSTOMER"
+                title={
+                  PHONE_AUTH_ENABLED ? 'Join with your phone or email' : 'Join with your email'
+                }
+                subtitle="One quick code — no app, no password, no spam."
+                allowRegistration
+                nameLabel="Your name"
+                submitLabel="Join program"
+                onAuthenticated={() => join.mutate()}
+              />
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <ConsentCheckbox
+                  text={b.consentText}
+                  checked={marketingConsent}
+                  onChange={setMarketingConsent}
+                />
+              </div>
+            </>
+          )}
+        </div>
 
-      <p className="mt-6 text-xs text-white/30">
-        Powered by <span className="font-medium text-white/50">Stamposa</span>
-      </p>
-    </div>
+        <p className="text-center text-xs text-white/40">
+          Powered by <span className="font-medium text-white/60">Stamposa</span>
+        </p>
+      </section>
+    </JoinShell>
   );
 }
 
+/** Full-page aurora shell used by every join state (loading, error, main). */
+function JoinShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[#1a1a26] text-white">
+      <style>{auroraStyles}</style>
+      <AuroraBackdrop />
+      <GridPattern />
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-10 sm:py-16">
+        {children}
+      </main>
+    </div>
+  );
+}
 
 /**
  * Unbundled and off by default — joining the programme never depends on
@@ -197,12 +231,12 @@ function ConsentCheckbox({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-relaxed text-body">
+    <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-relaxed text-white/70">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 size-4 shrink-0 cursor-pointer rounded border-line text-brand-600 focus:ring-2 focus:ring-brand-500/30"
+        className="mt-0.5 size-4 shrink-0 cursor-pointer rounded border-white/20 bg-white/[0.06] text-brand-500 focus:ring-2 focus:ring-brand-500/40"
       />
       <span>{text}</span>
     </label>
