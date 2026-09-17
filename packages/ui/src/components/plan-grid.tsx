@@ -12,29 +12,34 @@ export type Interval = 'MONTHLY' | 'YEARLY';
 /**
  * The pricing table, shared by the public pricing page and the merchant
  * billing screen. The CTA per plan comes either from `renderCta` (a function,
- * for the client-side merchant screen) or `signupHref` (a plain link, so the
- * public page can stay a server component). At most one is used.
+ * for the client-side merchant screen) or a signup link. Link form takes
+ * either `signupHrefFor` (per-plan href, so paid plans can carry the selected
+ * tier/interval through to the checkout flow) or the simpler `signupHref`
+ * (same href for every plan). If both are given, `signupHrefFor` wins.
  */
 export function PlanGrid({
   plans,
   currentTier,
   renderCta,
   signupHref,
+  signupHrefFor,
   defaultInterval = 'MONTHLY',
 }: {
   plans: Plan[];
   currentTier?: PlanTier;
   renderCta?: (plan: Plan, interval: Interval) => React.ReactNode;
   signupHref?: string;
+  signupHrefFor?: (plan: Plan, interval: Interval) => string;
   defaultInterval?: Interval;
 }) {
   const [interval, setInterval] = useState<Interval>(defaultInterval);
 
   const ctaFor = (plan: Plan) => {
     if (renderCta) return renderCta(plan, interval);
-    if (signupHref) {
+    const href = signupHrefFor ? signupHrefFor(plan, interval) : signupHref;
+    if (href) {
       return (
-        <Link href={signupHref} className="block">
+        <Link href={href} className="block">
           <Button variant={plan.recommended ? 'brand' : 'secondary'} className="w-full">
             {plan.tier === 'FREE' ? 'Start free' : `Choose ${plan.name}`}
           </Button>

@@ -61,7 +61,18 @@ export default async function PricingPage() {
         </div>
 
         <div className="mt-14">
-          <PlanGrid plans={plans} signupHref={appHref('/merchant/login')} />
+          <PlanGrid
+            plans={plans}
+            signupHrefFor={(plan, interval) => {
+              // Free plan: just start signup, nothing to buy.
+              if (plan.tier === 'FREE') return appHref('/merchant/login');
+              // Paid plan: carry the choice through login → billing so we can
+              // auto-fire the Dodo checkout instead of dumping the merchant on
+              // the dashboard with no memory of which plan they picked.
+              const target = `/merchant/billing?tier=${plan.tier}&interval=${interval}`;
+              return appHref(`/merchant/login?next=${encodeURIComponent(target)}`);
+            }}
+          />
         </div>
 
         <p className="mt-6 text-center text-[13px] text-muted">

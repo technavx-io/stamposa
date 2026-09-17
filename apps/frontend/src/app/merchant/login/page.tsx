@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Gift, Stamp } from 'lucide-react';
@@ -10,13 +10,26 @@ import { EmailAuth } from '@/components/auth/email-auth';
 import { consumeSignedOutElsewhere } from '@/lib/auth/session';
 import { useStoredSession } from '@/lib/auth/use-stored-session';
 
+/**
+ * Only accept an in-app `next` target (no protocol, no host, single leading
+ * slash) so a crafted link cannot redirect a signed-in merchant to an outside
+ * site as themselves.
+ */
+function safeNext(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+  return raw;
+}
+
 export default function MerchantLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeNext(searchParams.get('next'));
   const { session, ready } = useStoredSession('MERCHANT');
 
   useEffect(() => {
-    if (ready && session) router.replace('/merchant/dashboard');
-  }, [session, ready, router]);
+    if (ready && session) router.replace(next ?? '/merchant/dashboard');
+  }, [session, ready, router, next]);
 
   // Bug #13: if this tab was signed out because another tab logged out, tell
   // the user rather than dropping them on the login page with no context.
@@ -66,9 +79,13 @@ export default function MerchantLoginPage() {
             role="MERCHANT"
             allowSignup
             forgotPasswordHref="/merchant/forgot-password"
-            onAuthenticated={(s) =>
-              router.replace(s.business ? '/merchant/dashboard' : '/merchant/onboarding')
-            }
+            onAuthenticated={(s) => {
+              // Honour ?next=... when it's a safe in-app path AND the merchant
+              // has a business (a brand-new signup with no business still needs
+              // to finish onboarding before any billing action makes sense).
+              if (s.business && next) router.replace(next);
+              else router.replace(s.business ? '/merchant/dashboard' : '/merchant/onboarding');
+            }}
           />
         </AuthColumn>
       </main>

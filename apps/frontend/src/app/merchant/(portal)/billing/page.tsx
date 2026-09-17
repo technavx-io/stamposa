@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -89,6 +89,25 @@ export default function BillingPage() {
     void qc.invalidateQueries({ queryKey: ['merchant', 'subscription'] });
     router.replace('/merchant/billing');
   }, [params, qc, router]);
+
+  // Auto-checkout: when the merchant arrives from the marketing pricing page
+  // (`/merchant/billing?tier=GROWTH&interval=MONTHLY`), skip the Choose-plan
+  // step and hand them straight to Dodo. Guarded so it fires once per URL,
+  // and skips if they already hold the requested plan.
+  const autoCheckoutFired = useRef(false);
+  useEffect(() => {
+    if (autoCheckoutFired.current) return;
+    if (checkout.isPending) return;
+    if (!sub.data?.billingEnabled) return;
+    const tierParam = params.get('tier');
+    const intervalParam = params.get('interval');
+    if (!tierParam || !intervalParam) return;
+    if (!['STARTER', 'GROWTH', 'PRO'].includes(tierParam)) return;
+    if (!['MONTHLY', 'YEARLY'].includes(intervalParam)) return;
+    if (tierParam === sub.data.effectiveTier) return;
+    autoCheckoutFired.current = true;
+    checkout.mutate({ tier: tierParam as PaidTier, interval: intervalParam as Interval });
+  }, [params, sub.data, checkout]);
 
   const onCancel = () => {
     if (window.confirm('Cancel your paid plan? You keep access until the current period ends.')) {
