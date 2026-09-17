@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { Plan } from '@stamposa/ui/types/plans';
-import { PlanGrid } from '@stamposa/ui/components/plan-grid';
+import { PricingCtas } from './pricing-ctas';
 import { SiteHeader, SiteFooter } from '@/components/marketing/site-chrome';
 import { appHref } from '@stamposa/ui/lib/hosts';
 
@@ -61,17 +61,13 @@ export default async function PricingPage() {
         </div>
 
         <div className="mt-14">
-          <PlanGrid
+          {/* PricingCtas is a client wrapper — server components can't hand
+              functions across the RSC boundary, so the per-plan href builder
+              lives on the client and just receives the two base URLs. */}
+          <PricingCtas
             plans={plans}
-            signupHrefFor={(plan, interval) => {
-              // Free plan: just start signup, nothing to buy.
-              if (plan.tier === 'FREE') return appHref('/merchant/login');
-              // Paid plan: carry the choice through login → billing so we can
-              // auto-fire the Dodo checkout instead of dumping the merchant on
-              // the dashboard with no memory of which plan they picked.
-              const target = `/merchant/billing?tier=${plan.tier}&interval=${interval}`;
-              return appHref(`/merchant/login?next=${encodeURIComponent(target)}`);
-            }}
+            loginHref={appHref('/merchant/login')}
+            billingHref={appHref('/merchant/billing')}
           />
         </div>
 
