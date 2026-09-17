@@ -20,7 +20,7 @@ export default function RefundPolicy() {
           Refund Policy
         </h1>
         <p className="mt-3 text-[13px] text-muted">
-          Effective date: <strong>[LEGAL REVIEW &mdash; insert date]</strong>
+          Effective date: <strong>2026-09-17</strong>
         </p>
         <div className="mt-8">
           <LegalReviewBanner />
@@ -44,17 +44,17 @@ export default function RefundPolicy() {
           <h2>How to cancel</h2>
           <p>
             Cancel from the merchant dashboard under <em>Billing</em>, or email{' '}
-            <strong>[LEGAL REVIEW &mdash; support email, e.g. support@stamposa.com]</strong>. The
-            service continues until the end of the paid period; we do not backdate cancellations.
+            <strong>hello@stamposa.com</strong>. The service continues until the end of the paid
+            period; we do not backdate cancellations.
           </p>
 
           <h2>How to request a refund</h2>
           <p>
-            Email <strong>[LEGAL REVIEW &mdash; billing email]</strong> from the address
-            registered on the account, with your invoice number and the reason. We reply within{' '}
-            <strong>[LEGAL REVIEW &mdash; typical 5 business days]</strong>. Approved refunds are
-            processed by our merchant of record, <strong>Dodo Payments</strong>, back to the
-            original payment method within 7&ndash;14 business days depending on your bank.
+            Email <strong>hello@stamposa.com</strong> from the address registered on the account,
+            with your invoice number and the reason. We reply within <strong>3 business days</strong>.
+            Approved refunds are processed by our merchant of record, <strong>Dodo Payments</strong>,
+            back to the original payment method within 7&ndash;14 business days depending on your
+            bank.
           </p>
 
           <h2>Downgrades</h2>
