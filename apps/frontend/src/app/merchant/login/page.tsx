@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Gift, Stamp } from 'lucide-react';
 import { siteHref } from '@stamposa/ui/lib/hosts';
@@ -22,6 +22,16 @@ function safeNext(raw: string | null): string | null {
 }
 
 export default function MerchantLoginPage() {
+  // useSearchParams() forces a client-side render, so Next requires the tree
+  // that uses it to sit under a <Suspense>. The wrapper is otherwise transparent.
+  return (
+    <Suspense fallback={null}>
+      <MerchantLoginPageInner />
+    </Suspense>
+  );
+}
+
+function MerchantLoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get('next'));
