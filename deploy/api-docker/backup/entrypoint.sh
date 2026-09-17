@@ -68,4 +68,8 @@ fi
 chmod 600 /etc/backup.env
 
 echo "backup: entrypoint ready — schedule active (see /etc/crontabs/root)"
-exec crond -f -l 8
+# crond can't be PID 1 in this container (setpgid EPERM in the crash loop we
+# saw on 2026-09-17). Run it as a background child of this shell and wait —
+# bash stays PID 1 so crond runs as PID 2 and can setpgid its cron jobs.
+crond -f -l 8 &
+wait
