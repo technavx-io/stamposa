@@ -64,11 +64,7 @@ export default async function PricingPage() {
           {/* PricingCtas is a client wrapper — server components can't hand
               functions across the RSC boundary, so the per-plan href builder
               lives on the client and just receives the two base URLs. */}
-          <PricingCtas
-            plans={plans}
-            loginHref={appHref('/merchant/login')}
-            billingHref={appHref('/merchant/billing')}
-          />
+          <PricingCtas plans={plans} loginHref={appHref('/merchant/login')} />
         </div>
 
         <p className="mt-6 text-center text-[13px] text-muted">
