@@ -84,6 +84,7 @@ describe('BusinessesService.updateInfo', () => {
       hoursText: 'Mon–Sat · 10am–10pm',
       contactEmail: 'hi@wafflecafe.in',
       googleMapsUrl: 'https://maps.app.goo.gl/abc',
+      instagramUrl: 'https://instagram.com/wafflecafe',
     });
     const patch = prisma.business.update.mock.calls[0][0].data;
     expect(patch).toMatchObject({
@@ -95,6 +96,30 @@ describe('BusinessesService.updateInfo', () => {
       hoursText: 'Mon–Sat · 10am–10pm',
       contactEmail: 'hi@wafflecafe.in',
       googleMapsUrl: 'https://maps.app.goo.gl/abc',
+      instagramUrl: 'https://instagram.com/wafflecafe',
+    });
+  });
+
+  it('trims and normalises all social URLs (empty → null)', async () => {
+    const { service, prisma } = makeService({ id: 'biz_1' });
+    await service.updateInfo('biz_1', {
+      instagramUrl: '  instagram.com/wafflecafe  ',
+      facebookUrl: 'https://facebook.com/wafflecafe',
+      youtubeUrl: 'youtube.com/@wafflecafe',
+      xUrl: '',
+      linkedinUrl: '   ',
+      tiktokUrl: 'https://tiktok.com/@wafflecafe',
+      whatsappUrl: 'https://wa.me/919876543210',
+    });
+    const patch = prisma.business.update.mock.calls[0][0].data;
+    expect(patch).toMatchObject({
+      instagramUrl: 'https://instagram.com/wafflecafe',
+      facebookUrl: 'https://facebook.com/wafflecafe',
+      youtubeUrl: 'https://youtube.com/@wafflecafe',
+      xUrl: null,
+      linkedinUrl: null,
+      tiktokUrl: 'https://tiktok.com/@wafflecafe',
+      whatsappUrl: 'https://wa.me/919876543210',
     });
   });
 

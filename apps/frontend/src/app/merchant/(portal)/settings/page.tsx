@@ -647,6 +647,13 @@ const infoSchema = z.object({
     .optional()
     .or(z.literal('')),
   googleMapsUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  instagramUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  facebookUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  youtubeUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  xUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  linkedinUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  tiktokUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  whatsappUrl: z.string().trim().max(500).optional().or(z.literal('')),
 });
 type InfoFormValues = z.infer<typeof infoSchema>;
 
@@ -670,6 +677,13 @@ function BusinessInfoPanel() {
       hoursText: info.data?.hoursText ?? '',
       contactEmail: info.data?.contactEmail ?? '',
       googleMapsUrl: info.data?.googleMapsUrl ?? '',
+      instagramUrl: info.data?.instagramUrl ?? '',
+      facebookUrl: info.data?.facebookUrl ?? '',
+      youtubeUrl: info.data?.youtubeUrl ?? '',
+      xUrl: info.data?.xUrl ?? '',
+      linkedinUrl: info.data?.linkedinUrl ?? '',
+      tiktokUrl: info.data?.tiktokUrl ?? '',
+      whatsappUrl: info.data?.whatsappUrl ?? '',
     },
     resetOptions: { keepDirtyValues: true },
   });
@@ -686,6 +700,13 @@ function BusinessInfoPanel() {
         hoursText: values.hoursText ?? '',
         contactEmail: values.contactEmail ?? '',
         googleMapsUrl: values.googleMapsUrl ?? '',
+        instagramUrl: values.instagramUrl ?? '',
+        facebookUrl: values.facebookUrl ?? '',
+        youtubeUrl: values.youtubeUrl ?? '',
+        xUrl: values.xUrl ?? '',
+        linkedinUrl: values.linkedinUrl ?? '',
+        tiktokUrl: values.tiktokUrl ?? '',
+        whatsappUrl: values.whatsappUrl ?? '',
       });
       toast.success('Menu & info page saved');
       await queryClient.invalidateQueries({ queryKey: ['merchant', 'business-info'] });
@@ -800,6 +821,127 @@ function BusinessInfoPanel() {
           error={form.formState.errors.googleMapsUrl?.message}
         >
           {(p) => <Input {...p} type="url" inputMode="url" {...form.register('googleMapsUrl')} />}
+        </Field>
+
+        {/* Social media — a "Follow us" icon row on the public page. Every
+            field is optional; blanks hide the corresponding icon. */}
+        <div className="pt-2">
+          <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-body">
+            Social media
+          </h3>
+          <p className="mt-1 text-[13px] text-muted">
+            Add the profiles you want customers to find on your public page.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Instagram"
+            optional
+            error={form.formState.errors.instagramUrl?.message}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                type="url"
+                inputMode="url"
+                placeholder="https://instagram.com/yourbusiness"
+                {...form.register('instagramUrl')}
+              />
+            )}
+          </Field>
+          <Field
+            label="Facebook"
+            optional
+            error={form.formState.errors.facebookUrl?.message}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                type="url"
+                inputMode="url"
+                placeholder="https://facebook.com/yourbusiness"
+                {...form.register('facebookUrl')}
+              />
+            )}
+          </Field>
+          <Field
+            label="YouTube"
+            optional
+            error={form.formState.errors.youtubeUrl?.message}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                type="url"
+                inputMode="url"
+                placeholder="https://youtube.com/@yourbusiness"
+                {...form.register('youtubeUrl')}
+              />
+            )}
+          </Field>
+          <Field
+            label="X (Twitter)"
+            optional
+            error={form.formState.errors.xUrl?.message}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                type="url"
+                inputMode="url"
+                placeholder="https://x.com/yourbusiness"
+                {...form.register('xUrl')}
+              />
+            )}
+          </Field>
+          <Field
+            label="LinkedIn"
+            optional
+            error={form.formState.errors.linkedinUrl?.message}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                type="url"
+                inputMode="url"
+                placeholder="https://linkedin.com/company/yourbusiness"
+                {...form.register('linkedinUrl')}
+              />
+            )}
+          </Field>
+          <Field
+            label="TikTok"
+            optional
+            error={form.formState.errors.tiktokUrl?.message}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                type="url"
+                inputMode="url"
+                placeholder="https://tiktok.com/@yourbusiness"
+                {...form.register('tiktokUrl')}
+              />
+            )}
+          </Field>
+        </div>
+
+        <Field
+          label="WhatsApp"
+          optional
+          hint="This is your WhatsApp Business chat link — get it from wa.me or the WhatsApp app."
+          error={form.formState.errors.whatsappUrl?.message}
+        >
+          {(p) => (
+            <Input
+              {...p}
+              type="url"
+              inputMode="url"
+              placeholder="https://wa.me/919876543210"
+              {...form.register('whatsappUrl')}
+            />
+          )}
         </Field>
 
         <div className="flex flex-wrap items-center gap-2">

@@ -165,6 +165,13 @@ export class BusinessesService {
         ...(dto.hoursText !== undefined ? { hoursText: cleanText(dto.hoursText) } : {}),
         ...(dto.contactEmail !== undefined ? { contactEmail: cleanEmail(dto.contactEmail) } : {}),
         ...(dto.googleMapsUrl !== undefined ? { googleMapsUrl: cleanUrl(dto.googleMapsUrl) } : {}),
+        ...(dto.instagramUrl !== undefined ? { instagramUrl: cleanUrl(dto.instagramUrl) } : {}),
+        ...(dto.facebookUrl !== undefined ? { facebookUrl: cleanUrl(dto.facebookUrl) } : {}),
+        ...(dto.youtubeUrl !== undefined ? { youtubeUrl: cleanUrl(dto.youtubeUrl) } : {}),
+        ...(dto.xUrl !== undefined ? { xUrl: cleanUrl(dto.xUrl) } : {}),
+        ...(dto.linkedinUrl !== undefined ? { linkedinUrl: cleanUrl(dto.linkedinUrl) } : {}),
+        ...(dto.tiktokUrl !== undefined ? { tiktokUrl: cleanUrl(dto.tiktokUrl) } : {}),
+        ...(dto.whatsappUrl !== undefined ? { whatsappUrl: cleanUrl(dto.whatsappUrl) } : {}),
       },
     });
     return toBusinessInfoDto(business);

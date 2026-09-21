@@ -148,6 +148,17 @@ model Business {
   contactEmail   String? @db.VarChar(200) @map("contact_email")
   googleMapsUrl  String? @db.VarChar(500) @map("google_maps_url")
 
+  /// Social-media links rendered as a "Follow us" icon row on /b/<slug>.
+  /// Each platform is optional; a null hides that icon rather than showing
+  /// a broken link. WhatsApp is expected to be a wa.me/<number> chat link.
+  instagramUrl String? @db.VarChar(500) @map("instagram_url")
+  facebookUrl  String? @db.VarChar(500) @map("facebook_url")
+  youtubeUrl   String? @db.VarChar(500) @map("youtube_url")
+  xUrl         String? @db.VarChar(500) @map("x_url")
+  linkedinUrl  String? @db.VarChar(500) @map("linkedin_url")
+  tiktokUrl    String? @db.VarChar(500) @map("tiktok_url")
+  whatsappUrl  String? @db.VarChar(500) @map("whatsapp_url")
+
   /// Latest broadcast the merchant pushed to wallet passes. Apple has no
   /// free-form push: the lock-screen text is a pass field whose value changed,
   /// so the current message lives here and every pass renders it as a "Latest

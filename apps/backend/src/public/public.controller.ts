@@ -145,6 +145,13 @@ export class PublicController {
       hoursText: business.hoursText,
       contactEmail: business.contactEmail,
       googleMapsUrl: business.googleMapsUrl,
+      instagramUrl: business.instagramUrl,
+      facebookUrl: business.facebookUrl,
+      youtubeUrl: business.youtubeUrl,
+      xUrl: business.xUrl,
+      linkedinUrl: business.linkedinUrl,
+      tiktokUrl: business.tiktokUrl,
+      whatsappUrl: business.whatsappUrl,
     };
   }
 }

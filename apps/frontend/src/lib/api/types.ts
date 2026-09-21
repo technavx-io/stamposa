@@ -422,6 +422,13 @@ export interface BusinessInfo {
   hoursText: string | null;
   contactEmail: string | null;
   googleMapsUrl: string | null;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  youtubeUrl: string | null;
+  xUrl: string | null;
+  linkedinUrl: string | null;
+  tiktokUrl: string | null;
+  whatsappUrl: string | null;
 }
 
 /** Public /b/<slug> payload: business identity + info-page fields. */

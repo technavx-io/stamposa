@@ -104,6 +104,55 @@ export class UpdateBusinessInfoDto {
   @Transform(trim)
   @MaxLength(500)
   googleMapsUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://instagram.com/wafflecafe' })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(500)
+  instagramUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://facebook.com/wafflecafe' })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(500)
+  facebookUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://youtube.com/@wafflecafe' })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(500)
+  youtubeUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://x.com/wafflecafe' })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(500)
+  xUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://linkedin.com/company/wafflecafe' })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(500)
+  linkedinUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://tiktok.com/@wafflecafe' })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(500)
+  tiktokUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://wa.me/919876543210' })
+  @IsOptional()
+  @IsString()
+  @Transform(trim)
+  @MaxLength(500)
+  whatsappUrl?: string | null;
 }
 
 /** Merchant-facing DTO for GET /v1/merchant/business/info. */
@@ -131,6 +180,27 @@ export class BusinessInfoDto {
 
   @ApiProperty({ nullable: true, type: String })
   googleMapsUrl: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  instagramUrl: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  facebookUrl: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  youtubeUrl: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  xUrl: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  linkedinUrl: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  tiktokUrl: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  whatsappUrl: string | null;
 }
 
 export function toBusinessInfoDto(business: Business): BusinessInfoDto {
@@ -143,6 +213,13 @@ export function toBusinessInfoDto(business: Business): BusinessInfoDto {
     hoursText: business.hoursText,
     contactEmail: business.contactEmail,
     googleMapsUrl: business.googleMapsUrl,
+    instagramUrl: business.instagramUrl,
+    facebookUrl: business.facebookUrl,
+    youtubeUrl: business.youtubeUrl,
+    xUrl: business.xUrl,
+    linkedinUrl: business.linkedinUrl,
+    tiktokUrl: business.tiktokUrl,
+    whatsappUrl: business.whatsappUrl,
   };
 }
 
