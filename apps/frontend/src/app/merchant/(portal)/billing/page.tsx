@@ -81,66 +81,52 @@ export default function BillingPage() {
       toast.error(e instanceof ApiError ? e.message : "That code couldn't be applied."),
   });
 
-  // Returning from Dodo checkout. Dodo redirects the merchant to the neutral
-  // `?checkout=return` marker on BOTH success and cancel/failure (it doesn't
-  // append its own status), so we can't trust the URL. Instead: refetch the
-  // subscription and let its state tell us what actually happened. Poll a
-  // few times because the Dodo webhook is async — the API can lag the redirect
-  // by a couple of seconds.
+  // Returning from Dodo checkout. Dodo drops the merchant back at our
+  // `?checkout=return` marker on BOTH success and cancel/failure, so we
+  // don't trust the URL — we refetch the subscription and decide from
+  // its actual state. The ref guard makes this fire exactly once per
+  // page load; we deliberately do NOT wire cancellation to the effect
+  // cleanup because clearing the URL flips `params` right away and the
+  // cleanup would then race with the fetch — the earlier version of this
+  // code dismissed the loading toast that way and left the merchant with
+  // no visible feedback at all (the "blank screen" report from 0.13.4).
   const returnHandled = useRef(false);
   useEffect(() => {
     if (params.get('checkout') !== 'return') return;
     if (returnHandled.current) return;
     returnHandled.current = true;
-    // Clear the URL first so a re-render doesn't re-fire and so the merchant
-    // doesn't share a "?checkout=return" link by accident.
     router.replace('/merchant/billing');
 
-    const loadingId = toast.loading('Checking your payment…');
-    let cancelled = false;
-
-    void (async () => {
-      for (let attempt = 0; attempt < 4 && !cancelled; attempt++) {
-        try {
-          await qc.invalidateQueries({ queryKey: ['merchant', 'subscription'] });
-          const fresh = await qc.fetchQuery<SubscriptionState>({
-            queryKey: ['merchant', 'subscription'],
-            queryFn: merchantApi.subscription,
-          });
-          const paidActive = fresh.status === 'ACTIVE' && fresh.effectiveTier !== 'FREE';
-          if (paidActive) {
-            toast.dismiss(loadingId);
-            toast.success('Payment received — your new plan is active.');
-            return;
-          }
-          if (fresh.status === 'PAST_DUE') {
-            toast.dismiss(loadingId);
-            toast.error(
-              `Your payment didn't go through. Try again with a different card, or email ${BILLING_EMAIL} if you were charged.`,
-              { duration: 9000 },
-            );
-            return;
-          }
-        } catch {
-          // ignore — retry
+    (async () => {
+      // Give Dodo's webhook ~1.5s to update the subscription row before we read.
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        const fresh = await merchantApi.subscription();
+        qc.setQueryData(['merchant', 'subscription'], fresh);
+        const paidActive = fresh.status === 'ACTIVE' && fresh.effectiveTier !== 'FREE';
+        if (paidActive) {
+          toast.success('Payment received — your new plan is active.');
+          return;
         }
-        // Give Dodo's webhook another moment (2s each between the four attempts).
-        if (attempt < 3 && !cancelled) await new Promise((r) => setTimeout(r, 2000));
+        if (fresh.status === 'PAST_DUE') {
+          toast.error(
+            `Your payment didn't go through. Try again with a different card, or email ${BILLING_EMAIL} if you were charged.`,
+            { duration: 9000 },
+          );
+          return;
+        }
+        // Any other state (still TRIALING, FREE, EXPIRED, CANCELED) after a
+        // Dodo redirect means the paid plan did not activate.
+        toast.error(
+          `Your payment didn't complete. Please try again, or email ${BILLING_EMAIL} if the amount was charged.`,
+          { duration: 9000 },
+        );
+      } catch {
+        toast.error(
+          "Couldn't confirm your payment. Please refresh in a moment or try again.",
+        );
       }
-      if (cancelled) return;
-      // Fell through: subscription state didn't flip within ~6s. Could be a
-      // cancelled checkout, a declined card, or a slow webhook. Be honest.
-      toast.dismiss(loadingId);
-      toast.error(
-        `We didn't see your plan activate. If you completed payment, refresh in a moment. Otherwise please try again or email ${BILLING_EMAIL}.`,
-        { duration: 9000 },
-      );
     })();
-
-    return () => {
-      cancelled = true;
-      toast.dismiss(loadingId);
-    };
   }, [params, qc, router]);
 
   // Auto-checkout: when the merchant arrives from the marketing pricing page
