@@ -412,6 +412,26 @@ export interface PublicBusiness {
   acceptingJoins: boolean;
 }
 
+/** Merchant-facing menu & info-page fields. All optional; nulls hide sections. */
+export interface BusinessInfo {
+  menuUrl: string | null;
+  aboutText: string | null;
+  addressLine: string | null;
+  phoneNumber: string | null;
+  websiteUrl: string | null;
+  hoursText: string | null;
+  contactEmail: string | null;
+  googleMapsUrl: string | null;
+}
+
+/** Public /b/<slug> payload: business identity + info-page fields. */
+export interface PublicBusinessInfo extends BusinessInfo {
+  businessName: string;
+  slug: string;
+  brandColor: string | null;
+  logoUrl: string | null;
+}
+
 // ── Analytics, ledger, exports ──────────────────────────────────────────
 
 export type RangeKey = '7d' | '30d' | '90d';

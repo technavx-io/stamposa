@@ -9,6 +9,12 @@ import { SubscriptionService } from '../billing/subscription.service';
 import { FILE_STORAGE, FileStorage } from '../storage/storage.types';
 import { BusinessDto, toBusinessDto } from './dto/business.dto';
 import { CreateBusinessDto, UpdateBusinessDto } from './dto/business-request.dto';
+import {
+  BusinessInfoDto,
+  normaliseInfoUrl,
+  toBusinessInfoDto,
+  UpdateBusinessInfoDto,
+} from './dto/business-info.dto';
 
 const LOGO_MIME_TO_EXT: Record<string, string> = {
   'image/png': 'png',
@@ -128,6 +134,44 @@ export class BusinessesService {
       },
     });
     return this.dto(business);
+  }
+
+  /**
+   * The public /b/<slug> info page fields. Empty strings coerce to null so
+   * the merchant can clear a field by wiping the input; URL fields go through
+   * normaliseInfoUrl (rejects javascript:/data:, requires http/https).
+   */
+  async updateInfo(businessId: string, dto: UpdateBusinessInfoDto): Promise<BusinessInfoDto> {
+    const cleanText = (v: string | null | undefined) =>
+      v === undefined ? undefined : v && v.trim() ? v.trim() : null;
+
+    const cleanUrl = (v: string | null | undefined) =>
+      v === undefined ? undefined : normaliseInfoUrl(v);
+
+    const cleanEmail = (v: string | null | undefined) => {
+      if (v === undefined) return undefined;
+      const trimmed = (v ?? '').trim();
+      return trimmed ? trimmed : null;
+    };
+
+    const business = await this.prisma.business.update({
+      where: { id: businessId },
+      data: {
+        ...(dto.menuUrl !== undefined ? { menuUrl: cleanUrl(dto.menuUrl) } : {}),
+        ...(dto.aboutText !== undefined ? { aboutText: cleanText(dto.aboutText) } : {}),
+        ...(dto.addressLine !== undefined ? { addressLine: cleanText(dto.addressLine) } : {}),
+        ...(dto.phoneNumber !== undefined ? { phoneNumber: cleanText(dto.phoneNumber) } : {}),
+        ...(dto.websiteUrl !== undefined ? { websiteUrl: cleanUrl(dto.websiteUrl) } : {}),
+        ...(dto.hoursText !== undefined ? { hoursText: cleanText(dto.hoursText) } : {}),
+        ...(dto.contactEmail !== undefined ? { contactEmail: cleanEmail(dto.contactEmail) } : {}),
+        ...(dto.googleMapsUrl !== undefined ? { googleMapsUrl: cleanUrl(dto.googleMapsUrl) } : {}),
+      },
+    });
+    return toBusinessInfoDto(business);
+  }
+
+  infoDto(business: Business): BusinessInfoDto {
+    return toBusinessInfoDto(business);
   }
 
   async setLogo(business: Business, file: Express.Multer.File): Promise<BusinessDto> {

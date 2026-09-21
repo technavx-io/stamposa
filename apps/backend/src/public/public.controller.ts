@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { defaultConsentText } from '../loyalty/memberships.service';
 import { resolveCardStyle } from '../loyalty/card-style.util';
 import { CardStyleDto } from '../loyalty/dto/loyalty.dto';
+import { PublicBusinessInfoDto } from '../businesses/dto/business-info.dto';
 
 class PublicCampaignDto {
   @ApiProperty({ example: 'Coffee Lovers Card' })
@@ -113,6 +114,37 @@ export class PublicController {
       ),
       consentText: business.consentText ?? defaultConsentText(business.name),
       acceptingJoins: campaign !== null,
+    };
+  }
+
+  /**
+   * The digital business card at /b/<slug> — the "menu & info" page.
+   * Suspended businesses 404 like unknown slugs, so pausing hides the page.
+   */
+  @Public()
+  @Get('businesses/:slug/info')
+  @ApiOperation({ summary: 'Public info shown on the /b/<slug> menu & info page' })
+  @ApiOkResponse({ type: PublicBusinessInfoDto })
+  async businessInfo(@Param('slug') slug: string): Promise<PublicBusinessInfoDto> {
+    const business = await this.prisma.business.findUnique({
+      where: { slug: slug.toLowerCase() },
+    });
+    if (!business || business.suspendedAt !== null) {
+      throw notFound('BUSINESS_NOT_FOUND', 'This business does not exist.');
+    }
+    return {
+      businessName: business.name,
+      slug: business.slug,
+      brandColor: business.brandColor,
+      logoUrl: business.logoPath ? `${this.config.apiPublicUrl}${business.logoPath}` : null,
+      menuUrl: business.menuUrl,
+      aboutText: business.aboutText,
+      addressLine: business.addressLine,
+      phoneNumber: business.phoneNumber,
+      websiteUrl: business.websiteUrl,
+      hoursText: business.hoursText,
+      contactEmail: business.contactEmail,
+      googleMapsUrl: business.googleMapsUrl,
     };
   }
 }

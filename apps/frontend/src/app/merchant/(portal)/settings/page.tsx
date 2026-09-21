@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { AlertTriangle, Download, ImagePlus, Pause, Play, Trash2 } from 'lucide-react';
+import { AlertTriangle, Download, ExternalLink, ImagePlus, Menu, Pause, Play, Trash2 } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { merchantApi } from '@/lib/api/endpoints';
 import { useMerchant } from '@/lib/auth/merchant-context';
@@ -307,6 +307,8 @@ export default function SettingsPage() {
             </div>
           </Panel>
 
+          <BusinessInfoPanel />
+
           <Panel>
             <PanelHeader title="Notifications" description="What we send you about your programme." />
             <ul className="divide-y divide-line-soft">
@@ -605,5 +607,191 @@ export default function SettingsPage() {
         </div>
       </Modal>
     </>
+  );
+}
+
+// ── Menu & info page section ─────────────────────────────────────────────
+// Fields for /b/<slug>. Kept in its own component so the settings page
+// stays legible; it also owns its own state / mutation so a bad URL only
+// fails this form, not the whole page.
+
+const infoSchema = z.object({
+  menuUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  aboutText: z.string().trim().max(500).optional().or(z.literal('')),
+  addressLine: z.string().trim().max(200).optional().or(z.literal('')),
+  phoneNumber: z.string().trim().max(30).optional().or(z.literal('')),
+  websiteUrl: z.string().trim().max(500).optional().or(z.literal('')),
+  hoursText: z.string().trim().max(200).optional().or(z.literal('')),
+  contactEmail: z
+    .string()
+    .trim()
+    .max(200)
+    .email('That does not look like an email address.')
+    .optional()
+    .or(z.literal('')),
+  googleMapsUrl: z.string().trim().max(500).optional().or(z.literal('')),
+});
+type InfoFormValues = z.infer<typeof infoSchema>;
+
+function BusinessInfoPanel() {
+  const { business } = useMerchant();
+  const queryClient = useQueryClient();
+
+  const info = useQuery({
+    queryKey: ['merchant', 'business-info'],
+    queryFn: merchantApi.businessInfo,
+  });
+
+  const form = useForm<InfoFormValues>({
+    resolver: zodResolver(infoSchema),
+    values: {
+      menuUrl: info.data?.menuUrl ?? '',
+      aboutText: info.data?.aboutText ?? '',
+      addressLine: info.data?.addressLine ?? '',
+      phoneNumber: info.data?.phoneNumber ?? '',
+      websiteUrl: info.data?.websiteUrl ?? '',
+      hoursText: info.data?.hoursText ?? '',
+      contactEmail: info.data?.contactEmail ?? '',
+      googleMapsUrl: info.data?.googleMapsUrl ?? '',
+    },
+    resetOptions: { keepDirtyValues: true },
+  });
+
+  const save = form.handleSubmit(async (values) => {
+    try {
+      // The API treats "" as clear-this-field; we forward as-is.
+      await merchantApi.updateBusinessInfo({
+        menuUrl: values.menuUrl ?? '',
+        aboutText: values.aboutText ?? '',
+        addressLine: values.addressLine ?? '',
+        phoneNumber: values.phoneNumber ?? '',
+        websiteUrl: values.websiteUrl ?? '',
+        hoursText: values.hoursText ?? '',
+        contactEmail: values.contactEmail ?? '',
+        googleMapsUrl: values.googleMapsUrl ?? '',
+      });
+      toast.success('Menu & info page saved');
+      await queryClient.invalidateQueries({ queryKey: ['merchant', 'business-info'] });
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Could not save the info page.');
+    }
+  });
+
+  // The public /b/<slug> lives on the same host as the merchant portal
+  // (a Next.js route); a relative link works everywhere the app is served.
+  const publicHref = `/b/${business.slug}`;
+
+  return (
+    <Panel>
+      <PanelHeader
+        title="Menu & info page"
+        description="A public page for your business — Instagram bio, receipts, anywhere. Shows what customers see when they land outside the loyalty flow."
+      />
+      <form onSubmit={save} className="space-y-4 p-5">
+        <div className="rounded-lg border border-line-soft bg-surface-2/40 px-3 py-2 text-[13px] text-body">
+          Your public page:{' '}
+          <a
+            href={publicHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline"
+          >
+            {publicHref} <ExternalLink className="size-3.5" />
+          </a>
+        </div>
+
+        <Field
+          label="View-menu link"
+          optional
+          hint="Point this at wherever your menu lives — Zomato, an Instagram post, a PDF on Drive, anywhere."
+          error={form.formState.errors.menuUrl?.message}
+        >
+          {(p) => (
+            <Input
+              {...p}
+              type="url"
+              inputMode="url"
+              placeholder="https://www.zomato.com/…"
+              {...form.register('menuUrl')}
+            />
+          )}
+        </Field>
+
+        <Field
+          label="About the business"
+          optional
+          hint="One or two lines — what makes you you."
+          error={form.formState.errors.aboutText?.message}
+        >
+          {(p) => <Textarea {...p} rows={3} {...form.register('aboutText')} />}
+        </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Address"
+            optional
+            error={form.formState.errors.addressLine?.message}
+          >
+            {(p) => <Textarea {...p} rows={2} {...form.register('addressLine')} />}
+          </Field>
+          <Field
+            label="Hours"
+            optional
+            hint="Free form — e.g. Mon–Sat · 10am–10pm"
+            error={form.formState.errors.hoursText?.message}
+          >
+            {(p) => <Textarea {...p} rows={2} {...form.register('hoursText')} />}
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Phone (public)"
+            optional
+            error={form.formState.errors.phoneNumber?.message}
+          >
+            {(p) => <Input {...p} type="tel" {...form.register('phoneNumber')} />}
+          </Field>
+          <Field
+            label="Contact email"
+            optional
+            error={form.formState.errors.contactEmail?.message}
+          >
+            {(p) => <Input {...p} type="email" {...form.register('contactEmail')} />}
+          </Field>
+        </div>
+
+        <Field
+          label="Website"
+          optional
+          error={form.formState.errors.websiteUrl?.message}
+        >
+          {(p) => <Input {...p} type="url" inputMode="url" {...form.register('websiteUrl')} />}
+        </Field>
+
+        <Field
+          label="Google Maps link"
+          optional
+          hint="Optional — used by the “Open in Maps” button. If blank, the address is used."
+          error={form.formState.errors.googleMapsUrl?.message}
+        >
+          {(p) => <Input {...p} type="url" inputMode="url" {...form.register('googleMapsUrl')} />}
+        </Field>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" loading={form.formState.isSubmitting}>
+            <Menu className="size-4" /> Save info page
+          </Button>
+          <a
+            href={publicHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-[13px] font-medium text-body hover:bg-surface-2"
+          >
+            Open public page <ExternalLink className="size-3.5" />
+          </a>
+        </div>
+      </form>
+    </Panel>
   );
 }

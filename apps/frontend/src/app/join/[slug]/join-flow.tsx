@@ -5,7 +5,7 @@ import { PHONE_AUTH_ENABLED } from '@/lib/features';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ArrowRight, Gift, MapPin, Stamp } from 'lucide-react';
+import { ArrowRight, Clock, Gift, Info, MapPin, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api/client';
 import { customerApi, publicApi } from '@/lib/api/endpoints';
@@ -30,6 +30,16 @@ export function JoinFlow({ slug }: { slug: string }) {
     queryKey: ['public', 'business', slug],
     queryFn: () => publicApi.business(slug),
     retry: false,
+  });
+
+  // /b/<slug> info-page fields — shown as a compact "About this business"
+  // panel before the customer joins. The menuUrl is deliberately NOT shown
+  // here: we do not want to be a free menu-forwarder before enrolment.
+  const info = useQuery({
+    queryKey: ['public', 'business-info', slug],
+    queryFn: () => publicApi.businessInfo(slug),
+    retry: false,
+    enabled: business.isSuccess,
   });
 
   const join = useMutation({
@@ -119,6 +129,37 @@ export function JoinFlow({ slug }: { slug: string }) {
               <p className="mt-2 text-center text-[11.5px] leading-relaxed text-white/50">
                 {b.campaign.terms}
               </p>
+            )}
+          </div>
+        )}
+
+        {/* About this business — compact preview of the /b/<slug> page.
+            Deliberately excludes menuUrl (that lives behind the join flow). */}
+        {info.data && (info.data.aboutText || info.data.addressLine || info.data.hoursText) && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_60px_-20px_rgba(15,12,30,0.9),0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
+              <Info className="size-3.5" /> About this business
+            </p>
+            {info.data.aboutText && (
+              <p className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-white/80">
+                {info.data.aboutText}
+              </p>
+            )}
+            {(info.data.addressLine || info.data.hoursText) && (
+              <dl className="mt-3 space-y-2 text-[13px] text-white/70">
+                {info.data.addressLine && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-white/45" />
+                    <span>{info.data.addressLine}</span>
+                  </div>
+                )}
+                {info.data.hoursText && (
+                  <div className="flex items-start gap-2">
+                    <Clock className="mt-0.5 size-3.5 shrink-0 text-white/45" />
+                    <span className="whitespace-pre-line">{info.data.hoursText}</span>
+                  </div>
+                )}
+              </dl>
             )}
           </div>
         )}

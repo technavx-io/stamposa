@@ -136,6 +136,20 @@ model Business {
   notifyWeeklyDigest  Boolean @default(true) @map("notify_weekly_digest")
   notifyStaffInactive Boolean @default(true) @map("notify_staff_inactive")
 
+  /// "Menu & info page" — the public digital business card at /b/<slug>.
+  /// Every field is optional; the page hides empty sections rather than
+  /// showing blanks. menuUrl is the merchant-controlled "View menu" CTA and
+  /// points anywhere their menu already lives (Zomato, an Instagram post,
+  /// a Google Drive PDF …). Kept nullable so businesses upgrade in place.
+  menuUrl        String? @db.VarChar(500) @map("menu_url")
+  aboutText      String? @db.VarChar(500) @map("about_text")
+  addressLine    String? @db.VarChar(200) @map("address_line")
+  phoneNumber    String? @db.VarChar(30)  @map("phone_number")
+  websiteUrl     String? @db.VarChar(500) @map("website_url")
+  hoursText      String? @db.VarChar(200) @map("hours_text")
+  contactEmail   String? @db.VarChar(200) @map("contact_email")
+  googleMapsUrl  String? @db.VarChar(500) @map("google_maps_url")
+
   /// Latest broadcast the merchant pushed to wallet passes. Apple has no
   /// free-form push: the lock-screen text is a pass field whose value changed,
   /// so the current message lives here and every pass renders it as a "Latest

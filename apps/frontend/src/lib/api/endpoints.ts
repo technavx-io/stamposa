@@ -7,6 +7,7 @@ import type {
   Broadcast,
   BroadcastAudience,
   Business,
+  BusinessInfo,
   Campaign,
   Card,
   CardDetail,
@@ -23,6 +24,7 @@ import type {
   ConsentRecord,
   Paginated,
   PublicBusiness,
+  PublicBusinessInfo,
   RangeKey,
   SeriesPoint,
   StaffPerformance,
@@ -174,6 +176,11 @@ export const merchantApi = {
     });
   },
   removeCardImage: () => merchantClient.delete<Business>('/merchant/business/card-image'),
+
+  // /b/<slug> "Menu & info page" fields.
+  businessInfo: () => merchantClient.get<BusinessInfo>('/merchant/business/info'),
+  updateBusinessInfo: (data: Partial<BusinessInfo>) =>
+    merchantClient.patch<BusinessInfo>('/merchant/business/info', data),
   getQr: (size = 512) => merchantClient.get<QrInfo>(`/merchant/business/qr?size=${size}`),
   qrPngUrl: () => `/merchant/business/qr.png`,
 
@@ -393,5 +400,9 @@ export const customerApi = {
 export const publicApi = {
   business: (slug: string) =>
     customerClient.get<PublicBusiness>(`/public/businesses/${slug}`, { anonymous: true }),
+  businessInfo: (slug: string) =>
+    customerClient.get<PublicBusinessInfo>(`/public/businesses/${slug}/info`, {
+      anonymous: true,
+    }),
   plans: () => customerClient.get<Plan[]>('/public/plans', { anonymous: true }),
 };

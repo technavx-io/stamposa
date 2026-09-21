@@ -345,6 +345,16 @@ function LiveCard({ membershipId }: { membershipId: string }) {
           <GoogleReviewPrompt businessName={c.business.name} href={c.business.googleReviewUrl} />
         )}
 
+        {/* Cross-link to the merchant's public info page — the same slug
+            the /join link uses. Small and quiet, sits between the wallet
+            promos and the activity feed. */}
+        <Link
+          href={`/b/${c.business.slug}`}
+          className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2.5 text-[13px] font-medium text-body transition-colors hover:bg-surface-2"
+        >
+          View menu · business info <ExternalLink className="size-3.5 opacity-70" />
+        </Link>
+
         {/* Activity */}
         <Panel className="mt-6">
           <p className="border-b border-line-soft px-5 py-3 text-sm font-semibold text-strong">

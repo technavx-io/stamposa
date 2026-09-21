@@ -30,6 +30,7 @@ import { requireBusiness } from './business.util';
 import { BusinessesService } from './businesses.service';
 import { BusinessDto } from './dto/business.dto';
 import { CreateBusinessDto, QrQueryDto, UpdateBusinessDto } from './dto/business-request.dto';
+import { BusinessInfoDto, UpdateBusinessInfoDto } from './dto/business-info.dto';
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 const CARD_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
@@ -80,6 +81,24 @@ export class BusinessesController {
   ): Promise<BusinessDto> {
     const business = requireBusiness(merchant.business);
     return this.businesses.update(business.id, this.normalisePhone(dto));
+  }
+
+  @Get('info')
+  @ApiOperation({ summary: 'Get the public /b/<slug> info-page fields' })
+  @ApiOkResponse({ type: BusinessInfoDto })
+  getInfo(@CurrentMerchant() merchant: MerchantWithBusiness): BusinessInfoDto {
+    return this.businesses.infoDto(requireBusiness(merchant.business));
+  }
+
+  @Patch('info')
+  @ApiOperation({ summary: 'Update the public /b/<slug> info-page fields' })
+  @ApiOkResponse({ type: BusinessInfoDto })
+  updateInfo(
+    @CurrentMerchant() merchant: MerchantWithBusiness,
+    @Body() dto: UpdateBusinessInfoDto,
+  ): Promise<BusinessInfoDto> {
+    const business = requireBusiness(merchant.business);
+    return this.businesses.updateInfo(business.id, dto);
   }
 
   @Post('logo')
