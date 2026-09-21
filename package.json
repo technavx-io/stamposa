@@ -1,6 +1,6 @@
 {
   "name": "stamposa",
-  "version": "0.14.2",
+  "version": "0.14.3",
   "private": true,
   "description": "Stamposa — digital loyalty cards. Backend API, the app (portals + customer cards), the marketing website, and the UI package they share.",
   "workspaces": [

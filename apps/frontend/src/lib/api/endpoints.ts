@@ -351,6 +351,14 @@ export const merchantApi = {
     rewards: '/merchant/export/rewards.csv',
   },
   sendFeedback: submitFeedback(merchantClient),
+
+  /**
+   * Cross-device handoff — desktop asks the backend for a one-time token +
+   * QR SVG, the phone POSTs the token to `publicApi.consumeHandoff` to sign
+   * in as the same merchant without re-typing a password.
+   */
+  createHandoff: (goto?: string) =>
+    merchantClient.post<HandoffCreated>('/merchant/handoff', goto ? { goto } : {}),
 };
 
 // ── Staff console ───────────────────────────────────────────────────────
@@ -407,6 +415,17 @@ export const customerApi = {
 
 // ── Public ──────────────────────────────────────────────────────────────
 
+export interface HandoffCreated {
+  /** One-time hex token. Encoded in the QR — never render this on the page. */
+  token: string;
+  /** Fully-formed URL the QR encodes (`/merchant/handoff?token=…&goto=…`). */
+  url: string;
+  /** Pre-rendered inline SVG QR. Dangerously-set into a card element. */
+  qrSvg: string;
+  expiresAt: string;
+  expiresInSec: number;
+}
+
 export const publicApi = {
   business: (slug: string) =>
     customerClient.get<PublicBusiness>(`/public/businesses/${slug}`, { anonymous: true }),
@@ -415,4 +434,16 @@ export const publicApi = {
       anonymous: true,
     }),
   plans: () => customerClient.get<Plan[]>('/public/plans', { anonymous: true }),
+  /**
+   * Public — the phone has no session yet. Trades a one-time token from the
+   * scanned QR for a fresh merchant session (same envelope shape as
+   * `/auth/merchant/login`). Any authenticated portal client works here since
+   * the endpoint runs anonymous.
+   */
+  consumeHandoff: (token: string) =>
+    merchantClient.post<AuthSession>(
+      '/merchant/handoff/consume',
+      { token },
+      { anonymous: true },
+    ),
 };

@@ -19,11 +19,13 @@ import {
   Menu,
   Pause,
   Play,
+  RefreshCw,
+  Smartphone,
   Trash2,
   X,
 } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
-import { merchantApi } from '@/lib/api/endpoints';
+import { merchantApi, type HandoffCreated } from '@/lib/api/endpoints';
 import { useMerchant } from '@/lib/auth/merchant-context';
 import { downloadAuthenticated } from '@/lib/download';
 import {cn} from '@stamposa/ui/lib/utils';
@@ -849,6 +851,7 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
 
   const [pending, setPending] = useState<PendingImage[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [handoffOpen, setHandoffOpen] = useState(false);
 
   const hasHostedPdf = isHostedMenuPdf(menuUrl);
 
@@ -1024,12 +1027,24 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
         >
           <FilePlus className="size-4" /> Choose files
         </Button>
+        {/* Cross-device handoff: hand this workflow off to a phone camera in
+            one scan. Same actor, no re-login. */}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setHandoffOpen(true)}
+          disabled={upload.isPending}
+        >
+          <Smartphone className="size-4" /> Open on phone
+        </Button>
         {hasHostedPdf && (
           <span className="self-center text-[12px] text-muted">
             Adding new photos will replace the current PDF.
           </span>
         )}
       </div>
+
+      <HandoffModal open={handoffOpen} onClose={() => setHandoffOpen(false)} />
 
       {error && (
         <p className="mt-2 text-[13px] text-red-600" role="alert">
@@ -1106,4 +1121,134 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
       )}
     </div>
   );
+}
+
+// ── Cross-device handoff modal ───────────────────────────────────────────
+// Shows a QR that opens Stamposa on the merchant's phone already signed in
+// (WhatsApp-Web pattern). The QR is single-use, 5-min TTL — the server
+// enforces both. This component just displays it and counts down.
+
+function HandoffModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Open on phone"
+      description="Scan the QR to shoot menu photos from your phone — you'll land right back here, already signed in."
+    >
+      {open && <HandoffModalBody onClose={onClose} />}
+    </Modal>
+  );
+}
+
+function HandoffModalBody({ onClose }: { onClose: () => void }) {
+  const handoff = useMutation<HandoffCreated, ApiError>({
+    mutationFn: () => merchantApi.createHandoff('/merchant/settings#menu-pdf'),
+  });
+
+  // Fire the request once when the modal opens. Passing the mutation function
+  // directly instead of a dep-listed effect keeps StrictMode from firing
+  // twice on remount (which would burn two throwaway tokens).
+  useEffect(() => {
+    handoff.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!handoff.data) {
+      setSecondsLeft(null);
+      return;
+    }
+    const expiresAtMs = new Date(handoff.data.expiresAt).getTime();
+    const tick = () => {
+      const remaining = Math.max(0, Math.round((expiresAtMs - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [handoff.data]);
+
+  const expired = secondsLeft !== null && secondsLeft <= 0;
+
+  if (handoff.isPending || (!handoff.data && !handoff.isError)) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-10 text-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+        <p className="text-sm text-muted">Preparing your one-time sign-in code…</p>
+      </div>
+    );
+  }
+
+  if (handoff.isError) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-6 text-center">
+        <AlertTriangle className="size-6 text-amber-500" />
+        <p className="text-sm text-strong">Couldn’t generate the code.</p>
+        <p className="text-[13px] text-muted">
+          {handoff.error?.message ?? 'Please try again in a moment.'}
+        </p>
+        <Button variant="secondary" size="sm" onClick={() => handoff.mutate()}>
+          <RefreshCw className="size-4" /> Try again
+        </Button>
+      </div>
+    );
+  }
+
+  const data = handoff.data!;
+  return (
+    <div className="flex flex-col items-center gap-4">
+      {expired ? (
+        <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-line bg-canvas p-6 text-center">
+          <AlertTriangle className="size-7 text-amber-500" />
+          <p className="text-sm font-semibold text-strong">Code expired</p>
+          <p className="text-[13px] text-muted">
+            One-time codes are good for five minutes. Generate a fresh one below.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => handoff.mutate()}
+            loading={handoff.isPending}
+          >
+            <RefreshCw className="size-4" /> Generate new code
+          </Button>
+        </div>
+      ) : (
+        <>
+          {/* White card so any phone camera reads the QR fast. */}
+          <div
+            className="flex size-64 items-center justify-center rounded-2xl border border-line bg-white p-3"
+            // The QR SVG is server-generated by the `qrcode` library, sanitised
+            // by construction — the encoded content is a URL we just built,
+            // not user input. Same pattern the wallet-pass renderer uses.
+            dangerouslySetInnerHTML={{ __html: data.qrSvg }}
+            aria-label="Sign-in QR code — scan with your phone camera"
+            role="img"
+          />
+          <div className="text-center">
+            <p className="text-sm text-strong">Scan with your phone camera.</p>
+            <p className="mt-1 text-[13px] text-muted">
+              This code works for{' '}
+              <span className="font-mono font-semibold text-strong">
+                {formatMmSs(secondsLeft ?? data.expiresInSec)}
+              </span>{' '}
+              — single-use.
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function formatMmSs(totalSeconds: number): string {
+  const mm = Math.floor(totalSeconds / 60);
+  const ss = totalSeconds % 60;
+  return `${mm}:${ss.toString().padStart(2, '0')}`;
 }

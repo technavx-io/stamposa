@@ -15,6 +15,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { SharedModule } from './common/shared.module';
 import { CustomerPortalModule } from './customer-portal/customer-portal.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { HandoffModule } from './handoff/handoff.module';
 import { HealthModule } from './health/health.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -60,6 +61,7 @@ import { MonitoringModule } from './monitoring/monitoring.module';
     FeedbackModule,
     CustomerPortalModule,
     DashboardModule,
+    HandoffModule,
     PublicModule,
     HealthModule,
     MonitoringModule,
