@@ -143,8 +143,6 @@ model Business {
   /// a Google Drive PDF …). Kept nullable so businesses upgrade in place.
   menuUrl        String? @db.VarChar(500) @map("menu_url")
   aboutText      String? @db.VarChar(500) @map("about_text")
-  addressLine    String? @db.VarChar(200) @map("address_line")
-  phoneNumber    String? @db.VarChar(30)  @map("phone_number")
   websiteUrl     String? @db.VarChar(500) @map("website_url")
   hoursText      String? @db.VarChar(200) @map("hours_text")
   contactEmail   String? @db.VarChar(200) @map("contact_email")

@@ -78,8 +78,8 @@ describe('BusinessesService.updateInfo', () => {
     await service.updateInfo('biz_1', {
       menuUrl: 'https://www.zomato.com/waffle',
       aboutText: '   ',
-      addressLine: '  12 MG Road  ',
-      phoneNumber: '+91 80 1234 5678',
+      address: '  12 MG Road  ',
+      phone: '+91 80 1234 5678',
       websiteUrl: 'wafflecafe.in',
       hoursText: 'Mon–Sat · 10am–10pm',
       contactEmail: 'hi@wafflecafe.in',
@@ -89,8 +89,8 @@ describe('BusinessesService.updateInfo', () => {
     expect(patch).toMatchObject({
       menuUrl: 'https://www.zomato.com/waffle',
       aboutText: null,
-      addressLine: '12 MG Road',
-      phoneNumber: '+91 80 1234 5678',
+      address: '12 MG Road',
+      phone: '+91 80 1234 5678',
       websiteUrl: 'https://wafflecafe.in/',
       hoursText: 'Mon–Sat · 10am–10pm',
       contactEmail: 'hi@wafflecafe.in',

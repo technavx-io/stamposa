@@ -67,14 +67,14 @@ export class UpdateBusinessInfoDto {
   @IsString()
   @Transform(trim)
   @MaxLength(200)
-  addressLine?: string | null;
+  address?: string | null;
 
   @ApiPropertyOptional({ example: '+91 80 4123 4567' })
   @IsOptional()
   @IsString()
   @Transform(trim)
   @MaxLength(30)
-  phoneNumber?: string | null;
+  phone?: string | null;
 
   @ApiPropertyOptional({ example: 'https://www.wafflecafe.in' })
   @IsOptional()
@@ -115,10 +115,10 @@ export class BusinessInfoDto {
   aboutText: string | null;
 
   @ApiProperty({ nullable: true, type: String })
-  addressLine: string | null;
+  address: string | null;
 
   @ApiProperty({ nullable: true, type: String })
-  phoneNumber: string | null;
+  phone: string | null;
 
   @ApiProperty({ nullable: true, type: String })
   websiteUrl: string | null;
@@ -137,8 +137,8 @@ export function toBusinessInfoDto(business: Business): BusinessInfoDto {
   return {
     menuUrl: business.menuUrl,
     aboutText: business.aboutText,
-    addressLine: business.addressLine,
-    phoneNumber: business.phoneNumber,
+    address: business.address,
+    phone: business.phone,
     websiteUrl: business.websiteUrl,
     hoursText: business.hoursText,
     contactEmail: business.contactEmail,

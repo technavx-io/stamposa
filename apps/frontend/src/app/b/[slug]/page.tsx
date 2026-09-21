@@ -76,12 +76,12 @@ export default async function BusinessInfoPage({
   // from the address so the button never dead-ends.
   const mapHref = b.googleMapsUrl
     ? b.googleMapsUrl
-    : b.addressLine
-      ? `https://maps.google.com/?q=${encodeURIComponent(b.addressLine)}`
+    : b.address
+      ? `https://maps.google.com/?q=${encodeURIComponent(b.address)}`
       : null;
 
   const hasInfoCard = Boolean(
-    b.addressLine || b.hoursText || b.phoneNumber || b.contactEmail || b.websiteUrl,
+    b.address || b.hoursText || b.phone || b.contactEmail || b.websiteUrl,
   );
 
   return (
@@ -133,12 +133,12 @@ export default async function BusinessInfoPage({
         {hasInfoCard && (
           <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_60px_-20px_rgba(15,12,30,0.9),0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl">
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {b.addressLine && (
+              {b.address && (
                 <div className="space-y-1">
                   <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
                     <MapPin className="size-3.5" /> Address
                   </dt>
-                  <dd className="text-sm leading-relaxed text-white/85">{b.addressLine}</dd>
+                  <dd className="text-sm leading-relaxed text-white/85">{b.address}</dd>
                   {mapHref && (
                     <a
                       href={mapHref}
@@ -163,17 +163,17 @@ export default async function BusinessInfoPage({
                 </div>
               )}
 
-              {b.phoneNumber && (
+              {b.phone && (
                 <div className="space-y-1">
                   <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
                     <Phone className="size-3.5" /> Phone
                   </dt>
                   <dd>
                     <a
-                      href={`tel:${b.phoneNumber.replace(/\s+/g, '')}`}
+                      href={`tel:${b.phone.replace(/\s+/g, '')}`}
                       className="text-sm font-medium text-white/85 hover:text-white"
                     >
-                      {b.phoneNumber}
+                      {b.phone}
                     </a>
                   </dd>
                 </div>

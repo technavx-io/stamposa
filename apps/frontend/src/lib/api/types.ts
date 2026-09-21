@@ -416,8 +416,8 @@ export interface PublicBusiness {
 export interface BusinessInfo {
   menuUrl: string | null;
   aboutText: string | null;
-  addressLine: string | null;
-  phoneNumber: string | null;
+  address: string | null;
+  phone: string | null;
   websiteUrl: string | null;
   hoursText: string | null;
   contactEmail: string | null;

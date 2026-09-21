@@ -618,8 +618,8 @@ export default function SettingsPage() {
 const infoSchema = z.object({
   menuUrl: z.string().trim().max(500).optional().or(z.literal('')),
   aboutText: z.string().trim().max(500).optional().or(z.literal('')),
-  addressLine: z.string().trim().max(200).optional().or(z.literal('')),
-  phoneNumber: z.string().trim().max(30).optional().or(z.literal('')),
+  address: z.string().trim().max(200).optional().or(z.literal('')),
+  phone: z.string().trim().max(30).optional().or(z.literal('')),
   websiteUrl: z.string().trim().max(500).optional().or(z.literal('')),
   hoursText: z.string().trim().max(200).optional().or(z.literal('')),
   contactEmail: z
@@ -647,8 +647,8 @@ function BusinessInfoPanel() {
     values: {
       menuUrl: info.data?.menuUrl ?? '',
       aboutText: info.data?.aboutText ?? '',
-      addressLine: info.data?.addressLine ?? '',
-      phoneNumber: info.data?.phoneNumber ?? '',
+      address: info.data?.address ?? '',
+      phone: info.data?.phone ?? '',
       websiteUrl: info.data?.websiteUrl ?? '',
       hoursText: info.data?.hoursText ?? '',
       contactEmail: info.data?.contactEmail ?? '',
@@ -663,8 +663,8 @@ function BusinessInfoPanel() {
       await merchantApi.updateBusinessInfo({
         menuUrl: values.menuUrl ?? '',
         aboutText: values.aboutText ?? '',
-        addressLine: values.addressLine ?? '',
-        phoneNumber: values.phoneNumber ?? '',
+        address: values.address ?? '',
+        phone: values.phone ?? '',
         websiteUrl: values.websiteUrl ?? '',
         hoursText: values.hoursText ?? '',
         contactEmail: values.contactEmail ?? '',
@@ -730,9 +730,9 @@ function BusinessInfoPanel() {
           <Field
             label="Address"
             optional
-            error={form.formState.errors.addressLine?.message}
+            error={form.formState.errors.address?.message}
           >
-            {(p) => <Textarea {...p} rows={2} {...form.register('addressLine')} />}
+            {(p) => <Textarea {...p} rows={2} {...form.register('address')} />}
           </Field>
           <Field
             label="Hours"
@@ -748,9 +748,9 @@ function BusinessInfoPanel() {
           <Field
             label="Phone (public)"
             optional
-            error={form.formState.errors.phoneNumber?.message}
+            error={form.formState.errors.phone?.message}
           >
-            {(p) => <Input {...p} type="tel" {...form.register('phoneNumber')} />}
+            {(p) => <Input {...p} type="tel" {...form.register('phone')} />}
           </Field>
           <Field
             label="Contact email"

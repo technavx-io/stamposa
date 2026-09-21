@@ -135,7 +135,7 @@ export function JoinFlow({ slug }: { slug: string }) {
 
         {/* About this business — compact preview of the /b/<slug> page.
             Deliberately excludes menuUrl (that lives behind the join flow). */}
-        {info.data && (info.data.aboutText || info.data.addressLine || info.data.hoursText) && (
+        {info.data && (info.data.aboutText || info.data.address || info.data.hoursText) && (
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_60px_-20px_rgba(15,12,30,0.9),0_0_0_1px_rgba(255,255,255,0.04)_inset] backdrop-blur-2xl">
             <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/50">
               <Info className="size-3.5" /> About this business
@@ -145,12 +145,12 @@ export function JoinFlow({ slug }: { slug: string }) {
                 {info.data.aboutText}
               </p>
             )}
-            {(info.data.addressLine || info.data.hoursText) && (
+            {(info.data.address || info.data.hoursText) && (
               <dl className="mt-3 space-y-2 text-[13px] text-white/70">
-                {info.data.addressLine && (
+                {info.data.address && (
                   <div className="flex items-start gap-2">
                     <MapPin className="mt-0.5 size-3.5 shrink-0 text-white/45" />
-                    <span>{info.data.addressLine}</span>
+                    <span>{info.data.address}</span>
                   </div>
                 )}
                 {info.data.hoursText && (

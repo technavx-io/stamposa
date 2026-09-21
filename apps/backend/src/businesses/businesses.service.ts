@@ -159,8 +159,8 @@ export class BusinessesService {
       data: {
         ...(dto.menuUrl !== undefined ? { menuUrl: cleanUrl(dto.menuUrl) } : {}),
         ...(dto.aboutText !== undefined ? { aboutText: cleanText(dto.aboutText) } : {}),
-        ...(dto.addressLine !== undefined ? { addressLine: cleanText(dto.addressLine) } : {}),
-        ...(dto.phoneNumber !== undefined ? { phoneNumber: cleanText(dto.phoneNumber) } : {}),
+        ...(dto.address !== undefined ? { address: cleanText(dto.address) } : {}),
+        ...(dto.phone !== undefined ? { phone: cleanText(dto.phone) } : {}),
         ...(dto.websiteUrl !== undefined ? { websiteUrl: cleanUrl(dto.websiteUrl) } : {}),
         ...(dto.hoursText !== undefined ? { hoursText: cleanText(dto.hoursText) } : {}),
         ...(dto.contactEmail !== undefined ? { contactEmail: cleanEmail(dto.contactEmail) } : {}),
