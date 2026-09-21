@@ -4,11 +4,12 @@ import { QrModule } from '../qr/qr.module';
 import { StorageModule } from '../storage/storage.module';
 import { BusinessesController } from './businesses.controller';
 import { BusinessesService } from './businesses.service';
+import { MenuPdfService } from './menu-pdf.service';
 
 @Module({
   imports: [QrModule, StorageModule, BillingModule],
   controllers: [BusinessesController],
-  providers: [BusinessesService],
+  providers: [BusinessesService, MenuPdfService],
   exports: [BusinessesService],
 })
 export class BusinessesModule {}

@@ -1,12 +1,27 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { AlertTriangle, Download, ExternalLink, ImagePlus, Menu, Pause, Play, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Camera,
+  Download,
+  ExternalLink,
+  FilePlus,
+  FileText,
+  ImagePlus,
+  Menu,
+  Pause,
+  Play,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { merchantApi } from '@/lib/api/endpoints';
 import { useMerchant } from '@/lib/auth/merchant-context';
@@ -700,10 +715,16 @@ function BusinessInfoPanel() {
           </a>
         </div>
 
+        <MenuPdfUploader menuUrl={info.data?.menuUrl ?? null} />
+
         <Field
           label="View-menu link"
           optional
-          hint="Point this at wherever your menu lives — Zomato, an Instagram post, a PDF on Drive, anywhere."
+          hint={
+            isHostedMenuPdf(info.data?.menuUrl ?? null)
+              ? 'Auto-set from your uploaded menu PDF. Remove the PDF above to enter an external URL instead.'
+              : 'Point this at wherever your menu lives — Zomato, an Instagram post, a PDF on Drive, anywhere.'
+          }
           error={form.formState.errors.menuUrl?.message}
         >
           {(p) => (
@@ -712,6 +733,7 @@ function BusinessInfoPanel() {
               type="url"
               inputMode="url"
               placeholder="https://www.zomato.com/…"
+              disabled={isHostedMenuPdf(info.data?.menuUrl ?? null)}
               {...form.register('menuUrl')}
             />
           )}
@@ -793,5 +815,295 @@ function BusinessInfoPanel() {
         </div>
       </form>
     </Panel>
+  );
+}
+
+// ── Menu-PDF uploader ────────────────────────────────────────────────────
+// Camera-or-file picker that batches phone photos and POSTs them to
+// /merchant/business/menu-pdf. Once a PDF exists, the plain "View-menu
+// link" field above is disabled — everything flows through this control.
+
+/** Client-side upload limits. Also enforced server-side; we surface a clear
+ *  inline message before making the round-trip. */
+const MENU_MAX_FILES = 20;
+const MENU_MAX_PER_FILE_BYTES = 10 * 1024 * 1024;
+const MENU_MAX_TOTAL_BYTES = 40 * 1024 * 1024;
+const MENU_ACCEPT = 'image/jpeg,image/png,image/webp';
+
+/** True when the stored menuUrl points at a PDF we generated ourselves. */
+function isHostedMenuPdf(menuUrl: string | null): boolean {
+  if (!menuUrl) return false;
+  return /\/uploads\/menu\/[^/?#]+\.pdf(?:$|[?#])/.test(menuUrl);
+}
+
+interface PendingImage {
+  file: File;
+  previewUrl: string;
+  key: string;
+}
+
+function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
+  const queryClient = useQueryClient();
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const filesRef = useRef<HTMLInputElement>(null);
+
+  const [pending, setPending] = useState<PendingImage[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const hasHostedPdf = isHostedMenuPdf(menuUrl);
+
+  // Revoke object URLs when the component unmounts or the pending list is
+  // replaced — otherwise the browser leaks a blob per preview thumbnail.
+  useEffect(() => {
+    return () => {
+      pending.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const clearPending = () => {
+    pending.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    setPending([]);
+    setError(null);
+  };
+
+  const addFiles = (incoming: FileList | null) => {
+    if (!incoming || incoming.length === 0) return;
+    setError(null);
+    const next: PendingImage[] = [...pending];
+    for (const file of Array.from(incoming)) {
+      // iPhone HEIC arrives with mimetype image/heic — reject with the same
+      // message the server uses so the merchant knows how to fix it.
+      const mime = (file.type || '').toLowerCase();
+      if (mime === 'image/heic' || mime === 'image/heif' || /\.hei[cf]$/i.test(file.name)) {
+        setError(
+          'HEIC/HEIF isn’t supported. On iPhone: Settings → Camera → Formats → Most Compatible, then reshoot. Or upload JPEGs instead.',
+        );
+        return;
+      }
+      if (mime && !['image/jpeg', 'image/png', 'image/webp'].includes(mime)) {
+        setError('Only JPEG, PNG and WebP images are supported.');
+        return;
+      }
+      if (file.size > MENU_MAX_PER_FILE_BYTES) {
+        setError(`Each image must be under 10 MB (“${file.name}” is bigger).`);
+        return;
+      }
+      next.push({
+        file,
+        previewUrl: URL.createObjectURL(file),
+        key: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
+      });
+    }
+    if (next.length > MENU_MAX_FILES) {
+      setError(`Up to ${MENU_MAX_FILES} images per menu — that would make ${next.length}.`);
+      return;
+    }
+    const total = next.reduce((sum, p) => sum + p.file.size, 0);
+    if (total > MENU_MAX_TOTAL_BYTES) {
+      setError('Total upload must be under 40 MB. Try fewer or smaller photos.');
+      return;
+    }
+    setPending(next);
+  };
+
+  const removeAt = (index: number) => {
+    setError(null);
+    setPending((prev) => {
+      const dropped = prev[index];
+      if (dropped) URL.revokeObjectURL(dropped.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const move = (index: number, delta: -1 | 1) => {
+    setPending((prev) => {
+      const target = index + delta;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = prev.slice();
+      const [item] = next.splice(index, 1);
+      next.splice(target, 0, item);
+      return next;
+    });
+  };
+
+  const upload = useMutation({
+    mutationFn: () => merchantApi.uploadMenuImages(pending.map((p) => p.file)),
+    onSuccess: async () => {
+      toast.success('Your menu PDF is ready');
+      clearPending();
+      await queryClient.invalidateQueries({ queryKey: ['merchant', 'business-info'] });
+    },
+    onError: (e) =>
+      toast.error(e instanceof ApiError ? e.message : 'Could not build the menu PDF.'),
+  });
+
+  const removePdf = useMutation({
+    mutationFn: () => merchantApi.removeMenuPdf(),
+    onSuccess: async () => {
+      toast.success('Menu PDF removed');
+      await queryClient.invalidateQueries({ queryKey: ['merchant', 'business-info'] });
+    },
+    onError: (e) =>
+      toast.error(e instanceof ApiError ? e.message : 'Could not remove the menu PDF.'),
+  });
+
+  return (
+    <div className="rounded-xl border border-line bg-surface-2/30 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-strong">Upload menu images</p>
+          <p className="text-[13px] text-muted">
+            Shoot photos of your printed menu (or upload existing files) and we’ll turn them into
+            one PDF. Up to {MENU_MAX_FILES} images, 10 MB each.
+          </p>
+        </div>
+      </div>
+
+      {hasHostedPdf && menuUrl && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-900">
+          <FileText className="size-4 shrink-0" />
+          <span className="grow">Your menu PDF is ready.</span>
+          <a
+            href={menuUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-medium text-emerald-800 hover:underline"
+          >
+            View menu PDF <ExternalLink className="size-3.5" />
+          </a>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => removePdf.mutate()}
+            loading={removePdf.isPending}
+          >
+            <Trash2 className="size-4" /> Remove menu PDF
+          </Button>
+        </div>
+      )}
+
+      <input
+        ref={cameraRef}
+        type="file"
+        accept={MENU_ACCEPT}
+        capture="environment"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          addFiles(e.target.files);
+          e.target.value = '';
+        }}
+      />
+      <input
+        ref={filesRef}
+        type="file"
+        accept={MENU_ACCEPT}
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          addFiles(e.target.files);
+          e.target.value = '';
+        }}
+      />
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => cameraRef.current?.click()}
+          disabled={upload.isPending}
+        >
+          <Camera className="size-4" /> Take photos
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => filesRef.current?.click()}
+          disabled={upload.isPending}
+        >
+          <FilePlus className="size-4" /> Choose files
+        </Button>
+        {hasHostedPdf && (
+          <span className="self-center text-[12px] text-muted">
+            Adding new photos will replace the current PDF.
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <p className="mt-2 text-[13px] text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+
+      {pending.length > 0 && (
+        <>
+          <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+            {pending.map((p, index) => (
+              <li
+                key={p.key}
+                className="group relative overflow-hidden rounded-lg border border-line bg-surface"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.previewUrl}
+                  alt={`Page ${index + 1}`}
+                  className="aspect-[3/4] w-full object-cover"
+                />
+                <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-white">
+                  Page {index + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeAt(index)}
+                  aria-label={`Remove page ${index + 1}`}
+                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100"
+                >
+                  <X className="size-3.5" />
+                </button>
+                <div className="absolute inset-x-1 bottom-1 flex justify-between gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => move(index, -1)}
+                    disabled={index === 0}
+                    aria-label={`Move page ${index + 1} up`}
+                    className="rounded bg-black/60 p-1 text-white disabled:opacity-40"
+                  >
+                    <ArrowUp className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(index, 1)}
+                    disabled={index === pending.length - 1}
+                    aria-label={`Move page ${index + 1} down`}
+                    className="rounded bg-black/60 p-1 text-white disabled:opacity-40"
+                  >
+                    <ArrowDown className="size-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => upload.mutate()}
+              disabled={pending.length === 0 || upload.isPending}
+              loading={upload.isPending}
+            >
+              <FileText className="size-4" />
+              {hasHostedPdf ? 'Replace menu PDF' : 'Create menu PDF'}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clearPending} disabled={upload.isPending}>
+              Clear
+            </Button>
+            <span className="text-[12px] text-muted">
+              {pending.length} of {MENU_MAX_FILES} images ·{' '}
+              {Math.round(pending.reduce((s, p) => s + p.file.size, 0) / 1024 / 102.4) / 10} MB
+            </span>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

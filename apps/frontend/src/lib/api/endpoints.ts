@@ -181,6 +181,16 @@ export const merchantApi = {
   businessInfo: () => merchantClient.get<BusinessInfo>('/merchant/business/info'),
   updateBusinessInfo: (data: Partial<BusinessInfo>) =>
     merchantClient.patch<BusinessInfo>('/merchant/business/info', data),
+  /** Turn 1..20 phone photos into a menu PDF and set it as menuUrl. */
+  uploadMenuImages: (files: File[]) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('images', file));
+    return merchantClient.request<BusinessInfo>('/merchant/business/menu-pdf', {
+      method: 'POST',
+      formData,
+    });
+  },
+  removeMenuPdf: () => merchantClient.delete<BusinessInfo>('/merchant/business/menu-pdf'),
   getQr: (size = 512) => merchantClient.get<QrInfo>(`/merchant/business/qr?size=${size}`),
   qrPngUrl: () => `/merchant/business/qr.png`,
 

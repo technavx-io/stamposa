@@ -9,9 +9,10 @@ import {
   Query,
   StreamableFile,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -31,6 +32,11 @@ import { BusinessesService } from './businesses.service';
 import { BusinessDto } from './dto/business.dto';
 import { CreateBusinessDto, QrQueryDto, UpdateBusinessDto } from './dto/business-request.dto';
 import { BusinessInfoDto, UpdateBusinessInfoDto } from './dto/business-info.dto';
+import {
+  MenuPdfService,
+  MENU_MAX_FILES,
+  MENU_MAX_PER_FILE_BYTES,
+} from './menu-pdf.service';
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 const CARD_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
@@ -53,6 +59,7 @@ export class BusinessesController {
   constructor(
     private readonly businesses: BusinessesService,
     private readonly phones: PhoneService,
+    private readonly menuPdf: MenuPdfService,
   ) {}
 
   @Post()
@@ -99,6 +106,57 @@ export class BusinessesController {
   ): Promise<BusinessInfoDto> {
     const business = requireBusiness(merchant.business);
     return this.businesses.updateInfo(business.id, dto);
+  }
+
+  @Post('menu-pdf')
+  @ApiOperation({
+    summary:
+      'Build a menu PDF from uploaded photos and set it as this business’s menuUrl.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        images: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: `Up to ${MENU_MAX_FILES} JPEG/PNG/WebP photos, 10 MB each, 40 MB total.`,
+        },
+      },
+      required: ['images'],
+    },
+  })
+  @ApiOkResponse({ type: BusinessInfoDto })
+  @UseInterceptors(
+    // Per-file cap enforced by Multer; the aggregate cap is checked in the
+    // service so we can throw a clear domain error instead of a raw
+    // "PayloadTooLargeError".
+    FilesInterceptor('images', MENU_MAX_FILES, {
+      limits: { fileSize: MENU_MAX_PER_FILE_BYTES, files: MENU_MAX_FILES },
+    }),
+  )
+  async uploadMenuImages(
+    @CurrentMerchant() merchant: MerchantWithBusiness,
+    @UploadedFiles() files: Express.Multer.File[] | undefined,
+  ): Promise<BusinessInfoDto> {
+    const business = requireBusiness(merchant.business);
+    const { business: updated } = await this.menuPdf.buildAndStore(
+      business,
+      files ?? [],
+    );
+    return this.businesses.infoDto(updated);
+  }
+
+  @Delete('menu-pdf')
+  @ApiOperation({ summary: 'Remove the uploaded menu PDF and clear menuUrl.' })
+  @ApiOkResponse({ type: BusinessInfoDto })
+  async removeMenuPdf(
+    @CurrentMerchant() merchant: MerchantWithBusiness,
+  ): Promise<BusinessInfoDto> {
+    const business = requireBusiness(merchant.business);
+    const updated = await this.menuPdf.remove(business);
+    return this.businesses.infoDto(updated);
   }
 
   @Post('logo')
