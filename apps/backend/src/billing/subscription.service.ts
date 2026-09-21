@@ -67,7 +67,11 @@ export class SubscriptionService {
     const result = await this.dodo.createSubscriptionCheckout({
       productId,
       customer,
-      returnUrl: `${this.appConfig.webAppUrl}/merchant/billing?checkout=success`,
+      // Neutral return marker: Dodo drops the merchant back at this URL on
+      // both success and cancel/failure with no status of its own attached,
+      // so the frontend refetches the actual subscription state before
+      // deciding what to say. See merchant/(portal)/billing/page.tsx.
+      returnUrl: `${this.appConfig.webAppUrl}/merchant/billing?checkout=return`,
       // Echoed back on every webhook so we can resolve tenant + target plan
       // without reverse-mapping product ids.
       metadata: { businessId, tier, interval },
