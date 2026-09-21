@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, StaffRole } from '@prisma/client';
+import { TokenService } from '../auth/token.service';
 import { EntitlementsService } from '../billing/entitlements.service';
 import { conflict, forbidden, notFound } from '../common/exceptions';
 import { PasswordService } from '../common/password.service';
@@ -12,6 +13,7 @@ export class StaffManagementService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly entitlements: EntitlementsService,
+    private readonly tokens: TokenService,
   ) {}
 
   /**
@@ -94,6 +96,14 @@ export class StaffManagementService {
       },
       include: { _count: { select: { stampsIssued: true } } },
     });
+    // Bug #N4: a merchant resetting a staff member's password (e.g. because the
+    // counter phone was lost) must invalidate every existing refresh token for
+    // that staff, mirroring how merchant password reset revokes sessions in
+    // AuthService.resetPassword. Access tokens are stateless (900s TTL) and
+    // expire on their own; the refresh token is what a thief would rotate.
+    if (passwordHash !== undefined) {
+      await this.tokens.revokeAllForActor('STAFF', staff.id);
+    }
     return toStaffDto(staff);
   }
 }

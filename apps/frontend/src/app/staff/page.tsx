@@ -49,6 +49,13 @@ import { LoadError } from '@/components/ui/load-error';
 
 const STAFF_UNDO_SEC = 60;
 const MANAGER_UNDO_SEC = 15 * 60;
+/**
+ * Bug #N2: shared iPad at the counter should not stay signed in indefinitely.
+ * After 15 min of no user interaction we clear the session and bounce to the
+ * login screen with a security toast — mousemove/keydown/touchstart/scroll all
+ * reset the timer, so an active shift never trips it.
+ */
+const STAFF_IDLE_MS = 15 * 60 * 1000;
 
 export default function StaffConsolePage() {
   const router = useRouter();
@@ -101,6 +108,43 @@ export default function StaffConsolePage() {
       router.replace('/staff/login');
     }
   }, [authFailed, router]);
+
+  // Bug #N2: idle-logout for the shared counter iPad. Any real activity —
+  // pointer motion, keypress, touch, scroll — resets a 15-min timer. When it
+  // fires we clear the session and hand the device back to the login screen
+  // with a security toast so the next shift knows what happened.
+  useEffect(() => {
+    if (!session) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const signOutForIdle = () => {
+      const refreshToken = staffSession.get()?.tokens.refreshToken;
+      staffSession.clear();
+      if (refreshToken) {
+        // Fire-and-forget — the local session is already cleared, and we
+        // don't want a slow network to keep the previous shift signed in.
+        void staffApi.auth.logout(refreshToken).catch(() => undefined);
+      }
+      toast.info('Signed out for security — tap to sign back in.');
+      router.replace('/staff/login');
+    };
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(signOutForIdle, STAFF_IDLE_MS);
+    };
+    const events: Array<keyof WindowEventMap> = [
+      'mousemove',
+      'mousedown',
+      'keydown',
+      'touchstart',
+      'scroll',
+    ];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
+  }, [session, router]);
 
   const refresh = useCallback(
     () =>

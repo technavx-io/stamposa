@@ -19,6 +19,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { CurrentStaff, Roles } from '../auth/decorators/auth.decorators';
+import { TokenService } from '../auth/token.service';
 import { BusinessesService } from '../businesses/businesses.service';
 import { BusinessDto } from '../businesses/dto/business.dto';
 import { CampaignsService } from '../campaigns/campaigns.service';
@@ -191,6 +192,7 @@ export class StaffConsoleController {
     private readonly identifiers: IdentifierService,
     private readonly passwords: PasswordService,
     private readonly prisma: PrismaService,
+    private readonly tokens: TokenService,
   ) {}
 
   @Get('context')
@@ -232,6 +234,12 @@ export class StaffConsoleController {
     if (!ok) throw badRequest('WRONG_PASSWORD', 'Current password is incorrect.');
     const hash = await this.passwords.hash(dto.newPassword);
     await this.prisma.staff.update({ where: { id: staff.id }, data: { passwordHash: hash } });
+    // Bug #N4: revoke every existing refresh token so a stolen session dies at
+    // the moment the staff member rotates their password. The caller's current
+    // refresh token will fail on next rotation; the counter UI shows the login
+    // screen after the 900s access-token TTL runs out (usually much sooner
+    // because the sign-out helper clears the local session immediately).
+    await this.tokens.revokeAllForActor('STAFF', staff.id);
     return { success: true };
   }
 

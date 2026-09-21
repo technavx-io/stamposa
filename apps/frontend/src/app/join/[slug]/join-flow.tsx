@@ -149,6 +149,7 @@ export function JoinFlow({ slug }: { slug: string }) {
                 text={b.consentText}
                 checked={marketingConsent}
                 onChange={setMarketingConsent}
+                businessName={b.name}
               />
               <Button
                 size="lg"
@@ -188,6 +189,7 @@ export function JoinFlow({ slug }: { slug: string }) {
                   text={b.consentText}
                   checked={marketingConsent}
                   onChange={setMarketingConsent}
+                  businessName={b.name}
                 />
               </div>
             </>
@@ -225,20 +227,37 @@ function ConsentCheckbox({
   text,
   checked,
   onChange,
+  businessName,
 }: {
   text: string;
   checked: boolean;
   onChange: (value: boolean) => void;
+  businessName?: string;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-relaxed text-white/70">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 size-4 shrink-0 cursor-pointer rounded border-white/20 bg-white/[0.06] text-brand-500 focus:ring-2 focus:ring-brand-500/40"
-      />
-      <span>{text}</span>
-    </label>
+    <div className="space-y-2">
+      <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-relaxed text-white/70">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-0.5 size-4 shrink-0 cursor-pointer rounded border-white/20 bg-white/[0.06] text-brand-500 focus:ring-2 focus:ring-brand-500/40"
+        />
+        <span>{text}</span>
+      </label>
+      <p className="text-[11.5px] leading-relaxed text-white/45">
+        By continuing you agree to how {businessName ? `${businessName} and Stamposa` : 'Stamposa'} handle your data —
+        see our{' '}
+        <a
+          href={siteHref('/legal/privacy')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-amber-300 underline decoration-amber-300/40 underline-offset-2 hover:text-amber-200"
+        >
+          Privacy Policy
+        </a>
+        .
+      </p>
+    </div>
   );
 }

@@ -15,8 +15,15 @@ import {
 import { Request } from 'express';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Business, Merchant } from '@prisma/client';
+import { AuditActorType, PlatformAdmin } from '@prisma/client';
 import { Public, CurrentMerchant, Roles } from '../auth/decorators/auth.decorators';
-import { AdminRoute, RequireCapability } from '../admin/decorators/admin.decorators';
+import {
+  AdminRoute,
+  CurrentAdmin,
+  RequestContext,
+  RequireCapability,
+} from '../admin/decorators/admin.decorators';
+import { AuditService } from '../audit/audit.service';
 import { requireBusiness } from '../businesses/business.util';
 import { ALL_PLANS } from './plans';
 import {
@@ -115,7 +122,10 @@ export class MerchantSubscriptionController {
 @RequireCapability('promos.manage')
 @Controller('admin/promo-codes')
 export class PromoAdminController {
-  constructor(private readonly promo: PromoService) {}
+  constructor(
+    private readonly promo: PromoService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List promo codes with redemption counts' })
@@ -127,13 +137,38 @@ export class PromoAdminController {
   @Post()
   @ApiOperation({ summary: 'Create a promo code' })
   @ApiOkResponse({ type: PromoCodeDto })
-  async create(@Body() dto: CreatePromoCodeDto): Promise<PromoCodeDto> {
+  async create(
+    @CurrentAdmin() admin: PlatformAdmin,
+    @RequestContext() meta: { ipAddress: string | null; userAgent: string | null },
+    @Body() dto: CreatePromoCodeDto,
+  ): Promise<PromoCodeDto> {
     const created = await this.promo.create({
       code: dto.code,
       tier: dto.tier,
       freeMonths: dto.freeMonths,
       maxRedemptions: dto.maxRedemptions,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+    });
+    // Bug #N1 (admin audit gap): every promo-code mutation is a
+    // billing-affecting action performed by a platform operator and MUST leave
+    // an audit trail. Mirrors the shape used elsewhere in AdminController
+    // (customer.looked_up, merchant.suspended, …).
+    await this.audit.record({
+      actorType: AuditActorType.ADMIN,
+      adminId: admin.id,
+      actorLabel: admin.email,
+      action: 'promo.created',
+      targetType: 'promo_code',
+      targetId: created.id,
+      targetLabel: created.code,
+      metadata: {
+        tier: created.tier,
+        freeMonths: created.freeMonths,
+        maxRedemptions: created.maxRedemptions,
+        expiresAt: created.expiresAt ? created.expiresAt.toISOString() : null,
+      },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
     });
     return PromoCodeDto.from(created);
   }
@@ -142,10 +177,25 @@ export class PromoAdminController {
   @ApiOperation({ summary: 'Enable or disable a promo code' })
   @ApiOkResponse({ type: PromoCodeDto })
   async setActive(
+    @CurrentAdmin() admin: PlatformAdmin,
+    @RequestContext() meta: { ipAddress: string | null; userAgent: string | null },
     @Param('id') id: string,
     @Body() dto: SetPromoActiveDto,
   ): Promise<PromoCodeDto> {
-    return PromoCodeDto.from(await this.promo.setActive(id, dto.active));
+    const updated = await this.promo.setActive(id, dto.active);
+    await this.audit.record({
+      actorType: AuditActorType.ADMIN,
+      adminId: admin.id,
+      actorLabel: admin.email,
+      action: dto.active ? 'promo.activated' : 'promo.deactivated',
+      targetType: 'promo_code',
+      targetId: updated.id,
+      targetLabel: updated.code,
+      metadata: { active: dto.active },
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+    return PromoCodeDto.from(updated);
   }
 }
 

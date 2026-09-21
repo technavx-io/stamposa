@@ -20,7 +20,7 @@ export default function TermsOfService() {
           Terms of Service
         </h1>
         <p className="mt-3 text-[13px] text-muted">
-          Effective date: <strong>[LEGAL REVIEW &mdash; insert date]</strong> · Governed by the
+          Effective date: <strong>2026-09-21</strong> · Governed by the
           laws of India.
         </p>
         <div className="mt-8">
@@ -49,7 +49,7 @@ export default function TermsOfService() {
           <p>
             Keep your login credentials secret. Every action taken through your account is
             attributed to you. Tell us immediately at{' '}
-            <strong>[LEGAL REVIEW &mdash; security contact]</strong> if you suspect unauthorised
+            <strong>hello@stamposa.com</strong> if you suspect unauthorised
             access. You are responsible for what your staff members do under staff accounts you
             create.
           </p>

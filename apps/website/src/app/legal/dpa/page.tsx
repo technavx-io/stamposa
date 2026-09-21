@@ -20,7 +20,7 @@ export default function DataProcessingAgreement() {
           Data Processing Agreement
         </h1>
         <p className="mt-3 text-[13px] text-muted">
-          Effective date: <strong>[LEGAL REVIEW &mdash; insert date]</strong> · Forms part of
+          Effective date: <strong>2026-09-21</strong> · Forms part of
           the Stamposa Terms of Service · Governed by the laws of India.
         </p>
         <div className="mt-8">

@@ -20,7 +20,7 @@ export default function PrivacyPolicy() {
           Privacy Policy
         </h1>
         <p className="mt-3 text-[13px] text-muted">
-          Effective date: <strong>[LEGAL REVIEW — insert date]</strong> · Governed by the laws of
+          Effective date: <strong>2026-09-21</strong> · Governed by the laws of
           India.
         </p>
         <div className="mt-8">
@@ -131,8 +131,7 @@ export default function PrivacyPolicy() {
             <li>Complain to the Data Protection Board of India.</li>
           </ul>
           <p>
-            To exercise any of these, email <strong>[LEGAL REVIEW &mdash; privacy contact email,
-            e.g. privacy@stamposa.com]</strong>. Merchants can also self-serve erasure of their
+            To exercise any of these, email <strong>hello@stamposa.com</strong>. Merchants can also self-serve erasure of their
             customers from the merchant dashboard.
           </p>
 

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,8 +43,31 @@ const STEPS = [
   { label: 'Loyalty campaign', icon: Sparkles },
 ] as const;
 
+/**
+ * Only accept an in-app `next` target (no protocol, no host, single leading
+ * slash). Mirrors merchant/login safeNext so a crafted link cannot bounce a
+ * fresh signup out to an outside site as themselves.
+ */
+function safeNext(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+  return raw;
+}
+
 export default function OnboardingPage() {
+  // useSearchParams() forces a client-side render, so Next requires the tree
+  // that uses it to sit under a <Suspense>. The wrapper is otherwise transparent.
+  return (
+    <Suspense fallback={null}>
+      <OnboardingPageInner />
+    </Suspense>
+  );
+}
+
+function OnboardingPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeNext(searchParams.get('next'));
   const { session, ready } = useStoredSession('MERCHANT');
   const queryClient = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
@@ -107,7 +130,7 @@ export default function OnboardingPage() {
                   }}
                 />
               ) : (
-                <CampaignStep onDone={() => router.replace('/merchant/dashboard')} />
+                <CampaignStep onDone={() => router.replace(next ?? '/merchant/dashboard')} />
               )}
             </div>
           </div>

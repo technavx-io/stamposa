@@ -103,7 +103,7 @@ export default function QrPage() {
           <ol className="space-y-4 p-5 text-sm text-body">
             {[
               'Print the standee and place it where customers pay.',
-              'Customers scan it, verify their phone with an OTP and instantly get their digital card.',
+              'Customers scan it, enter their email to receive a one-time code, and instantly get their digital card.',
               'On every purchase, your staff searches the customer and adds a stamp — the card updates live on the customer’s phone.',
               'When the card is full, the reward unlocks and a fresh card starts automatically.',
             ].map((step, i) => (

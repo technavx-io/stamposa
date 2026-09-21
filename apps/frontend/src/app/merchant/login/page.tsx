@@ -41,6 +41,15 @@ function MerchantLoginPageInner() {
     if (ready && session) router.replace(next ?? '/merchant/dashboard');
   }, [session, ready, router, next]);
 
+  /**
+   * When we bounce a fresh signup to onboarding, thread `next` through so the
+   * merchant lands on their originally-requested destination after the two
+   * onboarding steps (Bug #B3 — was previously dropping the intent on the floor).
+   */
+  const onboardingHref = next
+    ? `/merchant/onboarding?next=${encodeURIComponent(next)}`
+    : '/merchant/onboarding';
+
   // Bug #13: if this tab was signed out because another tab logged out, tell
   // the user rather than dropping them on the login page with no context.
   useEffect(() => {
@@ -94,7 +103,7 @@ function MerchantLoginPageInner() {
               // has a business (a brand-new signup with no business still needs
               // to finish onboarding before any billing action makes sense).
               if (s.business && next) router.replace(next);
-              else router.replace(s.business ? '/merchant/dashboard' : '/merchant/onboarding');
+              else router.replace(s.business ? '/merchant/dashboard' : onboardingHref);
             }}
           />
         </AuthColumn>

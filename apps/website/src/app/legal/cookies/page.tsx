@@ -20,7 +20,7 @@ export default function CookiePolicy() {
           Cookie Policy
         </h1>
         <p className="mt-3 text-[13px] text-muted">
-          Effective date: <strong>[LEGAL REVIEW &mdash; insert date]</strong>
+          Effective date: <strong>2026-09-21</strong>
         </p>
         <div className="mt-8">
           <LegalReviewBanner />
