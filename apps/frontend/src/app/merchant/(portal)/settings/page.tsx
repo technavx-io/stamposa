@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,25 +11,34 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  Bell,
+  Building2,
   Camera,
+  CheckCircle2,
   Download,
   ExternalLink,
   FilePlus,
   FileText,
+  Globe,
+  Image as ImageIcon,
   ImagePlus,
-  Menu,
+  Palette,
   Pause,
   Play,
   RefreshCw,
+  ShieldAlert,
+  Share2,
   Smartphone,
+  Sparkles,
+  Star,
   Trash2,
   X,
 } from 'lucide-react';
+import { cn } from '@stamposa/ui/lib/utils';
 import { ApiError } from '@/lib/api/client';
 import { merchantApi, type HandoffCreated } from '@/lib/api/endpoints';
 import { useMerchant } from '@/lib/auth/merchant-context';
 import { downloadAuthenticated } from '@/lib/download';
-import {cn} from '@stamposa/ui/lib/utils';
 import { PageHeader } from '@/components/layout/page-header';
 import { StampGrid } from '@/components/stamp-grid';
 import { Button } from '@stamposa/ui/components/button';
@@ -36,21 +46,39 @@ import { Field, Input, Textarea } from '@/components/ui/field';
 import { LogoAvatar } from '@/components/ui/logo-avatar';
 import { Modal } from '@/components/ui/modal';
 import { Switch } from '@/components/ui/switch';
-import { Panel, PanelHeader } from '@/components/ui/surface';
-import { CardImageField, EmojiChoice, REWARD_EMOJIS, STAMP_EMOJIS } from '@/components/merchant/card-style-fields';
+import { Spinner } from '@/components/ui/surface';
+import {
+  CardImageField,
+  EmojiChoice,
+  REWARD_EMOJIS,
+  STAMP_EMOJIS,
+} from '@/components/merchant/card-style-fields';
 import { cardBackground } from '@/lib/card-bg';
-import { Star } from 'lucide-react';
+import { SectionNav, type SectionNavItem } from '@/components/settings/section-nav';
+import { SectionShell, useSaveFlash } from '@/components/settings/section-shell';
 
-const schema = z.object({
-  name: z.string().trim().min(2, 'Business name is required').max(80),
-  address: z.string().trim().max(200).optional().or(z.literal('')),
-  phone: z.string().trim().max(20).optional().or(z.literal('')),
-  category: z.string().trim().max(40).optional().or(z.literal('')),
-  timezone: z.string().trim().max(64),
-});
-type FormValues = z.infer<typeof schema>;
+// ── Section registry ────────────────────────────────────────────────────
+// Reflect the active pane in `?section=` so a merchant can send a link that
+// opens straight to Menu. Also the answer to "what tab was I on before I
+// reloaded".
 
-/** Common Indian-market zones first, then a few international ones. */
+const SECTION_KEYS = [
+  'business',
+  'public',
+  'menu',
+  'social',
+  'look',
+  'notifications',
+  'danger',
+] as const;
+type SectionKey = (typeof SECTION_KEYS)[number];
+
+function isSectionKey(v: string | null): v is SectionKey {
+  return !!v && (SECTION_KEYS as readonly string[]).includes(v);
+}
+
+// ── Timezone / category dictionaries — unchanged ────────────────────────
+
 const timezones = [
   'Asia/Kolkata',
   'Asia/Dubai',
@@ -73,564 +101,27 @@ const categories = [
   'other',
 ];
 
-const swatches = ['#4F46E5', '#0D9488', '#B45309', '#BE123C', '#7C3AED', '#0369A1', '#15803D', '#1F2937'];
+const swatches = [
+  '#4F46E5',
+  '#0D9488',
+  '#B45309',
+  '#BE123C',
+  '#7C3AED',
+  '#0369A1',
+  '#15803D',
+  '#1F2937',
+];
 
-export default function SettingsPage() {
-  const { me, business, refresh } = useMerchant();
-  const queryClient = useQueryClient();
-  const fileRef = useRef<HTMLInputElement>(null);
+// ── Zod schemas — UNCHANGED shape/paths ─────────────────────────────────
 
-  const [brandColor, setBrandColor] = useState(business.brandColor ?? '#4F46E5');
-  const [stampIcon, setStampIcon] = useState(business.stampIcon ?? '');
-  const [rewardIcon, setRewardIcon] = useState(business.rewardIcon ?? '');
-  const [imageTint, setImageTint] = useState(business.cardImageTint);
-  const [consentText, setConsentText] = useState<string | null>(null);
-  const [reviewLink, setReviewLink] = useState<string | null>(null);
-  const [pauseOpen, setPauseOpen] = useState(false);
-  const [downloading, setDownloading] = useState<string | null>(null);
-
-  const campaigns = useQuery({ queryKey: ['merchant', 'campaigns'], queryFn: merchantApi.listCampaigns });
-  const liveCampaign = campaigns.data?.find((c) => c.status !== 'ARCHIVED') ?? null;
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      name: business.name,
-      address: business.address ?? '',
-      phone: business.phone ?? '',
-      category: business.category ?? '',
-      timezone: business.timezone,
-    },
-  });
-
-  const save = form.handleSubmit(async (values) => {
-    try {
-      await merchantApi.updateBusiness({
-        name: values.name,
-        address: values.address || undefined,
-        phone: values.phone || undefined,
-        category: values.category || undefined,
-        timezone: values.timezone,
-      });
-      toast.success('Business profile saved');
-      await refresh();
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : 'Could not save the profile.');
-    }
-  });
-
-  const saveField = useMutation({
-    mutationFn: (data: Parameters<typeof merchantApi.updateBusiness>[0]) =>
-      merchantApi.updateBusiness(data),
-    onSuccess: async () => {
-      toast.success('Saved');
-      await refresh();
-      await queryClient.invalidateQueries({ queryKey: ['merchant'] });
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save.'),
-  });
-
-  const uploadLogo = useMutation({
-    mutationFn: (file: File) => merchantApi.uploadLogo(file),
-    onSuccess: async () => {
-      toast.success('Logo updated');
-      await refresh();
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Upload failed.'),
-  });
-
-  const removeLogo = useMutation({
-    mutationFn: () => merchantApi.removeLogo(),
-    onSuccess: async () => {
-      toast.success('Logo removed');
-      await refresh();
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove the logo.'),
-  });
-
-  const uploadCardImage = useMutation({
-    mutationFn: (file: File) => merchantApi.uploadCardImage(file),
-    onSuccess: async () => {
-      toast.success('Card image updated');
-      await refresh();
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Upload failed.'),
-  });
-
-  const removeCardImage = useMutation({
-    mutationFn: () => merchantApi.removeCardImage(),
-    onSuccess: async () => {
-      toast.success('Card image removed');
-      await refresh();
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove the image.'),
-  });
-
-  const togglePause = useMutation({
-    mutationFn: () =>
-      merchantApi.updateCampaign(liveCampaign!.id, {
-        status: liveCampaign!.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
-      }),
-    onSuccess: async (c) => {
-      toast.success(c.status === 'ACTIVE' ? 'Programme resumed' : 'Programme paused');
-      setPauseOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ['merchant'] });
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not update.'),
-  });
-
-  const download = async (key: 'customers' | 'transactions' | 'rewards') => {
-    setDownloading(key);
-    try {
-      await downloadAuthenticated(merchantApi.exportPaths[key], `${key}.csv`);
-      toast.success('Download started');
-    } catch {
-      toast.error('Could not download the export.');
-    } finally {
-      setDownloading(null);
-    }
-  };
-
-  return (
-    <>
-      <PageHeader title="Settings" description="Your business profile, as customers see it." />
-
-      <div className="grid items-start gap-6 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
-          <Panel>
-            <PanelHeader title="Business profile" />
-            <form onSubmit={save} className="space-y-4 p-5">
-              <Field label="Business name" error={form.formState.errors.name?.message}>
-                {(p) => <Input {...p} {...form.register('name')} />}
-              </Field>
-              <Field label="Address" optional error={form.formState.errors.address?.message}>
-                {(p) => <Textarea {...p} rows={2} {...form.register('address')} />}
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Business phone" optional error={form.formState.errors.phone?.message}>
-                  {(p) => <Input {...p} type="tel" {...form.register('phone')} />}
-                </Field>
-                <Field label="Category" optional>
-                  {(p) => (
-                    <select
-                      {...p}
-                      {...form.register('category')}
-                      className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-brand-500 focus:outline-2 focus:outline-brand-600/20"
-                    >
-                      <option value="">Not set</option>
-                      {categories.map((c) => (
-                        <option key={c} value={c}>
-                          {c.charAt(0).toUpperCase() + c.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </Field>
-              </div>
-              <Field
-                label="Timezone"
-                hint="Decides what counts as “today” in your dashboard and reports."
-              >
-                {(p) => (
-                  <select
-                    {...p}
-                    {...form.register('timezone')}
-                    className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm focus:border-brand-500 focus:outline-2 focus:outline-brand-600/20"
-                  >
-                    {timezones.map((tz) => (
-                      <option key={tz} value={tz}>
-                        {tz.replace('_', ' ')}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Field>
-              <Button type="submit" loading={form.formState.isSubmitting}>
-                Save changes
-              </Button>
-            </form>
-          </Panel>
-
-          <Panel>
-            <PanelHeader
-              title="Consent wording"
-              description="What customers agree to when they join. Editing it starts a new version; past agreements keep the text they saw."
-            />
-            <div className="space-y-3 p-5">
-              <Textarea
-                rows={3}
-                value={consentText ?? business.consentText ?? ''}
-                onChange={(e) => setConsentText(e.target.value)}
-                placeholder={`I agree to ${business.name} contacting me with offers and updates. I can unsubscribe at any time.`}
-              />
-              <Button
-                size="sm"
-                loading={saveField.isPending}
-                disabled={consentText === null || consentText === (business.consentText ?? '')}
-                onClick={() => saveField.mutate({ consentText: consentText ?? '' })}
-              >
-                Save wording
-              </Button>
-            </div>
-          </Panel>
-
-          <Panel>
-            <PanelHeader
-              title="Google reviews"
-              description="Add your review link and every customer card gets a “Leave a Google review” button."
-            />
-            <div className="space-y-3 p-5">
-              <Field
-                label="Google review link"
-                optional
-                hint="In Google Business Profile, choose “Ask for reviews” and copy the link. A Google Maps share link or your Place ID works too."
-              >
-                {(p) => (
-                  <Input
-                    {...p}
-                    type="url"
-                    inputMode="url"
-                    placeholder="https://g.page/r/…/review"
-                    value={reviewLink ?? business.googleReviewUrl ?? ''}
-                    onChange={(e) => setReviewLink(e.target.value)}
-                  />
-                )}
-              </Field>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  size="sm"
-                  loading={saveField.isPending}
-                  disabled={reviewLink === null || reviewLink.trim() === (business.googleReviewUrl ?? '')}
-                  onClick={() =>
-                    saveField
-                      .mutateAsync({ googleReviewUrl: reviewLink?.trim() ?? '' })
-                      .then(() => setReviewLink(null))
-                      .catch(() => undefined)
-                  }
-                >
-                  Save link
-                </Button>
-                {business.googleReviewUrl && (
-                  <a
-                    href={business.googleReviewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline"
-                  >
-                    <Star className="size-4" /> Open review page
-                  </a>
-                )}
-              </div>
-            </div>
-          </Panel>
-
-          <BusinessInfoPanel />
-
-          <Panel>
-            <PanelHeader title="Notifications" description="What we send you about your programme." />
-            <ul className="divide-y divide-line-soft">
-              {(
-                [
-                  ['notifyDailySummary', 'Daily summary', 'A short recap of yesterday each morning'],
-                  ['notifyWeeklyDigest', 'Weekly digest', 'How the week went, every Monday'],
-                  [
-                    'notifyStaffInactive',
-                    'Staff inactivity alerts',
-                    'Tell me if nobody has stamped in 48 hours',
-                  ],
-                ] as const
-              ).map(([key, label, description]) => (
-                <li key={key} className="flex items-center justify-between gap-4 px-5 py-3.5">
-                  <div>
-                    <p className="text-sm font-medium text-strong">{label}</p>
-                    <p className="text-[13px] text-muted">{description}</p>
-                  </div>
-                  <Switch
-                    checked={business[key]}
-                    onCheckedChange={(next) => saveField.mutate({ [key]: next })}
-                    aria-label={label}
-                  />
-                </li>
-              ))}
-            </ul>
-          </Panel>
-
-          <Panel className="border-red-200">
-            <PanelHeader title="Danger zone" description="Careful — these affect live customers." />
-            <div className="space-y-4 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-strong">
-                    {liveCampaign?.status === 'PAUSED' ? 'Programme is paused' : 'Pause the programme'}
-                  </p>
-                  <p className="text-[13px] text-muted">
-                    Stops new joins and stamping. Existing cards stay valid.
-                  </p>
-                </div>
-                <Button
-                  variant={liveCampaign?.status === 'PAUSED' ? 'primary' : 'secondary'}
-                  size="sm"
-                  disabled={!liveCampaign}
-                  loading={togglePause.isPending}
-                  onClick={() =>
-                    liveCampaign?.status === 'PAUSED' ? togglePause.mutate() : setPauseOpen(true)
-                  }
-                >
-                  {liveCampaign?.status === 'PAUSED' ? (
-                    <>
-                      <Play className="size-4" /> Resume
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="size-4" /> Pause
-                    </>
-                  )}
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-4">
-                <div>
-                  <p className="text-sm font-medium text-strong">Export everything first</p>
-                  <p className="text-[13px] text-muted">
-                    Your customer list is yours — download it any time, on any plan.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(['customers', 'transactions', 'rewards'] as const).map((key) => (
-                    <Button
-                      key={key}
-                      variant="secondary"
-                      size="sm"
-                      loading={downloading === key}
-                      onClick={() => void download(key)}
-                    >
-                      <Download className="size-4" /> {key}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Panel>
-        </div>
-
-        <div className="space-y-6 lg:col-span-2">
-          <Panel>
-            <PanelHeader title="Logo" description="PNG, JPEG or WebP, up to 2 MB." />
-            <div className="flex items-center gap-4 p-5">
-              <LogoAvatar name={business.name} logoUrl={business.logoUrl} size="xl" />
-              <div className="flex flex-col gap-2">
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadLogo.mutate(file);
-                    e.target.value = '';
-                  }}
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => fileRef.current?.click()}
-                  loading={uploadLogo.isPending}
-                >
-                  <ImagePlus className="size-4" /> {business.logoUrl ? 'Replace' : 'Upload logo'}
-                </Button>
-                {business.logoUrl && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeLogo.mutate()}
-                    loading={removeLogo.isPending}
-                  >
-                    <Trash2 className="size-4" /> Remove
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Panel>
-
-          <Panel>
-            <PanelHeader title="Card look" description="Defaults for the customer card and join page. Campaigns can override these." />
-            <div className="space-y-4 p-5">
-              <p className="text-[13px] font-medium text-body">Brand colour</p>
-              <div className="flex flex-wrap gap-2">
-                {swatches.map((hex) => (
-                  <button
-                    key={hex}
-                    onClick={() => setBrandColor(hex)}
-                    aria-label={`Choose ${hex}`}
-                    className={cn(
-                      'size-8 cursor-pointer rounded-lg ring-offset-2 transition-all',
-                      brandColor.toLowerCase() === hex.toLowerCase()
-                        ? 'ring-2 ring-zinc-900'
-                        : 'hover:scale-105',
-                    )}
-                    style={{ backgroundColor: hex }}
-                  />
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={brandColor}
-                  onChange={(e) => setBrandColor(e.target.value)}
-                  className="h-9 w-12 cursor-pointer rounded border border-line"
-                  aria-label="Custom colour"
-                />
-                <Input
-                  value={brandColor}
-                  onChange={(e) => setBrandColor(e.target.value)}
-                  className="h-9 font-mono text-[13px]"
-                  maxLength={7}
-                />
-              </div>
-
-              {/* Live preview so the choice is judged in context, not abstractly. */}
-              <div
-                className="rounded-2xl bg-cover bg-center p-4 text-white"
-                style={{
-                  background: cardBackground({
-                    color: brandColor,
-                    cardImageUrl: business.cardImageUrl,
-                    imageTinted: imageTint,
-                  }),
-                }}
-              >
-                <p className="text-sm font-semibold">{business.name}</p>
-                <div className="my-3">
-                  <StampGrid
-                    total={8}
-                    filled={3}
-                    size="sm"
-                    tone="dark"
-                    stampIcon={stampIcon || null}
-                    rewardIcon={rewardIcon || null}
-                  />
-                </div>
-                <p className="text-xs text-white/70">Card preview</p>
-              </div>
-
-              <div className="space-y-2 border-t border-line-soft pt-4">
-                <p className="text-[13px] font-medium text-body">Stamp icon</p>
-                <EmojiChoice
-                  value={stampIcon}
-                  onChange={setStampIcon}
-                  presets={STAMP_EMOJIS}
-                  defaultHint="Using the default check mark."
-                />
-              </div>
-              <div className="space-y-2">
-                <p className="text-[13px] font-medium text-body">Reward icon</p>
-                <EmojiChoice
-                  value={rewardIcon}
-                  onChange={setRewardIcon}
-                  presets={REWARD_EMOJIS}
-                  defaultHint="Using the default gift."
-                />
-              </div>
-
-              <div className="space-y-2 border-t border-line-soft pt-4">
-                <p className="text-[13px] font-medium text-body">Card background image</p>
-                <CardImageField
-                  imageUrl={business.cardImageUrl}
-                  onFile={(f) => uploadCardImage.mutate(f)}
-                  onRemove={() => removeCardImage.mutate()}
-                  uploading={uploadCardImage.isPending}
-                  removing={removeCardImage.isPending}
-                />
-                {business.cardImageUrl && (
-                  <label className="flex items-center gap-2 text-[13px] text-body">
-                    <input
-                      type="checkbox"
-                      className="size-4 accent-brand-600"
-                      checked={imageTint}
-                      onChange={(e) => setImageTint(e.target.checked)}
-                    />
-                    Tint the image with the brand colour
-                  </label>
-                )}
-                <p className="text-[12px] text-muted">
-                  PNG, JPEG or WebP, up to 4 MB. Untick the tint to show the image on its own (a soft
-                  dark scrim keeps text readable).
-                </p>
-              </div>
-
-              <Button
-                size="sm"
-                loading={saveField.isPending}
-                disabled={
-                  brandColor.toLowerCase() === (business.brandColor ?? '').toLowerCase() &&
-                  stampIcon === (business.stampIcon ?? '') &&
-                  rewardIcon === (business.rewardIcon ?? '') &&
-                  imageTint === business.cardImageTint
-                }
-                onClick={() =>
-                  saveField.mutate({
-                    brandColor,
-                    stampIcon: stampIcon || null,
-                    rewardIcon: rewardIcon || null,
-                    cardImageTint: imageTint,
-                  })
-                }
-              >
-                Save card look
-              </Button>
-            </div>
-          </Panel>
-
-          <Panel>
-            <PanelHeader title="Account" />
-            <dl className="space-y-3 p-5 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">Owner</dt>
-                <dd className="font-medium text-strong">{me.actor.name}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">Login email</dt>
-                <dd className="font-medium text-strong">{me.actor.email ?? '—'}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted">Join link</dt>
-                <dd className="max-w-[60%] truncate font-mono text-xs text-body">
-                  {business.joinUrl}
-                </dd>
-              </div>
-            </dl>
-          </Panel>
-        </div>
-      </div>
-
-      <Modal
-        open={pauseOpen}
-        onClose={() => setPauseOpen(false)}
-        title="Pause the programme?"
-        description="New customers can't join and staff can't add stamps. Existing cards and rewards stay exactly as they are."
-      >
-        <div className="space-y-4">
-          <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            Your QR code will show “not accepting new members” until you resume.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setPauseOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="danger" loading={togglePause.isPending} onClick={() => togglePause.mutate()}>
-              <Pause className="size-4" /> Pause programme
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    </>
-  );
-}
-
-// ── Menu & info page section ─────────────────────────────────────────────
-// Fields for /b/<slug>. Kept in its own component so the settings page
-// stays legible; it also owns its own state / mutation so a bad URL only
-// fails this form, not the whole page.
+const businessSchema = z.object({
+  name: z.string().trim().min(2, 'Business name is required').max(80),
+  address: z.string().trim().max(200).optional().or(z.literal('')),
+  phone: z.string().trim().max(20).optional().or(z.literal('')),
+  category: z.string().trim().max(40).optional().or(z.literal('')),
+  timezone: z.string().trim().max(64),
+});
+type BusinessFormValues = z.infer<typeof businessSchema>;
 
 const infoSchema = z.object({
   menuUrl: z.string().trim().max(500).optional().or(z.literal('')),
@@ -657,9 +148,421 @@ const infoSchema = z.object({
 });
 type InfoFormValues = z.infer<typeof infoSchema>;
 
-function BusinessInfoPanel() {
+// ── Page entry ──────────────────────────────────────────────────────────
+
+export default function SettingsPage() {
+  // useSearchParams needs a Suspense boundary in the App Router.
+  return (
+    <Suspense fallback={<SettingsFallback />}>
+      <SettingsPageInner />
+    </Suspense>
+  );
+}
+
+function SettingsFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center">
+      <Spinner className="size-6" />
+    </div>
+  );
+}
+
+function SettingsPageInner() {
+  const router = useRouter();
+  const params = useSearchParams();
+
+  const querySection = params.get('section');
+  const active: SectionKey = isSectionKey(querySection) ? querySection : 'business';
+
+  const selectSection = (key: SectionKey) => {
+    const q = new URLSearchParams(params.toString());
+    q.set('section', key);
+    // scroll:false + replace so the change feels like a tab, not a nav.
+    router.replace(`/merchant/settings?${q.toString()}`, { scroll: false });
+    // Fresh chrome — scroll to the pane top on section change so the header
+    // is always the first thing under the merchant's eye.
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const nav: SectionNavItem[] = [
+    { key: 'business', label: 'Business', icon: Building2 },
+    { key: 'public', label: 'Public page', icon: Globe },
+    { key: 'menu', label: 'Menu', icon: FileText },
+    { key: 'social', label: 'Social', icon: Share2 },
+    { key: 'look', label: 'Card look', icon: Palette },
+    { key: 'notifications', label: 'Notifications', icon: Bell },
+    { key: 'danger', label: 'Danger', icon: ShieldAlert, tone: 'danger' },
+  ];
+
+  return (
+    <div className="relative">
+      {/* Soft brand corner glow instead of the full auth aurora — a settings
+          page is dense; the accent hints at brand personality without
+          fighting the forms. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-16 -right-16 -z-10 size-[420px] rounded-full bg-brand-500/10 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-96 -left-20 -z-10 size-[360px] rounded-full bg-amber-400/10 blur-3xl"
+      />
+
+      <PageHeader
+        title="Settings"
+        description="Everything your customers see, and how you're set up behind the counter."
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+        <SectionNav items={nav} active={active} onSelect={(k) => selectSection(k as SectionKey)} />
+
+        <div className="min-w-0">
+          {active === 'business' && <BusinessSection />}
+          {active === 'public' && <PublicPageSection />}
+          {active === 'menu' && <MenuSection />}
+          {active === 'social' && <SocialSection />}
+          {active === 'look' && <CardLookSection />}
+          {active === 'notifications' && <NotificationsSection />}
+          {active === 'danger' && <DangerSection />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Business section ────────────────────────────────────────────────────
+// Business identity + logo + timezone + consent + data exports.
+
+function BusinessSection() {
+  const { me, business, refresh } = useMerchant();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const flash = useSaveFlash();
+  const logoFlash = useSaveFlash();
+  const consentFlash = useSaveFlash();
+  const [consentText, setConsentText] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const form = useForm<BusinessFormValues>({
+    resolver: zodResolver(businessSchema),
+    defaultValues: {
+      name: business.name,
+      address: business.address ?? '',
+      phone: business.phone ?? '',
+      category: business.category ?? '',
+      timezone: business.timezone,
+    },
+  });
+
+  const save = form.handleSubmit(async (values) => {
+    try {
+      await merchantApi.updateBusiness({
+        name: values.name,
+        address: values.address || undefined,
+        phone: values.phone || undefined,
+        category: values.category || undefined,
+        timezone: values.timezone,
+      });
+      toast.success('Business profile saved');
+      flash.flash();
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Could not save the profile.');
+    }
+  });
+
+  const uploadLogo = useMutation({
+    mutationFn: (file: File) => merchantApi.uploadLogo(file),
+    onSuccess: async () => {
+      toast.success('Logo updated');
+      logoFlash.flash();
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Upload failed.'),
+  });
+
+  const removeLogo = useMutation({
+    mutationFn: () => merchantApi.removeLogo(),
+    onSuccess: async () => {
+      toast.success('Logo removed');
+      logoFlash.flash();
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove the logo.'),
+  });
+
+  const saveConsent = useMutation({
+    mutationFn: (text: string) => merchantApi.updateBusiness({ consentText: text }),
+    onSuccess: async () => {
+      toast.success('Consent wording saved');
+      consentFlash.flash();
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save.'),
+  });
+
+  const download = async (key: 'customers' | 'transactions' | 'rewards') => {
+    setDownloading(key);
+    try {
+      await downloadAuthenticated(merchantApi.exportPaths[key], `${key}.csv`);
+      toast.success('Download started');
+    } catch {
+      toast.error('Could not download the export.');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <SectionShell
+        id="business"
+        eyebrow="Identity"
+        title="Business profile"
+        description="Your business name, contact, and default timezone. This is the record everything else hangs off."
+        flashRing={flash.ringClass}
+      >
+        <form onSubmit={save} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+            <div className="flex flex-col items-start gap-3">
+              <LogoAvatar name={business.name} logoUrl={business.logoUrl} size="xl" />
+              <div
+                className={cn(
+                  'rounded-lg transition-shadow duration-500',
+                  logoFlash.ringClass,
+                )}
+              >
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadLogo.mutate(f);
+                    e.target.value = '';
+                  }}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    loading={uploadLogo.isPending}
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <ImagePlus className="size-4" /> {business.logoUrl ? 'Replace' : 'Upload logo'}
+                  </Button>
+                  {business.logoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      loading={removeLogo.isPending}
+                      onClick={() => removeLogo.mutate()}
+                    >
+                      <Trash2 className="size-4" /> Remove
+                    </Button>
+                  )}
+                </div>
+                <p className="mt-2 text-[12px] text-muted">PNG, JPEG, WebP · up to 2 MB.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Field
+                label="Business name"
+                hint="The name your customers see when they scan your QR."
+                error={form.formState.errors.name?.message}
+              >
+                {(p) => <Input {...p} {...form.register('name')} />}
+              </Field>
+              <Field
+                label="Address"
+                optional
+                hint="Where you're located. Also shown on your public page."
+                error={form.formState.errors.address?.message}
+              >
+                {(p) => <Textarea {...p} rows={2} {...form.register('address')} />}
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Business phone"
+                  optional
+                  error={form.formState.errors.phone?.message}
+                >
+                  {(p) => <Input {...p} type="tel" {...form.register('phone')} />}
+                </Field>
+                <Field label="Category" optional hint="Helps us pick sensible defaults for you.">
+                  {(p) => (
+                    <select
+                      {...p}
+                      {...form.register('category')}
+                      className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm text-strong focus:border-brand-500 focus:outline-2 focus:outline-brand-600/20"
+                    >
+                      <option value="">Not set</option>
+                      {categories.map((c) => (
+                        <option key={c} value={c}>
+                          {c.charAt(0).toUpperCase() + c.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+              </div>
+              <Field
+                label="Timezone"
+                hint="Decides what counts as “today” in your dashboard and reports."
+              >
+                {(p) => (
+                  <select
+                    {...p}
+                    {...form.register('timezone')}
+                    className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm text-strong focus:border-brand-500 focus:outline-2 focus:outline-brand-600/20"
+                  >
+                    {timezones.map((tz) => (
+                      <option key={tz} value={tz}>
+                        {tz.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+            </div>
+          </div>
+
+          <DirtyBar
+            dirty={form.formState.isDirty}
+            saving={form.formState.isSubmitting}
+            onCancel={() => form.reset()}
+            submitLabel="Save profile"
+          />
+        </form>
+      </SectionShell>
+
+      <SectionShell
+        id="business-consent"
+        title="Consent wording"
+        description="What customers agree to when they join. Editing starts a new version — past agreements keep the text they saw."
+        flashRing={consentFlash.ringClass}
+      >
+        <div className="space-y-3">
+          <Textarea
+            rows={3}
+            value={consentText ?? business.consentText ?? ''}
+            onChange={(e) => setConsentText(e.target.value)}
+            placeholder={`I agree to ${business.name} contacting me with offers and updates. I can unsubscribe at any time.`}
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              loading={saveConsent.isPending}
+              disabled={consentText === null || consentText === (business.consentText ?? '')}
+              onClick={() => saveConsent.mutate(consentText ?? '')}
+            >
+              Save wording
+            </Button>
+            {consentText !== null && consentText !== (business.consentText ?? '') && (
+              <button
+                type="button"
+                className="text-[13px] font-medium text-muted hover:text-strong"
+                onClick={() => setConsentText(null)}
+              >
+                Discard
+              </button>
+            )}
+          </div>
+        </div>
+      </SectionShell>
+
+      <SectionShell
+        id="business-data"
+        title="Your data"
+        description="Your customer list, transactions, and rewards — yours to take at any time, on any plan."
+      >
+        <div className="flex flex-wrap gap-2">
+          {(['customers', 'transactions', 'rewards'] as const).map((key) => (
+            <Button
+              key={key}
+              variant="secondary"
+              size="sm"
+              loading={downloading === key}
+              onClick={() => void download(key)}
+            >
+              <Download className="size-4" /> Export {key}.csv
+            </Button>
+          ))}
+        </div>
+        <dl className="mt-6 space-y-2 border-t border-line-soft pt-4 text-sm">
+          <RowKv label="Owner" value={me.actor.name ?? '—'} />
+          <RowKv label="Login email" value={me.actor.email ?? '—'} />
+          <RowKv label="Join link" value={business.joinUrl} mono />
+        </dl>
+      </SectionShell>
+    </div>
+  );
+}
+
+function RowKv({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <dt className="text-muted">{label}</dt>
+      <dd
+        className={cn(
+          'max-w-[60%] truncate text-right font-medium text-strong',
+          mono && 'font-mono text-xs text-body',
+        )}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+/** Sticky-ish footer bar that only appears when the form is dirty. Keeps the
+ *  save action reachable without hunting for it, and lets the merchant back
+ *  out of edits without a page reload. */
+function DirtyBar({
+  dirty,
+  saving,
+  onCancel,
+  submitLabel,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  onCancel: () => void;
+  submitLabel: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-end gap-2 border-t border-line-soft pt-4 transition-opacity',
+        dirty ? 'opacity-100' : 'pointer-events-none opacity-60',
+      )}
+    >
+      {dirty && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-[13px] font-medium text-muted hover:text-strong"
+        >
+          Discard changes
+        </button>
+      )}
+      <Button type="submit" loading={saving} disabled={!dirty}>
+        {submitLabel}
+      </Button>
+    </div>
+  );
+}
+
+// ── Public page section — the /b/<slug> non-menu fields ─────────────────
+
+function PublicPageSection() {
   const { business } = useMerchant();
   const queryClient = useQueryClient();
+  const flash = useSaveFlash();
+  const reviewFlash = useSaveFlash();
+  const [reviewLink, setReviewLink] = useState<string | null>(null);
 
   const info = useQuery({
     queryKey: ['merchant', 'business-info'],
@@ -668,313 +571,771 @@ function BusinessInfoPanel() {
 
   const form = useForm<InfoFormValues>({
     resolver: zodResolver(infoSchema),
-    values: {
-      menuUrl: info.data?.menuUrl ?? '',
-      aboutText: info.data?.aboutText ?? '',
-      address: info.data?.address ?? '',
-      phone: info.data?.phone ?? '',
-      websiteUrl: info.data?.websiteUrl ?? '',
-      hoursText: info.data?.hoursText ?? '',
-      contactEmail: info.data?.contactEmail ?? '',
-      googleMapsUrl: info.data?.googleMapsUrl ?? '',
-      instagramUrl: info.data?.instagramUrl ?? '',
-      facebookUrl: info.data?.facebookUrl ?? '',
-      youtubeUrl: info.data?.youtubeUrl ?? '',
-      xUrl: info.data?.xUrl ?? '',
-      linkedinUrl: info.data?.linkedinUrl ?? '',
-      tiktokUrl: info.data?.tiktokUrl ?? '',
-      whatsappUrl: info.data?.whatsappUrl ?? '',
-    },
+    values: infoFormValues(info.data),
     resetOptions: { keepDirtyValues: true },
   });
 
+  const publicHref = `/b/${business.slug}`;
+
   const save = form.handleSubmit(async (values) => {
     try {
-      // The API treats "" as clear-this-field; we forward as-is.
-      await merchantApi.updateBusinessInfo({
-        menuUrl: values.menuUrl ?? '',
-        aboutText: values.aboutText ?? '',
-        address: values.address ?? '',
-        phone: values.phone ?? '',
-        websiteUrl: values.websiteUrl ?? '',
-        hoursText: values.hoursText ?? '',
-        contactEmail: values.contactEmail ?? '',
-        googleMapsUrl: values.googleMapsUrl ?? '',
-        instagramUrl: values.instagramUrl ?? '',
-        facebookUrl: values.facebookUrl ?? '',
-        youtubeUrl: values.youtubeUrl ?? '',
-        xUrl: values.xUrl ?? '',
-        linkedinUrl: values.linkedinUrl ?? '',
-        tiktokUrl: values.tiktokUrl ?? '',
-        whatsappUrl: values.whatsappUrl ?? '',
-      });
-      toast.success('Menu & info page saved');
+      await merchantApi.updateBusinessInfo(applyInfoValues(values));
+      toast.success('Public page saved');
+      flash.flash();
       await queryClient.invalidateQueries({ queryKey: ['merchant', 'business-info'] });
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : 'Could not save the info page.');
     }
   });
 
-  // The public /b/<slug> lives on the same host as the merchant portal
-  // (a Next.js route); a relative link works everywhere the app is served.
-  const publicHref = `/b/${business.slug}`;
+  const saveReview = useMutation({
+    mutationFn: (url: string) => merchantApi.updateBusiness({ googleReviewUrl: url }),
+    onSuccess: async () => {
+      toast.success('Review link saved');
+      reviewFlash.flash();
+      setReviewLink(null);
+      await queryClient.invalidateQueries({ queryKey: ['merchant'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save.'),
+  });
+
+  if (info.isPending) return <SkeletonPanel />;
 
   return (
-    <Panel>
-      <PanelHeader
-        title="Menu & info page"
-        description="A public page for your business — Instagram bio, receipts, anywhere. Shows what customers see when they land outside the loyalty flow."
-      />
-      <form onSubmit={save} className="space-y-4 p-5">
-        <div className="rounded-lg border border-line-soft bg-surface-2/40 px-3 py-2 text-[13px] text-body">
-          Your public page:{' '}
-          <a
-            href={publicHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline"
-          >
-            {publicHref} <ExternalLink className="size-3.5" />
-          </a>
-        </div>
-
-        <MenuPdfUploader menuUrl={info.data?.menuUrl ?? null} />
-
-        <Field
-          label="View-menu link"
-          optional
-          hint={
-            isHostedMenuPdf(info.data?.menuUrl ?? null)
-              ? 'Auto-set from your uploaded menu PDF. Remove the PDF above to enter an external URL instead.'
-              : 'Point this at wherever your menu lives — Zomato, an Instagram post, a PDF on Drive, anywhere.'
-          }
-          error={form.formState.errors.menuUrl?.message}
-        >
-          {(p) => (
-            <Input
-              {...p}
-              type="url"
-              inputMode="url"
-              placeholder="https://www.zomato.com/…"
-              disabled={isHostedMenuPdf(info.data?.menuUrl ?? null)}
-              {...form.register('menuUrl')}
-            />
-          )}
-        </Field>
-
-        <Field
-          label="About the business"
-          optional
-          hint="One or two lines — what makes you you."
-          error={form.formState.errors.aboutText?.message}
-        >
-          {(p) => <Textarea {...p} rows={3} {...form.register('aboutText')} />}
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-6">
+      <SectionShell
+        id="public"
+        eyebrow="Public"
+        title="Your public page"
+        description="A single page for your business — link it from Instagram bio, receipts, anywhere. Skip a field and it just hides."
+        publicHref={publicHref}
+        flashRing={flash.ringClass}
+      >
+        <form onSubmit={save} className="space-y-4">
           <Field
-            label="Address"
+            label="About the business"
             optional
-            error={form.formState.errors.address?.message}
+            hint="One or two lines — what makes you you."
+            error={form.formState.errors.aboutText?.message}
           >
-            {(p) => <Textarea {...p} rows={2} {...form.register('address')} />}
+            {(p) => <Textarea {...p} rows={3} {...form.register('aboutText')} />}
           </Field>
-          <Field
-            label="Hours"
-            optional
-            hint="Free form — e.g. Mon–Sat · 10am–10pm"
-            error={form.formState.errors.hoursText?.message}
-          >
-            {(p) => <Textarea {...p} rows={2} {...form.register('hoursText')} />}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Address" optional error={form.formState.errors.address?.message}>
+              {(p) => <Textarea {...p} rows={2} {...form.register('address')} />}
+            </Field>
+            <Field
+              label="Hours"
+              optional
+              hint="Free form — e.g. Mon–Sat · 10am–10pm"
+              error={form.formState.errors.hoursText?.message}
+            >
+              {(p) => <Textarea {...p} rows={2} {...form.register('hoursText')} />}
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Phone (public)"
+              optional
+              error={form.formState.errors.phone?.message}
+            >
+              {(p) => <Input {...p} type="tel" {...form.register('phone')} />}
+            </Field>
+            <Field
+              label="Contact email"
+              optional
+              error={form.formState.errors.contactEmail?.message}
+            >
+              {(p) => <Input {...p} type="email" {...form.register('contactEmail')} />}
+            </Field>
+          </div>
+
+          <Field label="Website" optional error={form.formState.errors.websiteUrl?.message}>
+            {(p) => <Input {...p} type="url" inputMode="url" {...form.register('websiteUrl')} />}
           </Field>
-        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
           <Field
-            label="Phone (public)"
+            label="Google Maps link"
             optional
-            error={form.formState.errors.phone?.message}
+            hint="Powers the “Open in Maps” button. If blank, we fall back to the address."
+            error={form.formState.errors.googleMapsUrl?.message}
           >
-            {(p) => <Input {...p} type="tel" {...form.register('phone')} />}
+            {(p) => <Input {...p} type="url" inputMode="url" {...form.register('googleMapsUrl')} />}
           </Field>
+
+          <DirtyBar
+            dirty={form.formState.isDirty}
+            saving={form.formState.isSubmitting}
+            onCancel={() => form.reset()}
+            submitLabel="Save public page"
+          />
+        </form>
+      </SectionShell>
+
+      <SectionShell
+        id="public-review"
+        title="Google reviews"
+        description="Add your review link and every customer card gets a “Leave a Google review” button."
+        flashRing={reviewFlash.ringClass}
+      >
+        <div className="space-y-3">
           <Field
-            label="Contact email"
+            label="Google review link"
             optional
-            error={form.formState.errors.contactEmail?.message}
-          >
-            {(p) => <Input {...p} type="email" {...form.register('contactEmail')} />}
-          </Field>
-        </div>
-
-        <Field
-          label="Website"
-          optional
-          error={form.formState.errors.websiteUrl?.message}
-        >
-          {(p) => <Input {...p} type="url" inputMode="url" {...form.register('websiteUrl')} />}
-        </Field>
-
-        <Field
-          label="Google Maps link"
-          optional
-          hint="Optional — used by the “Open in Maps” button. If blank, the address is used."
-          error={form.formState.errors.googleMapsUrl?.message}
-        >
-          {(p) => <Input {...p} type="url" inputMode="url" {...form.register('googleMapsUrl')} />}
-        </Field>
-
-        {/* Social media — a "Follow us" icon row on the public page. Every
-            field is optional; blanks hide the corresponding icon. */}
-        <div className="pt-2">
-          <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-body">
-            Social media
-          </h3>
-          <p className="mt-1 text-[13px] text-muted">
-            Add the profiles you want customers to find on your public page.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Instagram"
-            optional
-            error={form.formState.errors.instagramUrl?.message}
+            hint="In Google Business Profile, choose “Ask for reviews” and copy the link. A Google Maps share link or your Place ID works too."
           >
             {(p) => (
               <Input
                 {...p}
                 type="url"
                 inputMode="url"
-                placeholder="https://instagram.com/yourbusiness"
-                {...form.register('instagramUrl')}
+                placeholder="https://g.page/r/…/review"
+                value={reviewLink ?? business.googleReviewUrl ?? ''}
+                onChange={(e) => setReviewLink(e.target.value)}
               />
             )}
           </Field>
-          <Field
-            label="Facebook"
-            optional
-            error={form.formState.errors.facebookUrl?.message}
-          >
-            {(p) => (
-              <Input
-                {...p}
-                type="url"
-                inputMode="url"
-                placeholder="https://facebook.com/yourbusiness"
-                {...form.register('facebookUrl')}
-              />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              size="sm"
+              loading={saveReview.isPending}
+              disabled={
+                reviewLink === null || reviewLink.trim() === (business.googleReviewUrl ?? '')
+              }
+              onClick={() => saveReview.mutate(reviewLink?.trim() ?? '')}
+            >
+              Save link
+            </Button>
+            {business.googleReviewUrl && (
+              <a
+                href={business.googleReviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline dark:text-brand-300"
+              >
+                <Star className="size-4" /> Open review page
+              </a>
             )}
-          </Field>
-          <Field
-            label="YouTube"
-            optional
-            error={form.formState.errors.youtubeUrl?.message}
-          >
-            {(p) => (
-              <Input
-                {...p}
-                type="url"
-                inputMode="url"
-                placeholder="https://youtube.com/@yourbusiness"
-                {...form.register('youtubeUrl')}
-              />
-            )}
-          </Field>
-          <Field
-            label="X (Twitter)"
-            optional
-            error={form.formState.errors.xUrl?.message}
-          >
-            {(p) => (
-              <Input
-                {...p}
-                type="url"
-                inputMode="url"
-                placeholder="https://x.com/yourbusiness"
-                {...form.register('xUrl')}
-              />
-            )}
-          </Field>
-          <Field
-            label="LinkedIn"
-            optional
-            error={form.formState.errors.linkedinUrl?.message}
-          >
-            {(p) => (
-              <Input
-                {...p}
-                type="url"
-                inputMode="url"
-                placeholder="https://linkedin.com/company/yourbusiness"
-                {...form.register('linkedinUrl')}
-              />
-            )}
-          </Field>
-          <Field
-            label="TikTok"
-            optional
-            error={form.formState.errors.tiktokUrl?.message}
-          >
-            {(p) => (
-              <Input
-                {...p}
-                type="url"
-                inputMode="url"
-                placeholder="https://tiktok.com/@yourbusiness"
-                {...form.register('tiktokUrl')}
-              />
-            )}
-          </Field>
+          </div>
         </div>
-
-        <Field
-          label="WhatsApp"
-          optional
-          hint="This is your WhatsApp Business chat link — get it from wa.me or the WhatsApp app."
-          error={form.formState.errors.whatsappUrl?.message}
-        >
-          {(p) => (
-            <Input
-              {...p}
-              type="url"
-              inputMode="url"
-              placeholder="https://wa.me/919876543210"
-              {...form.register('whatsappUrl')}
-            />
-          )}
-        </Field>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" loading={form.formState.isSubmitting}>
-            <Menu className="size-4" /> Save info page
-          </Button>
-          <a
-            href={publicHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-[13px] font-medium text-body hover:bg-surface-2"
-          >
-            Open public page <ExternalLink className="size-3.5" />
-          </a>
-        </div>
-      </form>
-    </Panel>
+      </SectionShell>
+    </div>
   );
 }
 
-// ── Menu-PDF uploader ────────────────────────────────────────────────────
-// Camera-or-file picker that batches phone photos and POSTs them to
-// /merchant/business/menu-pdf. Once a PDF exists, the plain "View-menu
-// link" field above is disabled — everything flows through this control.
+// ── Menu section — the star of the pitch ────────────────────────────────
 
-/** Client-side upload limits. Also enforced server-side; we surface a clear
- *  inline message before making the round-trip. */
+function MenuSection() {
+  const { business } = useMerchant();
+  const queryClient = useQueryClient();
+  const flash = useSaveFlash();
+
+  const info = useQuery({
+    queryKey: ['merchant', 'business-info'],
+    queryFn: merchantApi.businessInfo,
+  });
+
+  const [externalMenu, setExternalMenu] = useState<string | null>(null);
+  const publicHref = `/b/${business.slug}`;
+
+  const menuUrl = info.data?.menuUrl ?? '';
+  const hosted = isHostedMenuPdf(info.data?.menuUrl ?? null);
+
+  const saveExternal = useMutation({
+    mutationFn: (url: string) => merchantApi.updateBusinessInfo({ menuUrl: url }),
+    onSuccess: async () => {
+      toast.success('Menu link saved');
+      flash.flash();
+      setExternalMenu(null);
+      await queryClient.invalidateQueries({ queryKey: ['merchant', 'business-info'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save.'),
+  });
+
+  if (info.isPending) return <SkeletonPanel />;
+
+  return (
+    <div className="space-y-6">
+      <SectionShell
+        id="menu"
+        eyebrow="Star feature"
+        title="Your menu"
+        description="Point customers at your menu the moment they land on your public page. Shoot it from your phone — we'll stitch the photos into a PDF."
+        publicHref={publicHref}
+      >
+        <MenuPdfUploaderHero menuUrl={info.data?.menuUrl ?? null} />
+      </SectionShell>
+
+      <SectionShell
+        id="menu-link"
+        title="Or link to a menu that lives elsewhere"
+        description="Zomato, Instagram post, PDF on Drive — anywhere. When you upload photos above, we hide this."
+        flashRing={flash.ringClass}
+      >
+        {hosted ? (
+          <div className="flex items-start gap-3 rounded-lg border border-line-soft bg-surface-2/50 p-3 text-[13px] text-muted">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+            <div>
+              Your menu is set from the uploaded PDF.
+              {menuUrl && (
+                <>
+                  {' '}
+                  <a
+                    href={menuUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-brand-600 hover:underline dark:text-brand-300"
+                  >
+                    View it here
+                  </a>
+                  .
+                </>
+              )}{' '}
+              Remove the PDF to set an external link instead.
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <Field label="Menu link" optional>
+              {(p) => (
+                <Input
+                  {...p}
+                  type="url"
+                  inputMode="url"
+                  placeholder="https://www.zomato.com/…"
+                  value={externalMenu ?? menuUrl}
+                  onChange={(e) => setExternalMenu(e.target.value)}
+                />
+              )}
+            </Field>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                loading={saveExternal.isPending}
+                disabled={externalMenu === null || externalMenu === menuUrl}
+                onClick={() => saveExternal.mutate((externalMenu ?? '').trim())}
+              >
+                Save link
+              </Button>
+              {menuUrl && !externalMenu && (
+                <a
+                  href={menuUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-600 hover:underline dark:text-brand-300"
+                >
+                  Open current menu <ExternalLink className="size-3.5" />
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </SectionShell>
+    </div>
+  );
+}
+
+// ── Social section — split out; two-column layout ───────────────────────
+
+function SocialSection() {
+  const { business } = useMerchant();
+  const queryClient = useQueryClient();
+  const flash = useSaveFlash();
+
+  const info = useQuery({
+    queryKey: ['merchant', 'business-info'],
+    queryFn: merchantApi.businessInfo,
+  });
+
+  const form = useForm<InfoFormValues>({
+    resolver: zodResolver(infoSchema),
+    values: infoFormValues(info.data),
+    resetOptions: { keepDirtyValues: true },
+  });
+
+  const save = form.handleSubmit(async (values) => {
+    try {
+      await merchantApi.updateBusinessInfo(applyInfoValues(values));
+      toast.success('Social links saved');
+      flash.flash();
+      await queryClient.invalidateQueries({ queryKey: ['merchant', 'business-info'] });
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Could not save.');
+    }
+  });
+
+  if (info.isPending) return <SkeletonPanel />;
+
+  const socialFields: Array<{
+    label: string;
+    name: keyof InfoFormValues;
+    placeholder: string;
+  }> = [
+    { label: 'Instagram', name: 'instagramUrl', placeholder: 'https://instagram.com/yourbusiness' },
+    { label: 'Facebook', name: 'facebookUrl', placeholder: 'https://facebook.com/yourbusiness' },
+    { label: 'WhatsApp', name: 'whatsappUrl', placeholder: 'https://wa.me/919876543210' },
+    { label: 'YouTube', name: 'youtubeUrl', placeholder: 'https://youtube.com/@yourbusiness' },
+    { label: 'TikTok', name: 'tiktokUrl', placeholder: 'https://tiktok.com/@yourbusiness' },
+    { label: 'X (Twitter)', name: 'xUrl', placeholder: 'https://x.com/yourbusiness' },
+    {
+      label: 'LinkedIn',
+      name: 'linkedinUrl',
+      placeholder: 'https://linkedin.com/company/yourbusiness',
+    },
+  ];
+
+  const allEmpty = socialFields.every((f) => !(info.data?.[f.name] ?? ''));
+
+  return (
+    <SectionShell
+      id="social"
+      eyebrow="Reach"
+      title="Social media"
+      description="These appear as icons on your public page. Blank fields are hidden — no dead icons."
+      publicHref={`/b/${business.slug}`}
+      flashRing={flash.ringClass}
+    >
+      <form onSubmit={save} className="space-y-4">
+        {allEmpty && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[13px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <Sparkles className="mt-0.5 size-4 shrink-0" />
+            Add your Instagram, WhatsApp and Facebook first — those three usually cover most
+            customers, and they'll show up as tap-to-open icons on your public page.
+          </div>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {socialFields.map((f) => (
+            <Field
+              key={f.name}
+              label={f.label}
+              optional
+              error={form.formState.errors[f.name]?.message as string | undefined}
+            >
+              {(p) => (
+                <Input
+                  {...p}
+                  type="url"
+                  inputMode="url"
+                  placeholder={f.placeholder}
+                  {...form.register(f.name)}
+                />
+              )}
+            </Field>
+          ))}
+        </div>
+        <DirtyBar
+          dirty={form.formState.isDirty}
+          saving={form.formState.isSubmitting}
+          onCancel={() => form.reset()}
+          submitLabel="Save social links"
+        />
+      </form>
+    </SectionShell>
+  );
+}
+
+// ── Card look section ───────────────────────────────────────────────────
+
+function CardLookSection() {
+  const { business, refresh } = useMerchant();
+  const flash = useSaveFlash();
+
+  const [brandColor, setBrandColor] = useState(business.brandColor ?? '#4F46E5');
+  const [stampIcon, setStampIcon] = useState(business.stampIcon ?? '');
+  const [rewardIcon, setRewardIcon] = useState(business.rewardIcon ?? '');
+  const [imageTint, setImageTint] = useState(business.cardImageTint);
+
+  // If the business updates elsewhere, keep the local state in sync so a save
+  // in another tab doesn't leave stale colour in memory here.
+  useEffect(() => {
+    setBrandColor(business.brandColor ?? '#4F46E5');
+    setStampIcon(business.stampIcon ?? '');
+    setRewardIcon(business.rewardIcon ?? '');
+    setImageTint(business.cardImageTint);
+  }, [business.brandColor, business.stampIcon, business.rewardIcon, business.cardImageTint]);
+
+  const dirty =
+    brandColor.toLowerCase() !== (business.brandColor ?? '').toLowerCase() ||
+    stampIcon !== (business.stampIcon ?? '') ||
+    rewardIcon !== (business.rewardIcon ?? '') ||
+    imageTint !== business.cardImageTint;
+
+  const save = useMutation({
+    mutationFn: () =>
+      merchantApi.updateBusiness({
+        brandColor,
+        stampIcon: stampIcon || null,
+        rewardIcon: rewardIcon || null,
+        cardImageTint: imageTint,
+      }),
+    onSuccess: async () => {
+      toast.success('Card look saved');
+      flash.flash();
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save.'),
+  });
+
+  const uploadCardImage = useMutation({
+    mutationFn: (file: File) => merchantApi.uploadCardImage(file),
+    onSuccess: async () => {
+      toast.success('Card image updated');
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Upload failed.'),
+  });
+
+  const removeCardImage = useMutation({
+    mutationFn: () => merchantApi.removeCardImage(),
+    onSuccess: async () => {
+      toast.success('Card image removed');
+      await refresh();
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not remove.'),
+  });
+
+  return (
+    <SectionShell
+      id="look"
+      eyebrow="Brand"
+      title="Card & rewards look"
+      description="How your stamp card feels in customers' hands. Individual campaigns can override these defaults."
+      flashRing={flash.ringClass}
+    >
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        {/* Left column — controls */}
+        <div className="space-y-6">
+          <div>
+            <p className="text-[13px] font-semibold text-strong">Brand colour</p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              The card gradient and stamp fill both key off this.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {swatches.map((hex) => (
+                <button
+                  key={hex}
+                  type="button"
+                  onClick={() => setBrandColor(hex)}
+                  aria-label={`Choose ${hex}`}
+                  className={cn(
+                    'size-8 cursor-pointer rounded-lg ring-offset-2 ring-offset-surface transition-all',
+                    brandColor.toLowerCase() === hex.toLowerCase()
+                      ? 'ring-2 ring-strong'
+                      : 'hover:scale-110',
+                  )}
+                  style={{ backgroundColor: hex }}
+                />
+              ))}
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="color"
+                value={brandColor}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="h-9 w-12 cursor-pointer rounded border border-line bg-transparent"
+                aria-label="Custom colour"
+              />
+              <Input
+                value={brandColor}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="h-9 max-w-[140px] font-mono text-[13px]"
+                maxLength={7}
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-line-soft pt-4">
+            <p className="text-[13px] font-semibold text-strong">Stamp icon</p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              Punched onto the card every time a customer earns a stamp.
+            </p>
+            <div className="mt-3">
+              <EmojiChoice
+                value={stampIcon}
+                onChange={setStampIcon}
+                presets={STAMP_EMOJIS}
+                defaultHint="Using the default check mark."
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-line-soft pt-4">
+            <p className="text-[13px] font-semibold text-strong">Reward icon</p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              Sits in the reward slot at the end of the card.
+            </p>
+            <div className="mt-3">
+              <EmojiChoice
+                value={rewardIcon}
+                onChange={setRewardIcon}
+                presets={REWARD_EMOJIS}
+                defaultHint="Using the default gift."
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-line-soft pt-4">
+            <p className="text-[13px] font-semibold text-strong">Card background image</p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              Optional — put your product or your storefront behind the stamps. PNG, JPEG or WebP,
+              up to 4 MB.
+            </p>
+            <div className="mt-3 space-y-3">
+              <CardImageField
+                imageUrl={business.cardImageUrl}
+                onFile={(f) => uploadCardImage.mutate(f)}
+                onRemove={() => removeCardImage.mutate()}
+                uploading={uploadCardImage.isPending}
+                removing={removeCardImage.isPending}
+              />
+              {business.cardImageUrl && (
+                <label className="flex items-center gap-2 text-[13px] text-body">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-brand-600"
+                    checked={imageTint}
+                    onChange={(e) => setImageTint(e.target.checked)}
+                  />
+                  Tint the image with the brand colour
+                </label>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-line-soft pt-4">
+            {dirty && (
+              <button
+                type="button"
+                className="text-[13px] font-medium text-muted hover:text-strong"
+                onClick={() => {
+                  setBrandColor(business.brandColor ?? '#4F46E5');
+                  setStampIcon(business.stampIcon ?? '');
+                  setRewardIcon(business.rewardIcon ?? '');
+                  setImageTint(business.cardImageTint);
+                }}
+              >
+                Discard changes
+              </button>
+            )}
+            <Button loading={save.isPending} disabled={!dirty} onClick={() => save.mutate()}>
+              Save card look
+            </Button>
+          </div>
+        </div>
+
+        {/* Right column — live preview. Sticks on the desktop so it stays
+            visible while the merchant fiddles with icons and swatches. */}
+        <div className="lg:sticky lg:top-6 lg:self-start">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+            Live preview
+          </p>
+          <div
+            className="rounded-2xl bg-cover bg-center p-5 text-white shadow-[0_10px_30px_-12px_rgba(0,0,0,0.35)]"
+            style={{
+              background: cardBackground({
+                color: brandColor,
+                cardImageUrl: business.cardImageUrl,
+                imageTinted: imageTint,
+              }),
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <LogoAvatar name={business.name} logoUrl={business.logoUrl} size="sm" />
+              <div>
+                <p className="text-sm font-semibold">{business.name}</p>
+                <p className="text-[11px] text-white/70">Preview</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <StampGrid
+                total={8}
+                filled={3}
+                size="sm"
+                tone="dark"
+                stampIcon={stampIcon || null}
+                rewardIcon={rewardIcon || null}
+              />
+            </div>
+            <p className="mt-3 text-[11px] text-white/70">3 of 8 stamps · reward at 8</p>
+          </div>
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
+// ── Notifications section ───────────────────────────────────────────────
+
+function NotificationsSection() {
+  const { business, refresh } = useMerchant();
+  const queryClient = useQueryClient();
+  const flash = useSaveFlash();
+
+  const toggle = useMutation({
+    mutationFn: (patch: Record<string, boolean>) => merchantApi.updateBusiness(patch),
+    onSuccess: async () => {
+      flash.flash();
+      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ['merchant'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save.'),
+  });
+
+  const items = [
+    {
+      key: 'notifyDailySummary' as const,
+      label: 'Daily summary',
+      description: 'A short recap of yesterday each morning.',
+    },
+    {
+      key: 'notifyWeeklyDigest' as const,
+      label: 'Weekly digest',
+      description: 'How the week went, delivered every Monday.',
+    },
+    {
+      key: 'notifyStaffInactive' as const,
+      label: 'Staff inactivity alerts',
+      description: 'Ping us if nobody has stamped in 48 hours.',
+    },
+  ];
+
+  return (
+    <SectionShell
+      id="notifications"
+      eyebrow="Alerts"
+      title="Email notifications"
+      description="What Stamposa emails you about your programme. Toggle any time — takes effect immediately."
+      flashRing={flash.ringClass}
+    >
+      <ul className="divide-y divide-line-soft">
+        {items.map((item) => (
+          <li key={item.key} className="flex items-center justify-between gap-4 py-3.5 first:pt-0">
+            <div>
+              <p className="text-sm font-medium text-strong">{item.label}</p>
+              <p className="text-[13px] text-muted">{item.description}</p>
+            </div>
+            <Switch
+              checked={business[item.key]}
+              onCheckedChange={(next) => toggle.mutate({ [item.key]: next })}
+              aria-label={item.label}
+            />
+          </li>
+        ))}
+      </ul>
+    </SectionShell>
+  );
+}
+
+// ── Danger section — pause only. Exports moved to Business > Your data ──
+
+function DangerSection() {
+  const queryClient = useQueryClient();
+  const [pauseOpen, setPauseOpen] = useState(false);
+  const flash = useSaveFlash();
+
+  const campaigns = useQuery({
+    queryKey: ['merchant', 'campaigns'],
+    queryFn: merchantApi.listCampaigns,
+  });
+  const liveCampaign = campaigns.data?.find((c) => c.status !== 'ARCHIVED') ?? null;
+
+  const togglePause = useMutation({
+    mutationFn: () =>
+      merchantApi.updateCampaign(liveCampaign!.id, {
+        status: liveCampaign!.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
+      }),
+    onSuccess: async (c) => {
+      toast.success(c.status === 'ACTIVE' ? 'Programme resumed' : 'Programme paused');
+      setPauseOpen(false);
+      flash.flash();
+      await queryClient.invalidateQueries({ queryKey: ['merchant'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not update.'),
+  });
+
+  return (
+    <>
+      <SectionShell
+        id="danger"
+        eyebrow="Careful"
+        title="Danger zone"
+        description="Actions that affect live customers. We ask twice."
+        flashRing={flash.ringClass}
+        className="border-red-200/70 dark:border-red-500/25"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-strong">
+              {liveCampaign?.status === 'PAUSED'
+                ? 'Programme is paused'
+                : 'Pause the programme'}
+            </p>
+            <p className="text-[13px] text-muted">
+              Stops new joins and stamping. Existing cards stay valid.
+            </p>
+          </div>
+          <Button
+            variant={liveCampaign?.status === 'PAUSED' ? 'primary' : 'secondary'}
+            size="sm"
+            disabled={!liveCampaign}
+            loading={togglePause.isPending}
+            onClick={() =>
+              liveCampaign?.status === 'PAUSED' ? togglePause.mutate() : setPauseOpen(true)
+            }
+          >
+            {liveCampaign?.status === 'PAUSED' ? (
+              <>
+                <Play className="size-4" /> Resume
+              </>
+            ) : (
+              <>
+                <Pause className="size-4" /> Pause
+              </>
+            )}
+          </Button>
+        </div>
+      </SectionShell>
+
+      <Modal
+        open={pauseOpen}
+        onClose={() => setPauseOpen(false)}
+        title="Pause the programme?"
+        description="New customers can't join and staff can't add stamps. Existing cards and rewards stay exactly as they are."
+      >
+        <div className="space-y-4">
+          <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            Your QR code will show “not accepting new members” until you resume.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setPauseOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={togglePause.isPending}
+              onClick={() => togglePause.mutate()}
+            >
+              <Pause className="size-4" /> Pause programme
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
+  );
+}
+
+// ── Menu PDF uploader — promoted hero ───────────────────────────────────
+// Same POSTs and validation as before; the framing is bigger and the three
+// input paths (take, choose, open on phone) are equally weighted.
+
 const MENU_MAX_FILES = 20;
 const MENU_MAX_PER_FILE_BYTES = 10 * 1024 * 1024;
 const MENU_MAX_TOTAL_BYTES = 40 * 1024 * 1024;
 const MENU_ACCEPT = 'image/jpeg,image/png,image/webp';
 
-/** True when the stored menuUrl points at a PDF we generated ourselves. */
 function isHostedMenuPdf(menuUrl: string | null): boolean {
   if (!menuUrl) return false;
   return /\/uploads\/menu\/[^/?#]+\.pdf(?:$|[?#])/.test(menuUrl);
@@ -986,7 +1347,7 @@ interface PendingImage {
   key: string;
 }
 
-function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
+function MenuPdfUploaderHero({ menuUrl }: { menuUrl: string | null }) {
   const queryClient = useQueryClient();
   const cameraRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
@@ -995,10 +1356,8 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [handoffOpen, setHandoffOpen] = useState(false);
 
-  const hasHostedPdf = isHostedMenuPdf(menuUrl);
+  const hosted = isHostedMenuPdf(menuUrl);
 
-  // Revoke object URLs when the component unmounts or the pending list is
-  // replaced — otherwise the browser leaks a blob per preview thumbnail.
   useEffect(() => {
     return () => {
       pending.forEach((p) => URL.revokeObjectURL(p.previewUrl));
@@ -1017,8 +1376,6 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
     setError(null);
     const next: PendingImage[] = [...pending];
     for (const file of Array.from(incoming)) {
-      // iPhone HEIC arrives with mimetype image/heic — reject with the same
-      // message the server uses so the merchant knows how to fix it.
       const mime = (file.type || '').toLowerCase();
       if (mime === 'image/heic' || mime === 'image/heif' || /\.hei[cf]$/i.test(file.name)) {
         setError(
@@ -1094,28 +1451,25 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
   });
 
   return (
-    <div className="rounded-xl border border-line bg-surface-2/30 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-strong">Upload menu images</p>
-          <p className="text-[13px] text-muted">
-            Shoot photos of your printed menu (or upload existing files) and we’ll turn them into
-            one PDF. Up to {MENU_MAX_FILES} images, 10 MB each.
-          </p>
-        </div>
-      </div>
-
-      {hasHostedPdf && menuUrl && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-900">
-          <FileText className="size-4 shrink-0" />
-          <span className="grow">Your menu PDF is ready.</span>
+    <div className="space-y-4">
+      {hosted && menuUrl && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13.5px] text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <FileText className="size-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Your menu PDF is live.</p>
+            <p className="text-[12.5px] opacity-90">
+              Customers see it right on your public page.
+            </p>
+          </div>
           <a
             href={menuUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-medium text-emerald-800 hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-emerald-700"
           >
-            View menu PDF <ExternalLink className="size-3.5" />
+            View PDF <ExternalLink className="size-3.5" />
           </a>
           <Button
             variant="ghost"
@@ -1123,7 +1477,7 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
             onClick={() => removePdf.mutate()}
             loading={removePdf.isPending}
           >
-            <Trash2 className="size-4" /> Remove menu PDF
+            <Trash2 className="size-4" /> Remove
           </Button>
         </div>
       )}
@@ -1152,51 +1506,57 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
         }}
       />
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
+      {/* Three equally-weighted paths — a real "add menu" hero */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <UploadTile
+          icon={Camera}
+          title="Take photos"
+          hint="Snap each page with your phone"
           onClick={() => cameraRef.current?.click()}
           disabled={upload.isPending}
-        >
-          <Camera className="size-4" /> Take photos
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
+        />
+        <UploadTile
+          icon={FilePlus}
+          title="Choose files"
+          hint="Pick images from this device"
           onClick={() => filesRef.current?.click()}
           disabled={upload.isPending}
-        >
-          <FilePlus className="size-4" /> Choose files
-        </Button>
-        {/* Cross-device handoff: hand this workflow off to a phone camera in
-            one scan. Same actor, no re-login. */}
-        <Button
-          variant="secondary"
-          size="sm"
+        />
+        <UploadTile
+          icon={Smartphone}
+          title="Open on phone"
+          hint="Handoff via QR — 5 min token"
           onClick={() => setHandoffOpen(true)}
           disabled={upload.isPending}
-        >
-          <Smartphone className="size-4" /> Open on phone
-        </Button>
-        {hasHostedPdf && (
-          <span className="self-center text-[12px] text-muted">
-            Adding new photos will replace the current PDF.
-          </span>
-        )}
+          accent
+        />
       </div>
 
-      <HandoffModal open={handoffOpen} onClose={() => setHandoffOpen(false)} />
+      <p className="text-[12.5px] text-muted">
+        Up to {MENU_MAX_FILES} images · 10 MB each · 40 MB total. We stitch them into one PDF and
+        set it as your menu.
+        {hosted && ' Adding new photos replaces the current PDF.'}
+      </p>
 
       {error && (
-        <p className="mt-2 text-[13px] text-red-600" role="alert">
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300" role="alert">
           {error}
         </p>
       )}
 
+      <HandoffModal open={handoffOpen} onClose={() => setHandoffOpen(false)} />
+
       {pending.length > 0 && (
-        <>
-          <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+        <div className="rounded-xl border border-line bg-surface-2/40 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[13px] font-semibold text-strong">
+              {pending.length} of {MENU_MAX_FILES} pages ready
+            </p>
+            <p className="text-[12px] text-muted">
+              {Math.round(pending.reduce((s, p) => s + p.file.size, 0) / 1024 / 102.4) / 10} MB
+            </p>
+          </div>
+          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
             {pending.map((p, index) => (
               <li
                 key={p.key}
@@ -1208,14 +1568,14 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
                   alt={`Page ${index + 1}`}
                   className="aspect-[3/4] w-full object-cover"
                 />
-                <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-white">
+                <span className="absolute top-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-white">
                   Page {index + 1}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeAt(index)}
                   aria-label={`Remove page ${index + 1}`}
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100"
+                  className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity focus:opacity-100 group-hover:opacity-100"
                 >
                   <X className="size-3.5" />
                 </button>
@@ -1242,33 +1602,81 @@ function MenuPdfUploader({ menuUrl }: { menuUrl: string | null }) {
               </li>
             ))}
           </ul>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <Button
               onClick={() => upload.mutate()}
               disabled={pending.length === 0 || upload.isPending}
               loading={upload.isPending}
             >
               <FileText className="size-4" />
-              {hasHostedPdf ? 'Replace menu PDF' : 'Create menu PDF'}
+              {hosted ? 'Replace menu PDF' : 'Create menu PDF'}
             </Button>
             <Button variant="ghost" size="sm" onClick={clearPending} disabled={upload.isPending}>
               Clear
             </Button>
-            <span className="text-[12px] text-muted">
-              {pending.length} of {MENU_MAX_FILES} images ·{' '}
-              {Math.round(pending.reduce((s, p) => s + p.file.size, 0) / 1024 / 102.4) / 10} MB
-            </span>
           </div>
-        </>
+        </div>
+      )}
+
+      {!hosted && pending.length === 0 && (
+        <div className="rounded-xl border border-dashed border-line bg-surface-2/30 px-4 py-6 text-center">
+          <ImageIcon className="mx-auto size-6 text-muted" />
+          <p className="mt-2 text-[13.5px] font-medium text-strong">No menu yet</p>
+          <p className="mt-1 text-[12.5px] text-muted">
+            Shoot the pages of your printed menu — one photo per page, we handle the rest.
+          </p>
+        </div>
       )}
     </div>
   );
 }
 
-// ── Cross-device handoff modal ───────────────────────────────────────────
-// Shows a QR that opens Stamposa on the merchant's phone already signed in
-// (WhatsApp-Web pattern). The QR is single-use, 5-min TTL — the server
-// enforces both. This component just displays it and counts down.
+function UploadTile({
+  icon: Icon,
+  title,
+  hint,
+  onClick,
+  disabled,
+  accent,
+}: {
+  icon: typeof Camera;
+  title: string;
+  hint: string;
+  onClick: () => void;
+  disabled?: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'group flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60',
+        accent
+          ? 'border-brand-500/40 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/15'
+          : 'border-line bg-surface hover:border-brand-500/40 hover:bg-surface-2',
+      )}
+    >
+      <div
+        className={cn(
+          'flex size-9 items-center justify-center rounded-lg transition-transform group-hover:scale-105',
+          accent
+            ? 'bg-brand-600 text-white'
+            : 'bg-surface-2 text-brand-600 dark:bg-brand-500/20 dark:text-brand-200',
+        )}
+      >
+        <Icon className="size-4.5" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-strong">{title}</p>
+        <p className="mt-0.5 text-[12.5px] text-muted">{hint}</p>
+      </div>
+    </button>
+  );
+}
+
+// ── Handoff modal — same behaviour, unchanged ───────────────────────────
 
 function HandoffModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
@@ -1285,12 +1693,9 @@ function HandoffModal({ open, onClose }: { open: boolean; onClose: () => void })
 
 function HandoffModalBody({ onClose }: { onClose: () => void }) {
   const handoff = useMutation<HandoffCreated, ApiError>({
-    mutationFn: () => merchantApi.createHandoff('/merchant/settings#menu-pdf'),
+    mutationFn: () => merchantApi.createHandoff('/merchant/settings?section=menu'),
   });
 
-  // Fire the request once when the modal opens. Passing the mutation function
-  // directly instead of a dep-listed effect keeps StrictMode from firing
-  // twice on remount (which would burn two throwaway tokens).
   useEffect(() => {
     handoff.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1360,12 +1765,8 @@ function HandoffModalBody({ onClose }: { onClose: () => void }) {
         </div>
       ) : (
         <>
-          {/* White card so any phone camera reads the QR fast. */}
           <div
             className="flex size-64 items-center justify-center rounded-2xl border border-line bg-white p-3"
-            // The QR SVG is server-generated by the `qrcode` library, sanitised
-            // by construction — the encoded content is a URL we just built,
-            // not user input. Same pattern the wallet-pass renderer uses.
             dangerouslySetInnerHTML={{ __html: data.qrSvg }}
             aria-label="Sign-in QR code — scan with your phone camera"
             role="img"
@@ -1394,3 +1795,77 @@ function formatMmSs(totalSeconds: number): string {
   const ss = totalSeconds % 60;
   return `${mm}:${ss.toString().padStart(2, '0')}`;
 }
+
+// ── Shared helpers ──────────────────────────────────────────────────────
+
+function infoFormValues(data: {
+  menuUrl?: string | null;
+  aboutText?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  websiteUrl?: string | null;
+  hoursText?: string | null;
+  contactEmail?: string | null;
+  googleMapsUrl?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  youtubeUrl?: string | null;
+  xUrl?: string | null;
+  linkedinUrl?: string | null;
+  tiktokUrl?: string | null;
+  whatsappUrl?: string | null;
+} | undefined): InfoFormValues {
+  return {
+    menuUrl: data?.menuUrl ?? '',
+    aboutText: data?.aboutText ?? '',
+    address: data?.address ?? '',
+    phone: data?.phone ?? '',
+    websiteUrl: data?.websiteUrl ?? '',
+    hoursText: data?.hoursText ?? '',
+    contactEmail: data?.contactEmail ?? '',
+    googleMapsUrl: data?.googleMapsUrl ?? '',
+    instagramUrl: data?.instagramUrl ?? '',
+    facebookUrl: data?.facebookUrl ?? '',
+    youtubeUrl: data?.youtubeUrl ?? '',
+    xUrl: data?.xUrl ?? '',
+    linkedinUrl: data?.linkedinUrl ?? '',
+    tiktokUrl: data?.tiktokUrl ?? '',
+    whatsappUrl: data?.whatsappUrl ?? '',
+  };
+}
+
+/** The API treats "" as clear-this-field; we forward as-is. */
+function applyInfoValues(values: InfoFormValues) {
+  return {
+    menuUrl: values.menuUrl ?? '',
+    aboutText: values.aboutText ?? '',
+    address: values.address ?? '',
+    phone: values.phone ?? '',
+    websiteUrl: values.websiteUrl ?? '',
+    hoursText: values.hoursText ?? '',
+    contactEmail: values.contactEmail ?? '',
+    googleMapsUrl: values.googleMapsUrl ?? '',
+    instagramUrl: values.instagramUrl ?? '',
+    facebookUrl: values.facebookUrl ?? '',
+    youtubeUrl: values.youtubeUrl ?? '',
+    xUrl: values.xUrl ?? '',
+    linkedinUrl: values.linkedinUrl ?? '',
+    tiktokUrl: values.tiktokUrl ?? '',
+    whatsappUrl: values.whatsappUrl ?? '',
+  };
+}
+
+function SkeletonPanel() {
+  return (
+    <div className="animate-pulse rounded-2xl border border-line/80 bg-surface p-6 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
+      <div className="h-5 w-40 rounded bg-surface-2" />
+      <div className="mt-2 h-3 w-64 rounded bg-surface-2" />
+      <div className="mt-6 space-y-3">
+        <div className="h-10 rounded bg-surface-2" />
+        <div className="h-10 rounded bg-surface-2" />
+        <div className="h-20 rounded bg-surface-2" />
+      </div>
+    </div>
+  );
+}
+
