@@ -154,8 +154,12 @@ function OnboardingPageInner() {
               )}
               {step === 3 && (
                 <>
-                  <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-white sm:text-[26px]">
+                  <h2 className="mt-2 flex items-center gap-2 font-display text-2xl font-semibold tracking-tight text-white sm:text-[26px]">
                     You&apos;re live.
+                    <Sparkles
+                      className="size-5 text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.55)]"
+                      strokeWidth={2.25}
+                    />
                   </h2>
                   <p className="mt-1.5 text-sm text-white/65">
                     Your join QR is ready. Print it, tape it up, start stamping.
@@ -361,7 +365,7 @@ function BusinessStep({ onDone }: { onDone: () => Promise<void> }) {
           type="submit"
           size="lg"
           variant="brand"
-          className="w-full"
+          className="w-full bg-gradient-to-b from-brand-500 to-brand-600 shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_14px_30px_-10px_rgba(79,70,229,0.55)] transition-all hover:-translate-y-px hover:from-brand-400 hover:to-brand-500"
           loading={form.formState.isSubmitting}
         >
           Continue
@@ -523,7 +527,7 @@ function CampaignStep({
             type="submit"
             size="lg"
             variant="brand"
-            className="flex-1"
+            className="flex-1 bg-gradient-to-b from-brand-500 to-brand-600 shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_14px_30px_-10px_rgba(79,70,229,0.55)] transition-all hover:-translate-y-px hover:from-brand-400 hover:to-brand-500"
             loading={form.formState.isSubmitting}
           >
             Launch campaign
@@ -571,8 +575,15 @@ function LiveStep({
         </div>
       </div>
 
-      {/* Big, generous QR. Kept on white so any camera reads it fast. */}
-      <div className="mx-auto flex w-full max-w-[300px] flex-col items-center rounded-2xl border border-white/10 bg-white p-4 shadow-[0_25px_60px_-20px_rgba(15,12,30,0.9)]">
+      {/* Big, generous QR. Kept on white so any camera reads it fast.
+          Slow amber breathing halo behind the card lifts it off the glass
+          and reads as "this is the payoff moment" without being loud. */}
+      <div className="relative mx-auto w-full max-w-[300px]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-6 -z-10 rounded-[36px] bg-amber-400/25 blur-3xl animate-live-halo"
+        />
+        <div className="flex w-full flex-col items-center rounded-2xl border border-white/10 bg-white p-4 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_25px_60px_-20px_rgba(15,12,30,0.9),0_0_60px_-10px_rgba(251,191,36,0.35)]">
         {qr.isPending ? (
           <div className="flex aspect-square w-full items-center justify-center">
             <div className="size-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
@@ -597,6 +608,7 @@ function LiveStep({
             {qr.data.joinUrl.replace(/^https?:\/\//, '')}
           </p>
         )}
+        </div>
       </div>
 
       <StickyAction>
@@ -605,7 +617,7 @@ function LiveStep({
             type="button"
             size="lg"
             variant="brand"
-            className="flex-1"
+            className="flex-1 bg-gradient-to-b from-brand-500 to-brand-600 shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_14px_30px_-10px_rgba(79,70,229,0.55)] hover:from-brand-400 hover:to-brand-500 hover:-translate-y-px transition-all"
             onClick={onDone}
           >
             <LayoutDashboard className="size-4" /> Open dashboard
@@ -614,16 +626,30 @@ function LiveStep({
             type="button"
             size="lg"
             variant="secondary"
-            className="flex-1 border-white/10 bg-white/[0.06] text-white hover:bg-white/10"
+            className="flex-1 border-white/10 bg-white/[0.06] text-white shadow-[0_1px_0_rgba(255,255,255,0.08)_inset] transition-all hover:-translate-y-px hover:bg-white/10 hover:border-white/20"
             onClick={onPrint}
           >
             <Printer className="size-4" /> Print my join card
           </Button>
         </div>
       </StickyAction>
+      <style>{liveHaloStyles}</style>
     </div>
   );
 }
+
+const liveHaloStyles = `
+  @keyframes live-halo {
+    0%, 100% { opacity: 0.65; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.06); }
+  }
+  .animate-live-halo {
+    animation: live-halo 3s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-live-halo { animation: none; opacity: 0.75; }
+  }
+`;
 
 /* ────────────────────────────────────────────────────────────────────────
    StickyAction — pins the CTA to the bottom of the glass card on mobile

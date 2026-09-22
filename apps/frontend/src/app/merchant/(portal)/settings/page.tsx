@@ -196,17 +196,15 @@ function SettingsPageInner() {
 
   return (
     <div className="relative">
-      {/* Soft brand corner glow instead of the full auth aurora — a settings
-          page is dense; the accent hints at brand personality without
-          fighting the forms. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-16 -right-16 -z-10 size-[420px] rounded-full bg-brand-500/10 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-96 -left-20 -z-10 size-[360px] rounded-full bg-amber-400/10 blur-3xl"
-      />
+      {/* Ambient layer — three enormous, VERY soft radial glows fixed behind
+          the entire content area. Static (no motion, no aurora churn) so a
+          dense settings surface stays legible, but the flat page picks up
+          depth and colour hints of the brand palette. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-32 size-[640px] rounded-full bg-brand-500/[0.07] blur-3xl dark:bg-brand-500/[0.12]" />
+        <div className="absolute -bottom-40 -left-32 size-[560px] rounded-full bg-amber-400/[0.06] blur-3xl dark:bg-amber-400/[0.08]" />
+        <div className="absolute top-1/2 left-1/4 size-[480px] -translate-y-1/2 rounded-full bg-violet-500/[0.05] blur-3xl dark:bg-violet-500/[0.09]" />
+      </div>
 
       <PageHeader
         title="Settings"
@@ -1652,25 +1650,42 @@ function UploadTile({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'group flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60',
+        'group relative flex flex-col items-start gap-2 overflow-hidden rounded-xl border p-4 text-left transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60',
+        // Layered shadow stack — inset top-highlight + close definition
+        // + long ambient lift. The tiles were previously flat; this gives
+        // the three primary paths real presence.
+        'shadow-[0_1px_0_rgba(255,255,255,0.55)_inset,0_1px_2px_rgba(15,23,42,0.05),0_10px_24px_-14px_rgba(15,23,42,0.16)]',
+        'dark:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset,0_1px_3px_rgba(0,0,0,0.4),0_16px_40px_-16px_rgba(0,0,0,0.55)]',
+        'enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_2px_4px_rgba(15,23,42,0.06),0_24px_60px_-16px_rgba(79,70,229,0.28)]',
+        'dark:enabled:hover:shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_2px_6px_rgba(0,0,0,0.45),0_24px_64px_-16px_rgba(99,102,241,0.45)]',
         accent
-          ? 'border-brand-500/40 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/15'
-          : 'border-line bg-surface hover:border-brand-500/40 hover:bg-surface-2',
+          ? 'border-brand-500/40 bg-gradient-to-b from-brand-50 to-brand-100/70 hover:border-brand-500/60 dark:from-brand-500/[0.12] dark:to-brand-500/[0.06] dark:hover:from-brand-500/[0.18]'
+          : 'border-line bg-surface hover:border-brand-500/40',
       )}
     >
+      {/* Whisper of a radial glow that swells on hover — signals "this tile
+          is the one your mouse is on" without being loud. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -inset-8 -z-0 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+        style={{
+          background:
+            'radial-gradient(circle at 30% 20%, rgba(99,102,241,0.22), transparent 60%)',
+        }}
+      />
       <div
         className={cn(
-          'flex size-9 items-center justify-center rounded-lg transition-transform group-hover:scale-105',
+          'relative flex size-9 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-105',
           accent
-            ? 'bg-brand-600 text-white'
-            : 'bg-surface-2 text-brand-600 dark:bg-brand-500/20 dark:text-brand-200',
+            ? 'bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_8px_16px_-6px_rgba(79,70,229,0.45)]'
+            : 'bg-surface-2 text-brand-600 shadow-[0_1px_0_rgba(255,255,255,0.5)_inset] dark:bg-brand-500/20 dark:text-brand-200 dark:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]',
         )}
       >
         <Icon className="size-4.5" />
       </div>
-      <div>
-        <p className="text-sm font-semibold text-strong">{title}</p>
-        <p className="mt-0.5 text-[12.5px] text-muted">{hint}</p>
+      <div className="relative">
+        <p className="text-sm font-semibold tracking-tight text-strong">{title}</p>
+        <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{hint}</p>
       </div>
     </button>
   );
