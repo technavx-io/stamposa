@@ -138,7 +138,7 @@ function OnboardingPageInner() {
                     {firstName ? `Welcome, ${firstName}.` : 'Welcome to Stamposa.'}
                   </h2>
                   <p className="mt-1.5 text-sm text-white/65">
-                    Two quick steps and you're taking stamps at the counter.
+                    Two quick steps and you&apos;re taking stamps at the counter.
                   </p>
                 </>
               )}
@@ -155,7 +155,7 @@ function OnboardingPageInner() {
               {step === 3 && (
                 <>
                   <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-white sm:text-[26px]">
-                    You're live.
+                    You&apos;re live.
                   </h2>
                   <p className="mt-1.5 text-sm text-white/65">
                     Your join QR is ready. Print it, tape it up, start stamping.
@@ -586,7 +586,7 @@ function LiveStep({
           />
         ) : (
           <p className="p-8 text-center text-[13px] text-zinc-500">
-            Couldn't load your QR just now — you can grab it from the QR tab.
+            Couldn&apos;t load your QR just now — you can grab it from the QR tab.
           </p>
         )}
         <p className="mt-3 text-center text-[12px] font-medium text-zinc-800">

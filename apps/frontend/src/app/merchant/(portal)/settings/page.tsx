@@ -902,7 +902,7 @@ function SocialSection() {
           <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[13px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
             <Sparkles className="mt-0.5 size-4 shrink-0" />
             Add your Instagram, WhatsApp and Facebook first — those three usually cover most
-            customers, and they'll show up as tap-to-open icons on your public page.
+            customers, and they&apos;ll show up as tap-to-open icons on your public page.
           </div>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
